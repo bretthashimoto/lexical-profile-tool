@@ -1,0 +1,303 @@
+"""
+Core lexical frequency profiling.
+
+Given a Reference frequency model and a target text (or texts), computes:
+  - token- and type-level coverage of each frequency band
+  - "off-list" words (not found anywhere in the reference)
+"""
+
+from __future__ import annotations
+
+import os
+from collections import Counter
+from dataclasses import dataclass, field
+from typing import Dict, Iterable, List, Optional, Tuple
+
+from .reference import Reference, require_txt_extension, open_text_file
+from .tokenizer import tokenize
+
+
+@dataclass
+class ProfileResult:
+    """Result of profiling a single text against a Reference."""
+
+    total_tokens: int
+    total_types: int
+    band_token_counts: Dict[int, int]      # band -> token count
+    band_type_counts: Dict[int, int]       # band -> type (unique word) count
+    band_token_pct: Dict[int, float]       # band -> % of all tokens
+    band_type_pct: Dict[int, float]        # band -> % of all types
+    off_list_tokens: int
+    off_list_types: int
+    off_list_pct_tokens: float
+    off_list_words: List[str]              # unique off-list words, most frequent first
+    ignored_tokens: int = 0
+    ignored_types: int = 0
+    ignored_pct_tokens: float = 0.0
+    ignored_words: List[str] = field(default_factory=list)  # unique ignored words, most frequent first
+    word_counts: Counter = field(repr=False, default_factory=Counter)
+    num_bands: int = 0
+    band_ranges: Dict[int, Tuple[int, int]] = field(default_factory=dict)
+
+    def band_label(self, band: int) -> str:
+        """Human-readable label for a band, e.g. "1-999", "1000-1999",
+        or (with a fine-grained schedule) "1-99", "100-199", ...,
+        "2000-2999"."""
+        r = self.band_ranges.get(band)
+        return f"{r[0]}-{r[1]}" if r else f"Band {band}"
+
+    def summary(self, max_bands_shown: Optional[int] = None,
+                max_off_list_shown: int = 20) -> str:
+        """Human-readable text summary, similar in spirit to classic
+        Lexical Frequency Profile reports (Laufer & Nation style)."""
+        lines = []
+        lines.append(f"Tokens: {self.total_tokens}   Types: {self.total_types}")
+        lines.append("")
+        # Size the "Band" column to fit the longest band label (e.g.
+        # "10000-10999") so the table stays aligned regardless of how many
+        # bands there are or how wide their labels get.
+        label_width = max(10, max((len(self.band_label(b)) + 1 for b in self.band_token_counts), default=10))
+        lines.append(f"{'Band':<{label_width}}{'Tokens':>10}{'% Tokens':>12}{'Types':>10}{'% Types':>12}")
+        bands = sorted(self.band_token_counts.keys())
+        if max_bands_shown:
+            bands = bands[:max_bands_shown]
+        for b in bands:
+            lines.append(
+                f"{self.band_label(b):<{label_width}}{self.band_token_counts[b]:>10}"
+                f"{self.band_token_pct[b]:>11.2f}%"
+                f"{self.band_type_counts.get(b, 0):>10}"
+                f"{self.band_type_pct.get(b, 0):>11.2f}%"
+            )
+        lines.append(
+            f"{'Off-list':<{label_width}}{self.off_list_tokens:>10}"
+            f"{self.off_list_pct_tokens:>11.2f}%"
+            f"{self.off_list_types:>10}"
+            f"{'':>12}"
+        )
+        if self.ignored_tokens or self.ignored_words:
+            lines.append(
+                f"{'Ignored':<{label_width}}{self.ignored_tokens:>10}"
+                f"{self.ignored_pct_tokens:>11.2f}%"
+                f"{self.ignored_types:>10}"
+                f"{'':>12}"
+            )
+        if self.off_list_words:
+            shown = self.off_list_words[:max_off_list_shown]
+            more = len(self.off_list_words) - len(shown)
+            lines.append("")
+            lines.append(f"Sample off-list words: {', '.join(shown)}"
+                          + (f"  (+{more} more)" if more > 0 else ""))
+        if self.ignored_words:
+            shown = self.ignored_words[:max_off_list_shown]
+            more = len(self.ignored_words) - len(shown)
+            lines.append("")
+            lines.append(f"Sample ignored words: {', '.join(shown)}"
+                          + (f"  (+{more} more)" if more > 0 else ""))
+        return "\n".join(lines)
+
+    def to_dict(self) -> dict:
+        return {
+            "total_tokens": self.total_tokens,
+            "total_types": self.total_types,
+            "band_token_counts": {self.band_label(b): n for b, n in self.band_token_counts.items()},
+            "band_type_counts": {self.band_label(b): n for b, n in self.band_type_counts.items()},
+            "band_token_pct": {self.band_label(b): n for b, n in self.band_token_pct.items()},
+            "band_type_pct": {self.band_label(b): n for b, n in self.band_type_pct.items()},
+            "off_list_tokens": self.off_list_tokens,
+            "off_list_types": self.off_list_types,
+            "off_list_pct_tokens": self.off_list_pct_tokens,
+            "off_list_words": self.off_list_words,
+            "ignored_tokens": self.ignored_tokens,
+            "ignored_types": self.ignored_types,
+            "ignored_pct_tokens": self.ignored_pct_tokens,
+            "ignored_words": self.ignored_words,
+        }
+
+
+class LexicalProfiler:
+    """Profiles target text(s) against a Reference frequency model."""
+
+    def __init__(self, reference: Reference, min_length: int = 1,
+                 ignore_words: Optional[Iterable[str]] = None):
+        """
+        Args:
+            reference: the Reference frequency model to profile against.
+            min_length: minimum token length to include.
+            ignore_words: optional words to exclude from band/off-list
+                classification. Matching tokens are still counted toward
+                total_tokens/total_types, but reported separately under
+                ProfileResult.ignored_* instead of a frequency band or
+                off-list. Matched case-insensitively if the reference
+                lowercases tokens (the default).
+        """
+        self.reference = reference
+        self.min_length = min_length
+        # Normalize the ignore list the same way tokens get normalized
+        # (lowercased, if the reference does that) so lookups below are a
+        # simple set membership check instead of a case-insensitive one.
+        if ignore_words:
+            self.ignore_words = {
+                (w.lower() if reference.lowercase else w) for w in ignore_words
+            }
+        else:
+            self.ignore_words = set()
+
+    def _tokenize(self, text: str) -> List[str]:
+        return tokenize(
+            text,
+            language=self.reference.language,
+            lowercase=self.reference.lowercase,
+            lemmatize=self.reference.lemmatize,
+            min_length=self.min_length,
+        )
+
+    def profile_text(self, text: str) -> ProfileResult:
+        """Profile a single text string against the reference."""
+        tokens = self._tokenize(text)
+        return self._profile_tokens(tokens)
+
+    def profile_texts(self, texts: Dict[str, str]) -> Dict[str, ProfileResult]:
+        """Profile multiple named texts (e.g. {filename: content, ...}).
+
+        Returns a dict of filename -> ProfileResult, run independently
+        per text (each text's own token/type counts, not pooled).
+        """
+        return {name: self.profile_text(content) for name, content in texts.items()}
+
+    def profile_document(self, path: str, encoding: str = "utf-8") -> ProfileResult:
+        """Profile a single target document, given a path to a .txt file.
+
+        Args:
+            path: path to a .txt file. Any other extension raises
+                ValueError.
+            encoding: text encoding used to read the file (default
+                'utf-8'). Bytes that don't decode are dropped rather than
+                raising (errors='ignore').
+        """
+        require_txt_extension(path)
+        with open_text_file(path, encoding) as f:
+            text = f.read()
+        return self.profile_text(text)
+
+    def profile_corpus(self, path: str, encoding: str = "utf-8") -> Dict[str, ProfileResult]:
+        """Profile every .txt file found in a directory, each independently.
+
+        Searches `path` recursively, mirroring how Reference.from_corpus
+        builds a reference from a directory. Any non-.txt file found along
+        the way raises ValueError.
+
+        Args:
+            path: path to a directory of target .txt files.
+            encoding: text encoding used to read each file (default
+                'utf-8'). Bytes that don't decode are dropped rather than
+                raising (errors='ignore').
+
+        Returns:
+            A dict mapping each file's path (relative to `path`) to its
+            ProfileResult -- relative paths (rather than bare filenames)
+            avoid collisions between same-named files in different
+            subdirectories.
+        """
+        # os.walk() on a path that doesn't exist just silently yields
+        # nothing, which would otherwise look like "an empty folder" --
+        # check up front so a typo'd path gives a clear error instead.
+        if not os.path.isdir(path):
+            raise ValueError(
+                f"Can't find the folder '{path}'. Check the path is "
+                f"correct (relative to the folder you're running from, or "
+                f"use a full/absolute path), and that it's a folder, not a "
+                f"file (use profile_document(...) for a single file)."
+            )
+
+        # os.walk descends into subdirectories on its own, so this picks up
+        # every .txt file no matter how deeply nested. Sorting filenames
+        # keeps the iteration order (and therefore dict order) deterministic.
+        texts = {}
+        for root, _dirs, files in os.walk(path):
+            for fname in sorted(files):
+                fpath = os.path.join(root, fname)
+                require_txt_extension(fpath)
+                # Key by path relative to the corpus root (e.g.
+                # "subfolder/essay.txt") rather than just the filename, so
+                # two files named the same in different subfolders don't
+                # overwrite each other in the results dict.
+                rel_name = os.path.relpath(fpath, path)
+                with open_text_file(fpath, encoding) as f:
+                    texts[rel_name] = f.read()
+
+        if not texts:
+            raise ValueError(
+                f"The folder '{path}' exists, but doesn't contain any "
+                f".txt files (checked all subfolders too). Add some .txt "
+                f"files to it, or double-check this is the folder you meant."
+            )
+        return self.profile_texts(texts)
+
+    def _profile_tokens(self, tokens: List[str]) -> ProfileResult:
+        # Counting by unique word up front (rather than scanning the raw
+        # token list) means each word only needs one reference lookup no
+        # matter how many times it appears in the text.
+        word_counts = Counter(tokens)
+        total_tokens = len(tokens)
+        total_types = len(word_counts)
+
+        band_token_counts: Dict[int, int] = {b: 0 for b in range(1, self.reference.num_bands + 1)}
+        band_type_counts: Dict[int, int] = {b: 0 for b in range(1, self.reference.num_bands + 1)}
+
+        off_list_tokens = 0
+        off_list_word_counts: Counter = Counter()
+        ignored_tokens = 0
+        ignored_word_counts: Counter = Counter()
+
+        # Classify every unique word into exactly one bucket: ignored, a
+        # frequency band, or off-list. Ignored words are checked first so
+        # they're pulled out before ever touching the reference -- they
+        # still count toward the totals above, they just don't land in a
+        # band or in off-list.
+        for word, count in word_counts.items():
+            if word in self.ignore_words:
+                ignored_tokens += count
+                ignored_word_counts[word] = count
+                continue
+            band = self.reference.band_of(word)
+            if band is None:
+                off_list_tokens += count
+                off_list_word_counts[word] = count
+            else:
+                band_token_counts[band] += count
+                band_type_counts[band] += 1
+
+        off_list_types = len(off_list_word_counts)
+        ignored_types = len(ignored_word_counts)
+
+        def pct(n, d):
+            return (n / d * 100.0) if d else 0.0
+
+        band_token_pct = {b: pct(n, total_tokens) for b, n in band_token_counts.items()}
+        band_type_pct = {b: pct(n, total_types) for b, n in band_type_counts.items()}
+
+        # most_common() with no argument returns every entry sorted by
+        # count descending, which is exactly the "most frequent first"
+        # ordering these word lists are documented to have.
+        off_list_words_sorted = [w for w, _ in off_list_word_counts.most_common()]
+        ignored_words_sorted = [w for w, _ in ignored_word_counts.most_common()]
+
+        return ProfileResult(
+            total_tokens=total_tokens,
+            total_types=total_types,
+            band_token_counts=band_token_counts,
+            band_type_counts=band_type_counts,
+            band_token_pct=band_token_pct,
+            band_type_pct=band_type_pct,
+            off_list_tokens=off_list_tokens,
+            off_list_types=off_list_types,
+            off_list_pct_tokens=pct(off_list_tokens, total_tokens),
+            off_list_words=off_list_words_sorted,
+            ignored_tokens=ignored_tokens,
+            ignored_types=ignored_types,
+            ignored_pct_tokens=pct(ignored_tokens, total_tokens),
+            ignored_words=ignored_words_sorted,
+            word_counts=word_counts,
+            num_bands=self.reference.num_bands,
+            band_ranges=self.reference.band_ranges,
+        )

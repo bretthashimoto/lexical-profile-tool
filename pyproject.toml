@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lexical-profiler"
+version = "0.2.0"
+description = "Lexical frequency profiling of texts against a corpus- or list-derived reference frequency model."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "Brett Hashimoto" },
+]
+license = { file = "LICENSE" }
+keywords = ["linguistics", "lexical-frequency", "vocabulary", "readability", "nlp", "spacy"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = [
+    "spacy>=3.7",
+    # spacy imports click at module load time (via its own CLI), but some
+    # resolved versions of its `typer` dependency don't pull click in on
+    # their own -- pin it directly so a plain `pip install` doesn't leave
+    # `import lexical_profiler` crashing with ModuleNotFoundError: click.
+    "click>=8.0",
+]
+
+[project.scripts]
+lexical-profiler = "lexical_profiler.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["lexical_profiler*"]

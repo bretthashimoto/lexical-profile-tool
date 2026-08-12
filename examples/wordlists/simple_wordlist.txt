@@ -1,0 +1,33 @@
+# A plain word list: one word per line, already ordered from most to
+# least frequent. No frequency numbers needed -- this is a short excerpt
+# in the style of a real published list (e.g. the General Service List).
+# Lines starting with "#" and blank lines are ignored.
+the
+be
+to
+of
+and
+a
+in
+that
+have
+it
+for
+not
+on
+with
+he
+as
+you
+do
+at
+this
+but
+his
+by
+from
+they
+we
+say
+her
+she

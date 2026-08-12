@@ -1,0 +1,25 @@
+# A "word,frequency" list: each line is a word and how often it occurs
+# in some larger source corpus. Rank is derived by sorting on the
+# frequency column (highest first), not by the order lines appear here.
+# Tab-separated or space-separated columns work too -- the delimiter is
+# auto-detected.
+the,22038615
+be,12545825
+to,12145630
+of,10996820
+and,10688363
+a,10099589
+in,8814418
+that,4931069
+have,4586947
+it,4380774
+fox,1450
+owl,980
+forest,2200
+weather,1875
+storm,610
+rain,1980
+economy,3040
+inflation,1420
+analyst,540
+demand,1690

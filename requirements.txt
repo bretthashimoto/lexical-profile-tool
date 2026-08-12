@@ -1,0 +1,9 @@
+spacy>=3.7
+
+# Language pipelines are installed separately, e.g.:
+#   python -m spacy download en_core_web_sm
+#   python -m spacy download es_core_news_sm
+#   python -m spacy download de_core_news_sm
+# Tokenization works without a downloaded pipeline (spaCy falls back to a
+# rule-based tokenizer for the requested language). Lemmatization
+# requires the corresponding pipeline to be installed.

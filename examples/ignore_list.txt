@@ -1,0 +1,7 @@
+# Words to exclude from band/off-list scoring -- typically proper nouns,
+# names, or made-up/brand terms that would otherwise show up as "off-list"
+# even though they're not really vocabulary difficulty.
+# One word per line. Lines starting with "#" and blank lines are ignored.
+Zocharias
+Priya
+Fintastic
