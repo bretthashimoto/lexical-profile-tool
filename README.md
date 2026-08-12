@@ -12,6 +12,9 @@ text is scored by what % of its words fall in the most frequent 1000
 words (K1), the next 1000 (K2), and so on, with everything else marked
 "off-list."
 
+> **Trying this out as a tester?** See [TESTING.md](TESTING.md) for a
+> guided setup + things to try, and how to send back feedback.
+
 ## Two ways to build the reference
 
 1. **From a corpus of texts** — frequencies are counted directly from
