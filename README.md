@@ -1,5 +1,7 @@
 # lexical_profiler
 
+[![Tests](https://github.com/bretthashimoto/lexical-profile-tool/actions/workflows/tests.yml/badge.svg)](https://github.com/bretthashimoto/lexical-profile-tool/actions/workflows/tests.yml)
+
 A small Python toolkit for **lexical frequency profiling**: measuring how
 much of a text's vocabulary falls into common vs. rare/unknown frequency
 bands, relative to a reference frequency model.
