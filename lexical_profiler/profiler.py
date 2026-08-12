@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import os
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Optional, Tuple
 
-from .reference import Reference, require_txt_extension, open_text_file
+from .reference import Reference, open_text_file, require_txt_extension
 from .tokenizer import tokenize
 
 
@@ -23,21 +23,22 @@ class ProfileResult:
 
     total_tokens: int
     total_types: int
-    band_token_counts: Dict[int, int]      # band -> token count
-    band_type_counts: Dict[int, int]       # band -> type (unique word) count
-    band_token_pct: Dict[int, float]       # band -> % of all tokens
-    band_type_pct: Dict[int, float]        # band -> % of all types
+    band_token_counts: dict[int, int]      # band -> token count
+    band_type_counts: dict[int, int]       # band -> type (unique word) count
+    band_token_pct: dict[int, float]       # band -> % of all tokens
+    band_type_pct: dict[int, float]        # band -> % of all types
     off_list_tokens: int
     off_list_types: int
     off_list_pct_tokens: float
-    off_list_words: List[str]              # unique off-list words, most frequent first
+    off_list_words: list[str]              # unique off-list words, most frequent first
     ignored_tokens: int = 0
     ignored_types: int = 0
     ignored_pct_tokens: float = 0.0
-    ignored_words: List[str] = field(default_factory=list)  # unique ignored words, most frequent first
+    # unique ignored words, most frequent first
+    ignored_words: list[str] = field(default_factory=list)
     word_counts: Counter = field(repr=False, default_factory=Counter)
     num_bands: int = 0
-    band_ranges: Dict[int, Tuple[int, int]] = field(default_factory=dict)
+    band_ranges: dict[int, tuple[int, int]] = field(default_factory=dict)
 
     def band_label(self, band: int) -> str:
         """Human-readable label for a band, e.g. "1-999", "1000-1999",
@@ -46,7 +47,7 @@ class ProfileResult:
         r = self.band_ranges.get(band)
         return f"{r[0]}-{r[1]}" if r else f"Band {band}"
 
-    def summary(self, max_bands_shown: Optional[int] = None,
+    def summary(self, max_bands_shown: int | None = None,
                 max_off_list_shown: int = 20) -> str:
         """Human-readable text summary, similar in spirit to classic
         Lexical Frequency Profile reports (Laufer & Nation style)."""
@@ -56,8 +57,12 @@ class ProfileResult:
         # Size the "Band" column to fit the longest band label (e.g.
         # "10000-10999") so the table stays aligned regardless of how many
         # bands there are or how wide their labels get.
-        label_width = max(10, max((len(self.band_label(b)) + 1 for b in self.band_token_counts), default=10))
-        lines.append(f"{'Band':<{label_width}}{'Tokens':>10}{'% Tokens':>12}{'Types':>10}{'% Types':>12}")
+        label_width = max(
+            10, max((len(self.band_label(b)) + 1 for b in self.band_token_counts), default=10)
+        )
+        lines.append(
+            f"{'Band':<{label_width}}{'Tokens':>10}{'% Tokens':>12}{'Types':>10}{'% Types':>12}"
+        )
         bands = sorted(self.band_token_counts.keys())
         if max_bands_shown:
             bands = bands[:max_bands_shown]
@@ -118,7 +123,7 @@ class LexicalProfiler:
     """Profiles target text(s) against a Reference frequency model."""
 
     def __init__(self, reference: Reference, min_length: int = 1,
-                 ignore_words: Optional[Iterable[str]] = None):
+                 ignore_words: Iterable[str] | None = None):
         """
         Args:
             reference: the Reference frequency model to profile against.
@@ -142,7 +147,7 @@ class LexicalProfiler:
         else:
             self.ignore_words = set()
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: str) -> list[str]:
         return tokenize(
             text,
             language=self.reference.language,
@@ -156,7 +161,7 @@ class LexicalProfiler:
         tokens = self._tokenize(text)
         return self._profile_tokens(tokens)
 
-    def profile_texts(self, texts: Dict[str, str]) -> Dict[str, ProfileResult]:
+    def profile_texts(self, texts: dict[str, str]) -> dict[str, ProfileResult]:
         """Profile multiple named texts (e.g. {filename: content, ...}).
 
         Returns a dict of filename -> ProfileResult, run independently
@@ -179,7 +184,7 @@ class LexicalProfiler:
             text = f.read()
         return self.profile_text(text)
 
-    def profile_corpus(self, path: str, encoding: str = "utf-8") -> Dict[str, ProfileResult]:
+    def profile_corpus(self, path: str, encoding: str = "utf-8") -> dict[str, ProfileResult]:
         """Profile every .txt file found in a directory, each independently.
 
         Searches `path` recursively, mirroring how Reference.from_corpus
@@ -233,7 +238,7 @@ class LexicalProfiler:
             )
         return self.profile_texts(texts)
 
-    def _profile_tokens(self, tokens: List[str]) -> ProfileResult:
+    def _profile_tokens(self, tokens: list[str]) -> ProfileResult:
         # Counting by unique word up front (rather than scanning the raw
         # token list) means each word only needs one reference lookup no
         # matter how many times it appears in the text.
@@ -241,8 +246,8 @@ class LexicalProfiler:
         total_tokens = len(tokens)
         total_types = len(word_counts)
 
-        band_token_counts: Dict[int, int] = {b: 0 for b in range(1, self.reference.num_bands + 1)}
-        band_type_counts: Dict[int, int] = {b: 0 for b in range(1, self.reference.num_bands + 1)}
+        band_token_counts: dict[int, int] = {b: 0 for b in range(1, self.reference.num_bands + 1)}
+        band_type_counts: dict[int, int] = {b: 0 for b in range(1, self.reference.num_bands + 1)}
 
         off_list_tokens = 0
         off_list_word_counts: Counter = Counter()

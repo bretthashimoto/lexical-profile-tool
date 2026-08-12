@@ -6,12 +6,11 @@ from __future__ import annotations
 
 import csv
 import json
-from typing import Dict, Optional
 
 from .profiler import ProfileResult
 
 
-def _open_output_file(path: str, newline: Optional[str] = None):
+def _open_output_file(path: str, newline: str | None = None):
     """Open `path` for writing, turning common failures (missing parent
     folder, no write permission, path is a folder) into a plain-language
     ValueError instead of a raw OS-level traceback.
@@ -38,7 +37,7 @@ def _open_output_file(path: str, newline: Optional[str] = None):
         ) from None
 
 
-def export_json(results: Dict[str, ProfileResult], path: str) -> None:
+def export_json(results: dict[str, ProfileResult], path: str) -> None:
     """Write one or more named results to a JSON file.
 
     `results` maps a label (e.g. filename) to a ProfileResult.
@@ -48,7 +47,7 @@ def export_json(results: Dict[str, ProfileResult], path: str) -> None:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
-def export_csv(results: Dict[str, ProfileResult], path: str) -> None:
+def export_csv(results: dict[str, ProfileResult], path: str) -> None:
     """Write a tidy CSV: one row per (text, band), plus an off-list row.
 
     Columns: text, band, tokens, pct_tokens, types, pct_types
@@ -83,7 +82,7 @@ def export_csv(results: Dict[str, ProfileResult], path: str) -> None:
                 ])
 
 
-def export_off_list_csv(results: Dict[str, ProfileResult], path: str) -> None:
+def export_off_list_csv(results: dict[str, ProfileResult], path: str) -> None:
     """Write a CSV of off-list (unknown) words per text, with counts."""
     with _open_output_file(path, newline="") as f:
         writer = csv.writer(f)
@@ -93,7 +92,7 @@ def export_off_list_csv(results: Dict[str, ProfileResult], path: str) -> None:
                 writer.writerow([name, word, r.word_counts[word]])
 
 
-def export_ignored_csv(results: Dict[str, ProfileResult], path: str) -> None:
+def export_ignored_csv(results: dict[str, ProfileResult], path: str) -> None:
     """Write a CSV of ignored words per text, with counts."""
     with _open_output_file(path, newline="") as f:
         writer = csv.writer(f)

@@ -9,7 +9,7 @@ each and prints a report.
 import os
 import tempfile
 
-from lexical_profiler import Reference, LexicalProfiler
+from lexical_profiler import LexicalProfiler, Reference
 from lexical_profiler import report as report_mod
 
 SAMPLE_CORPUS = [
@@ -102,8 +102,9 @@ if __name__ == "__main__":
     print("Exporting combined JSON/CSV report for both demos to the current directory ...")
     results = {"corpus_reference_demo": r1, "wordlist_reference_demo": r2,
                "spanish_demo": r3, "fine_grained_demo": r4}
-    json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lexical_profile_demo.json")
-    csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lexical_profile_demo.csv")
+    here = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(here, "lexical_profile_demo.json")
+    csv_path = os.path.join(here, "lexical_profile_demo.csv")
     report_mod.export_json(results, json_path)
     report_mod.export_csv(results, csv_path)
     print(f"Done: {json_path}, {csv_path}")

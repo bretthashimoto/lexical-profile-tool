@@ -1,4 +1,4 @@
-from lexical_profiler.tokenizer import tokenize, lemmatizer_available
+from lexical_profiler.tokenizer import lemmatizer_available, tokenize
 
 
 def test_tokenize_lowercases_by_default():

@@ -6,7 +6,6 @@ from lexical_profiler.reference import (
     require_txt_extension,
 )
 
-
 # ---------- compute_band_assignment ----------
 
 def test_compute_band_assignment_uniform_bands():

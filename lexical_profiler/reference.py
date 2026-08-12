@@ -20,8 +20,8 @@ from __future__ import annotations
 import json
 import os
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 from .tokenizer import tokenize
 
@@ -50,7 +50,7 @@ def open_text_file(path: str, encoding: str = "utf-8"):
     just like the builtin `open()`.
     """
     try:
-        return open(path, "r", encoding=encoding, errors="ignore")
+        return open(path, encoding=encoding, errors="ignore")
     except FileNotFoundError:
         raise ValueError(
             f"Can't find the file '{path}'. Double-check the spelling and "
@@ -76,7 +76,7 @@ def open_text_file(path: str, encoding: str = "utf-8"):
         ) from None
 
 
-def _iter_input_texts(source: Union[str, Iterable[str]], encoding: str = "utf-8") -> Iterable[str]:
+def _iter_input_texts(source: str | Iterable[str], encoding: str = "utf-8") -> Iterable[str]:
     """Yield raw text strings from a flexible `source`:
 
       - a path to a single .txt file
@@ -143,8 +143,8 @@ def _iter_input_texts(source: Union[str, Iterable[str]], encoding: str = "utf-8"
 
 def compute_band_assignment(
     n_words: int, band_size: int,
-    fine_band_size: Optional[int] = None, fine_grained_until: Optional[int] = None,
-) -> Tuple[List[int], Dict[int, Tuple[int, int]]]:
+    fine_band_size: int | None = None, fine_grained_until: int | None = None,
+) -> tuple[list[int], dict[int, tuple[int, int]]]:
     """Assign each of `n_words` ranked words (rank 1 = most frequent) to a band.
 
     Args:
@@ -165,8 +165,8 @@ def compute_band_assignment(
             inclusive, so labels can be built directly from real data
             rather than recomputed via a formula.
     """
-    band_of_position: List[int] = []
-    band_ranges: Dict[int, Tuple[int, int]] = {}
+    band_of_position: list[int] = []
+    band_ranges: dict[int, tuple[int, int]] = {}
     band_num = 1
     rank = 1
 
@@ -220,14 +220,14 @@ class Reference:
         lemmatize: whether reference words were lemmatized when built
     """
 
-    word_to_rank: Dict[str, int]
-    word_to_band: Dict[str, int]
-    band_ranges: Dict[int, Tuple[int, int]]
+    word_to_rank: dict[str, int]
+    word_to_band: dict[str, int]
+    band_ranges: dict[int, tuple[int, int]]
     band_size: int
     num_bands: int
-    fine_band_size: Optional[int] = None
-    fine_grained_until: Optional[int] = None
-    counts: Dict[str, int] = field(default_factory=dict)
+    fine_band_size: int | None = None
+    fine_grained_until: int | None = None
+    counts: dict[str, int] = field(default_factory=dict)
     lowercase: bool = True
     lemmatize: bool = False
     language: str = "en"
@@ -236,12 +236,12 @@ class Reference:
     # ---------- constructors ----------
 
     @classmethod
-    def from_corpus(cls, source: Union[str, Iterable[str]], band_size: int = 1000,
+    def from_corpus(cls, source: str | Iterable[str], band_size: int = 1000,
                      lowercase: bool = True, lemmatize: bool = False,
                      min_length: int = 1, language: str = "en",
-                     fine_band_size: Optional[int] = None,
-                     fine_grained_until: Optional[int] = None,
-                     encoding: str = "utf-8") -> "Reference":
+                     fine_band_size: int | None = None,
+                     fine_grained_until: int | None = None,
+                     encoding: str = "utf-8") -> Reference:
         """Build a reference frequency model from a corpus of texts.
 
         Args:
@@ -327,11 +327,11 @@ class Reference:
 
     @classmethod
     def from_word_list(cls, path: str, band_size: int = 1000,
-                        lowercase: bool = True, has_frequencies: Optional[bool] = None,
-                        delimiter: Optional[str] = None, language: str = "en",
-                        fine_band_size: Optional[int] = None,
-                        fine_grained_until: Optional[int] = None,
-                        encoding: str = "utf-8") -> "Reference":
+                        lowercase: bool = True, has_frequencies: bool | None = None,
+                        delimiter: str | None = None, language: str = "en",
+                        fine_band_size: int | None = None,
+                        fine_grained_until: int | None = None,
+                        encoding: str = "utf-8") -> Reference:
         """Load an existing frequency/rank word list from a file.
 
         Accepted formats (auto-detected unless overridden):
@@ -375,7 +375,7 @@ class Reference:
         # this is fine) so we can peek at the first row to auto-detect the
         # format before deciding how to parse the rest.
         require_txt_extension(path)
-        rows: List[str] = []
+        rows: list[str] = []
         with open_text_file(path, encoding) as f:
             for raw_line in f:
                 line = raw_line.strip()
@@ -408,8 +408,8 @@ class Reference:
         auto_has_freq = len(sample_parts) >= 2 and sample_parts[1].replace(".", "", 1).isdigit()
         use_freq = auto_has_freq if has_frequencies is None else has_frequencies
 
-        counts: Dict[str, int] = {}
-        ordered_words: List[str] = []
+        counts: dict[str, int] = {}
+        ordered_words: list[str] = []
 
         if use_freq:
             # Frequencies in the file may not already be sorted, so collect
@@ -462,8 +462,10 @@ class Reference:
             lowercase=lowercase,
             lemmatize=False,
             language=language,
-            source_description=f"word list '{os.path.basename(path)}' ({len(ordered_words)} words, "
-                                f"{'with' if use_freq else 'without'} frequencies, language={language})",
+            source_description=f"word list '{os.path.basename(path)}' "
+                                f"({len(ordered_words)} words, "
+                                f"{'with' if use_freq else 'without'} frequencies, "
+                                f"language={language})",
         )
 
     # ---------- persistence ----------
@@ -505,7 +507,7 @@ class Reference:
             ) from None
 
     @classmethod
-    def load(cls, path: str) -> "Reference":
+    def load(cls, path: str) -> Reference:
         """Load a reference previously saved with `.save(path)`.
 
         Raises ValueError (with a plain-language explanation) if the file
@@ -513,7 +515,7 @@ class Reference:
         reference that was actually produced by `.save(...)`.
         """
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 payload = json.load(f)
         except FileNotFoundError:
             raise ValueError(
@@ -595,10 +597,10 @@ class Reference:
     def __len__(self) -> int:
         return len(self.word_to_rank)
 
-    def band_of(self, word: str) -> Optional[int]:
+    def band_of(self, word: str) -> int | None:
         return self.word_to_band.get(word)
 
-    def rank_of(self, word: str) -> Optional[int]:
+    def rank_of(self, word: str) -> int | None:
         return self.word_to_rank.get(word)
 
     def band_label(self, band: int) -> str:

@@ -26,9 +26,9 @@ Typical usage:
     print(result.summary())
 """
 
-from .reference import Reference
 from .profiler import LexicalProfiler, ProfileResult
-from .tokenizer import tokenize, lemmatizer_available, download_model
+from .reference import Reference
+from .tokenizer import download_model, lemmatizer_available, tokenize
 
 __all__ = [
     "Reference", "LexicalProfiler", "ProfileResult",

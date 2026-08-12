@@ -27,7 +27,6 @@ import re
 import subprocess
 import sys
 from functools import lru_cache
-from typing import Optional, Tuple
 
 import spacy
 from spacy.language import Language
@@ -78,7 +77,7 @@ def _is_full_model_name(language: str) -> bool:
     return bool(_MODEL_NAME_RE.match(language))
 
 
-def _resolve_model_name(language: str) -> Optional[str]:
+def _resolve_model_name(language: str) -> str | None:
     if _is_full_model_name(language):
         return language
     return LANGUAGE_MODEL_MAP.get(language.lower())
@@ -113,7 +112,7 @@ def download_model(language: str) -> bool:
         return False
 
 
-def _load_pipeline(language: str) -> Tuple[Language, bool]:
+def _load_pipeline(language: str) -> tuple[Language, bool]:
     """Return (nlp, has_lemmatizer) for `language`, caching by language.
 
     Tries a full trained pipeline first; falls back to a blank
@@ -168,7 +167,7 @@ def lemmatizer_available(language: str = "en") -> bool:
 
 
 @lru_cache(maxsize=32)
-def _cached_pipeline(language: str) -> Tuple[Language, bool]:
+def _cached_pipeline(language: str) -> tuple[Language, bool]:
     return _load_pipeline(language)
 
 

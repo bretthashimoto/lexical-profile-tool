@@ -26,9 +26,9 @@ import argparse
 import os
 import sys
 
-from .reference import Reference, require_txt_extension, open_text_file
-from .profiler import LexicalProfiler
 from . import report as report_mod
+from .profiler import LexicalProfiler
+from .reference import Reference, open_text_file, require_txt_extension
 
 
 def _collect_ignore_words(args) -> list:
@@ -96,7 +96,8 @@ def main(argv=None):
     target_group.add_argument("--target", nargs="*", metavar="FILE",
                                help="One or more target text files to profile.")
     target_group.add_argument("--target-dir", metavar="DIR",
-                               help="Directory of target text files to profile (each profiled independently).")
+                               help="Directory of target text files to profile "
+                                    "(each profiled independently).")
 
     parser.add_argument("--band-size", type=int, default=1000,
                          help="Words per frequency band (default: 1000).")
