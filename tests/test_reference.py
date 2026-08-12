@@ -1,0 +1,142 @@
+import pytest
+
+from lexical_profiler.reference import (
+    Reference,
+    compute_band_assignment,
+    require_txt_extension,
+)
+
+
+# ---------- compute_band_assignment ----------
+
+def test_compute_band_assignment_uniform_bands():
+    band_of_position, band_ranges = compute_band_assignment(2500, band_size=1000)
+    assert band_ranges == {1: (1, 1000), 2: (1001, 2000), 3: (2001, 2500)}
+    assert band_of_position[0] == 1
+    assert band_of_position[999] == 1
+    assert band_of_position[1000] == 2
+    assert band_of_position[-1] == 3
+
+
+def test_compute_band_assignment_fine_grained_then_uniform():
+    band_of_position, band_ranges = compute_band_assignment(
+        2200, band_size=1000, fine_band_size=100, fine_grained_until=2000,
+    )
+    # 20 fine bands of 100 covering ranks 1-2000, then one more band for 2001-2200.
+    assert len(band_ranges) == 21
+    assert band_ranges[1] == (1, 100)
+    assert band_ranges[20] == (1901, 2000)
+    assert band_ranges[21] == (2001, 2200)
+    assert band_of_position[0] == 1
+    assert band_of_position[2000] == 21
+
+
+def test_require_txt_extension_rejects_non_txt():
+    with pytest.raises(ValueError):
+        require_txt_extension("notes.pdf")
+    require_txt_extension("notes.txt")  # doesn't raise
+
+
+# ---------- Reference.from_corpus ----------
+
+def test_from_corpus_ranks_by_frequency():
+    ref = Reference.from_corpus(["the the the cat cat dog"], band_size=1000)
+    assert ref.rank_of("the") == 1
+    assert ref.rank_of("cat") == 2
+    assert ref.rank_of("dog") == 3
+    assert ref.band_of("the") == 1
+    assert len(ref) == 3
+
+
+def test_from_corpus_empty_source_raises():
+    with pytest.raises(ValueError):
+        Reference.from_corpus([])
+
+
+def test_from_corpus_no_usable_words_raises():
+    with pytest.raises(ValueError):
+        Reference.from_corpus(["123 456 !!!"])
+
+
+def test_from_corpus_reads_directory(tmp_path):
+    (tmp_path / "a.txt").write_text("cat cat dog", encoding="utf-8")
+    (tmp_path / "b.txt").write_text("dog bird", encoding="utf-8")
+    ref = Reference.from_corpus(str(tmp_path), band_size=1000)
+    assert ref.rank_of("cat") == 1  # cat=2, dog=2 -- tie broken by Counter order
+    assert "bird" in ref
+
+
+def test_from_corpus_rejects_non_txt_file(tmp_path):
+    bad = tmp_path / "notes.pdf"
+    bad.write_text("hello", encoding="utf-8")
+    with pytest.raises(ValueError):
+        Reference.from_corpus(str(bad))
+
+
+# ---------- Reference.from_word_list ----------
+
+def test_from_word_list_plain_words(tmp_path):
+    path = tmp_path / "words.txt"
+    path.write_text("the\nbe\nto\n", encoding="utf-8")
+    ref = Reference.from_word_list(str(path), band_size=1000)
+    assert ref.rank_of("the") == 1
+    assert ref.rank_of("be") == 2
+    assert ref.rank_of("to") == 3
+    assert ref.counts == {}  # rank-only, no frequency data
+
+
+def test_from_word_list_with_frequencies_sorts_by_freq(tmp_path):
+    path = tmp_path / "freqs.txt"
+    # Deliberately out of order -- should be re-sorted by frequency desc.
+    path.write_text("be\t50\nthe\t100\nto\t10\n", encoding="utf-8")
+    ref = Reference.from_word_list(str(path), band_size=1000)
+    assert ref.rank_of("the") == 1
+    assert ref.rank_of("be") == 2
+    assert ref.rank_of("to") == 3
+    assert ref.counts["the"] == 100
+
+
+def test_from_word_list_comma_delimiter_autodetected(tmp_path):
+    path = tmp_path / "freqs.txt"
+    path.write_text("the,100\nbe,50\n", encoding="utf-8")
+    ref = Reference.from_word_list(str(path), band_size=1000)
+    assert ref.rank_of("the") == 1
+    assert ref.counts["the"] == 100
+
+
+def test_from_word_list_missing_file_raises():
+    with pytest.raises(ValueError):
+        Reference.from_word_list("does/not/exist.txt")
+
+
+def test_from_word_list_empty_file_raises(tmp_path):
+    path = tmp_path / "empty.txt"
+    path.write_text("", encoding="utf-8")
+    with pytest.raises(ValueError):
+        Reference.from_word_list(str(path))
+
+
+# ---------- save / load ----------
+
+def test_save_and_load_round_trip(tmp_path):
+    ref = Reference.from_corpus(["the the the cat cat dog"], band_size=1000)
+    save_path = tmp_path / "reference.json"
+    ref.save(str(save_path))
+
+    loaded = Reference.load(str(save_path))
+    assert loaded.rank_of("the") == ref.rank_of("the")
+    assert loaded.band_of("cat") == ref.band_of("cat")
+    assert loaded.num_bands == ref.num_bands
+    assert loaded.language == ref.language
+
+
+def test_load_missing_file_raises():
+    with pytest.raises(ValueError):
+        Reference.load("does/not/exist.json")
+
+
+def test_load_invalid_json_raises(tmp_path):
+    path = tmp_path / "bad.json"
+    path.write_text("not valid json{{{", encoding="utf-8")
+    with pytest.raises(ValueError):
+        Reference.load(str(path))

@@ -33,8 +33,14 @@ dependencies = [
     "click>=8.0",
 ]
 
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
 [project.scripts]
 lexical-profiler = "lexical_profiler.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["lexical_profiler*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
