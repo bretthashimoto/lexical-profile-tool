@@ -27,6 +27,7 @@ class ProfileResult:
     band_type_counts: dict[int, int]       # band -> type (unique word) count
     band_token_pct: dict[int, float]       # band -> % of all tokens
     band_type_pct: dict[int, float]        # band -> % of all types
+    cumulative_token_pct: dict[int, float] # band -> % of tokens in bands 1..band
     off_list_tokens: int
     off_list_types: int
     off_list_pct_tokens: float
@@ -61,7 +62,8 @@ class ProfileResult:
             10, max((len(self.band_label(b)) + 1 for b in self.band_token_counts), default=10)
         )
         lines.append(
-            f"{'Band':<{label_width}}{'Tokens':>10}{'% Tokens':>12}{'Types':>10}{'% Types':>12}"
+            f"{'Band':<{label_width}}{'Tokens':>10}{'% Tokens':>12}{'Cum %':>10}"
+            f"{'Types':>10}{'% Types':>12}"
         )
         bands = sorted(self.band_token_counts.keys())
         if max_bands_shown:
@@ -70,12 +72,18 @@ class ProfileResult:
             lines.append(
                 f"{self.band_label(b):<{label_width}}{self.band_token_counts[b]:>10}"
                 f"{self.band_token_pct[b]:>11.2f}%"
+                f"{self.cumulative_token_pct[b]:>9.2f}%"
                 f"{self.band_type_counts.get(b, 0):>10}"
                 f"{self.band_type_pct.get(b, 0):>11.2f}%"
             )
+        # Off-list/Ignored aren't part of the band 1..N progression, so
+        # "coverage through this row" isn't a meaningful number for them --
+        # leave the Cum % cell blank rather than showing a stale/misleading
+        # value.
         lines.append(
             f"{'Off-list':<{label_width}}{self.off_list_tokens:>10}"
             f"{self.off_list_pct_tokens:>11.2f}%"
+            f"{'':>10}"
             f"{self.off_list_types:>10}"
             f"{'':>12}"
         )
@@ -83,6 +91,7 @@ class ProfileResult:
             lines.append(
                 f"{'Ignored':<{label_width}}{self.ignored_tokens:>10}"
                 f"{self.ignored_pct_tokens:>11.2f}%"
+                f"{'':>10}"
                 f"{self.ignored_types:>10}"
                 f"{'':>12}"
             )
@@ -108,6 +117,9 @@ class ProfileResult:
             "band_type_counts": {self.band_label(b): n for b, n in self.band_type_counts.items()},
             "band_token_pct": {self.band_label(b): n for b, n in self.band_token_pct.items()},
             "band_type_pct": {self.band_label(b): n for b, n in self.band_type_pct.items()},
+            "cumulative_token_pct": {
+                self.band_label(b): n for b, n in self.cumulative_token_pct.items()
+            },
             "off_list_tokens": self.off_list_tokens,
             "off_list_types": self.off_list_types,
             "off_list_pct_tokens": self.off_list_pct_tokens,
@@ -199,7 +211,7 @@ class LexicalProfiler:
 
         Returns:
             A dict mapping each file's path (relative to `path`) to its
-            ProfileResult -- relative paths (rather than bare filenames)
+            ProfileResult; relative paths (rather than bare filenames)
             avoid collisions between same-named files in different
             subdirectories.
         """
@@ -256,7 +268,7 @@ class LexicalProfiler:
 
         # Classify every unique word into exactly one bucket: ignored, a
         # frequency band, or off-list. Ignored words are checked first so
-        # they're pulled out before ever touching the reference -- they
+        # they're pulled out before ever touching the reference; they
         # still count toward the totals above, they just don't land in a
         # band or in off-list.
         for word, count in word_counts.items():
@@ -281,6 +293,15 @@ class LexicalProfiler:
         band_token_pct = {b: pct(n, total_tokens) for b, n in band_token_counts.items()}
         band_type_pct = {b: pct(n, total_types) for b, n in band_type_counts.items()}
 
+        # Running total of token % across bands 1..b, in band order: "how
+        # much of the text is covered by the N most frequent bands," the
+        # classic Lexical Frequency Profile coverage curve.
+        cumulative_token_pct: dict[int, float] = {}
+        running = 0.0
+        for b in sorted(band_token_pct.keys()):
+            running += band_token_pct[b]
+            cumulative_token_pct[b] = running
+
         # most_common() with no argument returns every entry sorted by
         # count descending, which is exactly the "most frequent first"
         # ordering these word lists are documented to have.
@@ -294,6 +315,7 @@ class LexicalProfiler:
             band_type_counts=band_type_counts,
             band_token_pct=band_token_pct,
             band_type_pct=band_type_pct,
+            cumulative_token_pct=cumulative_token_pct,
             off_list_tokens=off_list_tokens,
             off_list_types=off_list_types,
             off_list_pct_tokens=pct(off_list_tokens, total_tokens),

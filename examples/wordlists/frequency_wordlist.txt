@@ -1,7 +1,7 @@
 # A "word,frequency" list: each line is a word and how often it occurs
 # in some larger source corpus. Rank is derived by sorting on the
 # frequency column (highest first), not by the order lines appear here.
-# Tab-separated or space-separated columns work too -- the delimiter is
+# Tab-separated or space-separated columns work too; the delimiter is
 # auto-detected.
 the,22038615
 be,12545825

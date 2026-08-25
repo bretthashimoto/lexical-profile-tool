@@ -19,7 +19,7 @@ def _open_output_file(path: str, newline: str | None = None):
         return open(path, "w", encoding="utf-8", newline=newline)
     except FileNotFoundError:
         raise ValueError(
-            f"Can't write to '{path}' -- the folder it's supposed to go "
+            f"Can't write to '{path}': the folder it's supposed to go "
             f"in doesn't exist. Create that folder first, or choose an "
             f"output path in a folder that already exists."
         ) from None
@@ -50,11 +50,14 @@ def export_json(results: dict[str, ProfileResult], path: str) -> None:
 def export_csv(results: dict[str, ProfileResult], path: str) -> None:
     """Write a tidy CSV: one row per (text, band), plus an off-list row.
 
-    Columns: text, band, tokens, pct_tokens, types, pct_types
+    Columns: text, band, tokens, pct_tokens, cumulative_pct_tokens, types, pct_types
     """
     with _open_output_file(path, newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["text", "band", "tokens", "pct_tokens", "types", "pct_types"])
+        writer.writerow([
+            "text", "band", "tokens", "pct_tokens", "cumulative_pct_tokens",
+            "types", "pct_types",
+        ])
         for name, r in results.items():
             # One row per numbered frequency band, in order (band 1 first).
             for band in sorted(r.band_token_counts.keys()):
@@ -63,22 +66,26 @@ def export_csv(results: dict[str, ProfileResult], path: str) -> None:
                     r.band_label(band),
                     r.band_token_counts[band],
                     f"{r.band_token_pct[band]:.4f}",
+                    f"{r.cumulative_token_pct[band]:.4f}",
                     r.band_type_counts.get(band, 0),
                     f"{r.band_type_pct.get(band, 0):.4f}",
                 ])
             # Off-list words aren't in any band, so they get one extra
             # summary row instead of being folded into the band rows above.
+            # cumulative_pct_tokens is left blank here (as for "ignored"
+            # below) since cumulative coverage is only defined over the
+            # band 1..N progression, not these out-of-band buckets.
             writer.writerow([
                 name, "off_list", r.off_list_tokens,
-                f"{r.off_list_pct_tokens:.4f}", r.off_list_types, "",
+                f"{r.off_list_pct_tokens:.4f}", "", r.off_list_types, "",
             ])
             # Only add the "ignored" row if an ignore list was actually
-            # used and matched something -- keeps the CSV unchanged for
+            # used and matched something; keeps the CSV unchanged for
             # callers who never pass ignore_words.
             if r.ignored_tokens or r.ignored_words:
                 writer.writerow([
                     name, "ignored", r.ignored_tokens,
-                    f"{r.ignored_pct_tokens:.4f}", r.ignored_types, "",
+                    f"{r.ignored_pct_tokens:.4f}", "", r.ignored_types, "",
                 ])
 
 

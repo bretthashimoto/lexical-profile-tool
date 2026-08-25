@@ -56,7 +56,7 @@ def _collect_targets(args) -> dict:
                 targets[os.path.basename(path)] = f.read()
     if args.target_dir:
         # os.listdir() on a path that doesn't exist raises a fairly
-        # low-level FileNotFoundError -- check up front so a typo'd
+        # low-level FileNotFoundError, so check up front that a typo'd
         # --target-dir gives a clearer message instead.
         if not os.path.isdir(args.target_dir):
             raise ValueError(
@@ -148,7 +148,7 @@ def main(argv=None):
 
     # Load target texts before doing any of the (potentially slow)
     # reference-building work below, so a typo in --target fails fast.
-    # ValueError here means a non-.txt file was passed -- report it as a
+    # ValueError here means a non-.txt file was passed, so report it as a
     # clean CLI usage error instead of an uncaught traceback.
     try:
         targets = _collect_targets(args)
@@ -174,7 +174,7 @@ def main(argv=None):
         parser.error(
             "Fine-grained bands need both options set together: "
             "--fine-band-size (how wide, e.g. 100) and --fine-until (how "
-            "far, e.g. 2000) -- you only gave one of the two. Either add "
+            "far, e.g. 2000); you only gave one of the two. Either add "
             "the missing one, or drop the one you gave to use uniform "
             "--band-size bands throughout."
         )
@@ -226,7 +226,7 @@ def main(argv=None):
         print(result.summary(max_off_list_shown=args.max_off_list_shown))
 
     # Each export can fail for the same reasons a save-reference can (bad
-    # output path, no write permission, etc.) -- same clean-error handling.
+    # output path, no write permission, etc.); same clean-error handling.
     try:
         if args.out_json:
             report_mod.export_json(results, args.out_json)

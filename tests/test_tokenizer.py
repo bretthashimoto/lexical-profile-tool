@@ -15,7 +15,7 @@ def test_tokenize_drops_pure_punctuation_and_numbers():
 
 
 def test_tokenize_keeps_tokens_with_internal_punctuation():
-    # spaCy's tokenizer splits "don't" into "do" / "n't" -- both pieces
+    # spaCy's tokenizer splits "don't" into "do" / "n't"; both pieces
     # contain alphabetic characters, so neither should be dropped by the
     # any(ch.isalpha()) filter.
     tokens = tokenize("don't stop")
@@ -32,7 +32,7 @@ def test_tokenize_empty_string_returns_empty_list():
 
 
 def test_tokenize_unknown_language_code_falls_back_without_crashing():
-    # 'xx' / nonsense codes shouldn't raise -- should fall back to the
+    # 'xx' / nonsense codes shouldn't raise; should fall back to the
     # generic multi-language tokenizer instead.
     tokens = tokenize("hello world", language="zznotalang")
     assert tokens == ["hello", "world"]

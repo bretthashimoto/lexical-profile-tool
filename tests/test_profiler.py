@@ -96,6 +96,16 @@ def test_profile_corpus_empty_directory_raises(tmp_path, small_reference):
         profiler.profile_corpus(str(tmp_path))
 
 
+def test_cumulative_token_pct_runs_across_bands(small_reference):
+    profiler = LexicalProfiler(small_reference)
+    result = profiler.profile_text("the cat mouse")
+
+    # band1="the" (1/3 tokens), band2="cat" (1/3 tokens), band3=none.
+    assert result.cumulative_token_pct[1] == pytest.approx(100 / 3)
+    assert result.cumulative_token_pct[2] == pytest.approx(200 / 3)
+    assert result.cumulative_token_pct[3] == pytest.approx(200 / 3)
+
+
 def test_summary_and_to_dict(small_reference):
     profiler = LexicalProfiler(small_reference)
     result = profiler.profile_text("the cat mouse")
@@ -103,7 +113,9 @@ def test_summary_and_to_dict(small_reference):
     summary = result.summary()
     assert "Tokens: 3" in summary
     assert "mouse" in summary
+    assert "Cum %" in summary
 
     as_dict = result.to_dict()
     assert as_dict["total_tokens"] == 3
     assert as_dict["off_list_words"] == ["mouse"]
+    assert as_dict["cumulative_token_pct"]["1-1"] == pytest.approx(100 / 3)

@@ -6,12 +6,12 @@ A Reference maps each known word to:
   - a frequency band (1 = the band containing the most frequent words)
 
 It can be built two ways:
-  * Reference.from_corpus(...)     -- derive frequencies from a corpus of texts
-  * Reference.from_word_list(...)  -- load an existing ordered/frequency word list
+  * Reference.from_corpus(...):     derive frequencies from a corpus of texts
+  * Reference.from_word_list(...):  load an existing ordered/frequency word list
 
 By default, bands are a uniform width (`band_size`, 1000 words). You can
 optionally request finer-grained bands for the most frequent words via
-`fine_band_size` / `fine_grained_until` -- e.g. 100-word bands up through
+`fine_band_size` / `fine_grained_until`, e.g. 100-word bands up through
 rank 2000, then normal 1000-word bands after that.
 """
 
@@ -35,7 +35,7 @@ def require_txt_extension(path: str) -> None:
     """
     if os.path.splitext(path)[1].lower() != ".txt":
         raise ValueError(
-            f"Can't use '{path}' -- only plain .txt files are accepted "
+            f"Can't use '{path}': only plain .txt files are accepted "
             f"(this file doesn't end in .txt). If it's really a text file, "
             f"try renaming it with a .txt extension; otherwise, save/export "
             f"it as plain text first."
@@ -72,7 +72,7 @@ def open_text_file(path: str, encoding: str = "utf-8"):
     except LookupError:
         raise ValueError(
             f"'{encoding}' isn't a valid text encoding. Common values are "
-            f"'utf-8', 'latin-1', or 'utf-16' -- double-check the spelling."
+            f"'utf-8', 'latin-1', or 'utf-16'; double-check the spelling."
         ) from None
 
 
@@ -84,15 +84,15 @@ def _iter_input_texts(source: str | Iterable[str], encoding: str = "utf-8") -> I
       - a list of file paths
       - a list of raw text strings (if they don't look like existing paths)
 
-    A bare string `source` is always treated as a path (never raw text) --
+    A bare string `source` is always treated as a path (never raw text);
     if it doesn't exist, that's an error. The "not a path -> treat as raw
     text" fallback only applies to items inside a list, since that's the
     documented way to pass literal text content directly.
     """
     # Remember whether the caller passed one bare string (as opposed to a
     # list), so we know below whether a non-existent path should raise
-    # (bare string -- almost certainly a typo'd path) or fall back to raw
-    # text (list item -- deliberately supported for literal text content).
+    # (bare string, almost certainly a typo'd path) or fall back to raw
+    # text (list item, deliberately supported for literal text content).
     single_path = isinstance(source, str)
     if single_path:
         source = [source]
@@ -264,7 +264,7 @@ class Reference:
                 a rule-based tokenizer); lemmatization requires one.
             fine_band_size: optionally use a narrower band width for the
                 most frequent words (e.g. 100), up through rank
-                `fine_grained_until` (e.g. 2000) -- so the first 2000
+                `fine_grained_until` (e.g. 2000), so the first 2000
                 words are split into 20 bands of 100 instead of 2 bands
                 of 1000, and `band_size` applies as usual after that.
             fine_grained_until: the rank up to which `fine_band_size`
@@ -387,7 +387,7 @@ class Reference:
             raise ValueError(
                 f"The word list at '{path}' doesn't have any usable lines "
                 f"in it. It might be empty, or every line might be blank "
-                f"or a '#' comment -- add at least one real word to the "
+                f"or a '#' comment; add at least one real word to the "
                 f"file and try again."
             )
 
@@ -414,7 +414,7 @@ class Reference:
         if use_freq:
             # Frequencies in the file may not already be sorted, so collect
             # every (word, freq) pair first and then sort by frequency
-            # descending -- rank is derived from that sorted order below.
+            # descending; rank is derived from that sorted order below.
             pairs = []
             for line in rows:
                 parts = split_row(line)
@@ -490,7 +490,7 @@ class Reference:
                 json.dump(payload, f, ensure_ascii=False)
         except FileNotFoundError:
             raise ValueError(
-                f"Can't save to '{path}' -- the folder it's supposed to go "
+                f"Can't save to '{path}': the folder it's supposed to go "
                 f"in doesn't exist. Create that folder first, or save "
                 f"somewhere that already exists."
             ) from None
@@ -543,7 +543,7 @@ class Reference:
         try:
             word_to_rank = payload["word_to_rank"]
 
-            # word_to_band isn't saved to disk -- it's cheap to recompute
+            # word_to_band isn't saved to disk; it's cheap to recompute
             # from word_to_rank + band_ranges, and doing so avoids ever
             # trusting a stale/duplicated copy of the same information.
             if "band_ranges" in payload:

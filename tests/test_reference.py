@@ -61,7 +61,7 @@ def test_from_corpus_reads_directory(tmp_path):
     (tmp_path / "a.txt").write_text("cat cat dog", encoding="utf-8")
     (tmp_path / "b.txt").write_text("dog bird", encoding="utf-8")
     ref = Reference.from_corpus(str(tmp_path), band_size=1000)
-    assert ref.rank_of("cat") == 1  # cat=2, dog=2 -- tie broken by Counter order
+    assert ref.rank_of("cat") == 1  # cat=2, dog=2; tie broken by Counter order
     assert "bird" in ref
 
 
@@ -86,7 +86,7 @@ def test_from_word_list_plain_words(tmp_path):
 
 def test_from_word_list_with_frequencies_sorts_by_freq(tmp_path):
     path = tmp_path / "freqs.txt"
-    # Deliberately out of order -- should be re-sorted by frequency desc.
+    # Deliberately out of order; should be re-sorted by frequency desc.
     path.write_text("be\t50\nthe\t100\nto\t10\n", encoding="utf-8")
     ref = Reference.from_word_list(str(path), band_size=1000)
     assert ref.rank_of("the") == 1

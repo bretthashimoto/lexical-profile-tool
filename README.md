@@ -17,9 +17,9 @@ words (K1), the next 1000 (K2), and so on, with everything else marked
 
 ## Two ways to build the reference
 
-1. **From a corpus of texts** — frequencies are counted directly from
+1. **From a corpus of texts**: frequencies are counted directly from
    whatever documents you supply.
-2. **From an existing word list** — a plain word list (one per line,
+2. **From an existing word list**: a plain word list (one per line,
    ordered by frequency) or a `word,frequency` / `word<TAB>frequency`
    file, such as a published list (GSL, NGSL, COCA-derived lists, etc).
 
@@ -47,7 +47,7 @@ python -m spacy download fr_core_news_sm  # French
 
 If you request lemmatization for a language whose pipeline isn't
 installed, the tool silently falls back to using surface word forms
-instead of raising an error — check ahead of time with
+instead of raising an error. Check ahead of time with
 `lexical_profiler.lemmatizer_available("es")`, or fetch a model
 programmatically with `lexical_profiler.download_model("es")` (or via
 `--download-model` on the CLI).
@@ -56,7 +56,7 @@ programmatically with `lexical_profiler.download_model("es")` (or via
 
 **Every file this package reads has to be a plain `.txt` file.** Word
 documents, PDFs, CSVs with a `.csv` extension, etc. are rejected with a
-clear error telling you to convert/rename them first — this keeps
+clear error telling you to convert/rename them first. This keeps
 tokenization predictable, since "plain text" is the one format every
 tool can agree on.
 
@@ -65,7 +65,7 @@ that the tutorial below uses directly, laid out like this:
 
 ```
 examples/
-  corpus/                        # a reference corpus -- just plain text
+  corpus/                        # a reference corpus: just plain text
     animals.txt
     weather.txt
     economy.txt
@@ -87,12 +87,12 @@ high branch. Foxes are clever hunters, and owls are silent fliers who
 rule the night. ...
 ```
 
-A **target file** (used to *profile*) looks exactly the same — any
+A **target file** (used to *profile*) looks exactly the same: any
 plain-text document you want scored against the reference, e.g.
 `examples/targets/student_essay_1.txt`.
 
 Point at a whole **folder** instead of a single file and every `.txt`
-file inside it (subfolders included) is picked up automatically — that
+file inside it (subfolders included) is picked up automatically. That
 works for both corpus-building and target-profiling.
 
 A **plain word list** (`examples/wordlists/simple_wordlist.txt`) is one
@@ -110,7 +110,7 @@ and
 ```
 
 A **frequency word list** (`examples/wordlists/frequency_wordlist.txt`)
-adds a count per word — the format is auto-detected, and rows are
+adds a count per word: the format is auto-detected, and rows are
 re-sorted by frequency regardless of what order they're in the file:
 
 ```text
@@ -135,11 +135,11 @@ Fintastic
 ## Tutorial: profiling a couple of nature-and-economy essays
 
 Let's actually use the files above. Imagine two students turned in short
-essays — one about a hike, one about the economy — and we want to know
+essays (one about a hike, one about the economy) and we want to know
 how "wordy" each one is relative to a small reference built from three
 sample articles.
 
-### Step 1 — Build a reference
+### Step 1: Build a reference
 
 A `Reference` is just a lookup table: word → rank → frequency band. Build
 one from the sample corpus folder:
@@ -153,12 +153,12 @@ print(reference.source_description)
 ```
 
 `band_size=20` means "put the 20 most frequent words in band 1, the next
-20 in band 2," and so on — a real project profiling English essays would
+20 in band 2," and so on. A real project profiling English essays would
 use the standard `band_size=1000` (the default) against a much bigger
 corpus, or a published list (see Step 6). Small numbers are just easier
 to read in a tutorial.
 
-### Step 2 — Set up the profiler (and tell it what to ignore)
+### Step 2: Set up the profiler (and tell it what to ignore)
 
 ```python
 ignore_words = [
@@ -171,10 +171,10 @@ profiler = LexicalProfiler(reference, ignore_words=ignore_words)
 ```
 
 `ignore_words` keeps `Zocharias`, `Priya`, and `Fintastic` from showing up
-as "off-list" (i.e. unknown/rare) vocabulary — they're names, not
+as "off-list" (i.e. unknown/rare) vocabulary. They're names, not
 vocabulary difficulty, and it'd be misleading to score them that way.
 
-### Step 3 — Profile a single essay
+### Step 3: Profile a single essay
 
 ```python
 result = profiler.profile_document("examples/targets/student_essay_1.txt")
@@ -184,16 +184,16 @@ print(result.summary())
 ```text
 Tokens: 61   Types: 45
 
-Band          Tokens    % Tokens     Types     % Types
-1-20              18      29.51%         7      15.56%
-21-40              0       0.00%         0       0.00%
-41-60              3       4.92%         3       6.67%
-61-80              0       0.00%         0       0.00%
-81-100             6       9.84%         4       8.89%
-101-120            5       8.20%         4       8.89%
-121-129            2       3.28%         1       2.22%
-Off-list          26      42.62%        25
-Ignored            1       1.64%         1
+Band          Tokens    % Tokens     Cum %     Types     % Types
+1-20              18      29.51%    29.51%         7      15.56%
+21-40              0       0.00%    29.51%         0       0.00%
+41-60              3       4.92%    34.43%         3       6.67%
+61-80              0       0.00%    34.43%         0       0.00%
+81-100             6       9.84%    44.26%         4       8.89%
+101-120            5       8.20%    52.46%         4       8.89%
+121-129            2       3.28%    55.74%         1       2.22%
+Off-list          26      42.62%                  25
+Ignored            1       1.64%                   1
 
 Sample off-list words: unpredictable, yesterday, my, friend, i, went,
 hiking, we, saw, darting, between, trees, an, hooting, softly, as, set,
@@ -204,11 +204,15 @@ Sample ignored words: zocharias
 
 Reading this: 61 words total, 45 of them unique. About 30% of the essay's
 words are in band 1 (the most common words in our tiny reference), and a
-big chunk (42.6%) is "off-list" — words our 3-article reference has just
+big chunk (42.6%) is "off-list": words our 3-article reference has just
 never seen, like `yesterday` or `unpredictable`. `Zocharias` shows up
-under **Ignored**, not **Off-list**, exactly as intended.
+under **Ignored**, not **Off-list**, exactly as intended. **Cum %** is the
+running total of `% Tokens` through that band: "how much of the essay is
+covered by the N most frequent bands," the number to watch against the
+standard 95%/98% reading-comprehension coverage thresholds once you're
+using a real-sized reference instead of this tiny tutorial one.
 
-### Step 4 — Profile a whole folder of essays at once
+### Step 4: Profile a whole folder of essays at once
 
 Got a stack of essays to grade instead of just one? Point
 `profile_corpus` at the folder and every `.txt` file inside gets scored
@@ -230,7 +234,7 @@ student_essay_2.txt -> 49 tokens, 67.3% off-list
 relative to the folder you gave it, e.g. `"unit1/essay3.txt"`, so files
 with the same name in different subfolders don't collide.)
 
-### Step 5 — Export a report
+### Step 5: Export a report
 
 ```python
 from lexical_profiler import report
@@ -241,7 +245,7 @@ report.export_off_list_csv(results, "unknown_words.csv")   # every off-list word
 report.export_ignored_csv(results, "ignored_words.csv")    # every ignored word, with counts
 ```
 
-### Step 6 — Save your reference so you don't have to rebuild it
+### Step 6: Save your reference so you don't have to rebuild it
 
 Building a reference from a big corpus can be slow; save it once and
 reload it instantly next time:
@@ -251,10 +255,10 @@ reference.save("nature_economy_reference.json")
 reference = Reference.load("nature_economy_reference.json")
 ```
 
-### Step 7 — Or use a published word list instead of a corpus
+### Step 7: Or use a published word list instead of a corpus
 
 If you don't have (or don't want to build) a corpus, load an existing
-frequency list instead — same `Reference` object comes out either way:
+frequency list instead; same `Reference` object comes out either way:
 
 ```python
 reference = Reference.from_word_list(
@@ -262,9 +266,9 @@ reference = Reference.from_word_list(
 )
 ```
 
-### Step 8 — The same tutorial, from the command line
+### Step 8: The same tutorial, from the command line
 
-Everything above has a command-line equivalent — handy for scripting or
+Everything above has a command-line equivalent, handy for scripting or
 for people who'd rather not write Python:
 
 ```bash
@@ -297,10 +301,10 @@ Run `python -m lexical_profiler --help` to see every flag at once.
 
 | Parameter | Default | What it does |
 |---|---|---|
-| `source` | *required* | A `.txt` file path, a directory of `.txt` files (searched recursively), a list of file paths, or a list of raw text strings. A bare string is always treated as a path — if it doesn't exist, you get a clear error rather than it silently being tokenized as if it were the text itself. |
+| `source` | *required* | A `.txt` file path, a directory of `.txt` files (searched recursively), a list of file paths, or a list of raw text strings. A bare string is always treated as a path; if it doesn't exist, you get a clear error rather than it silently being tokenized as if it were the text itself. |
 | `band_size` | `1000` | Words per frequency band (band 1 = the `band_size` most frequent words, etc). |
 | `lowercase` | `True` | Lowercase every token before counting/matching. |
-| `lemmatize` | `False` | Reduce words to a base dictionary form (`running` → `run`) using spaCy. Silently falls back to surface forms if no trained pipeline is installed for `language` — see [`lemmatizer_available`](#other-handy-functions). |
+| `lemmatize` | `False` | Reduce words to a base dictionary form (`running` → `run`) using spaCy. Silently falls back to surface forms if no trained pipeline is installed for `language`; see [`lemmatizer_available`](#other-handy-functions). |
 | `min_length` | `1` | Drop tokens shorter than this. |
 | `language` | `"en"` | ISO 639-1 code (`"es"`, `"de"`, ...) or a full spaCy model name (`"en_core_web_sm"`). Tokenization works for any language spaCy knows about, with or without a downloaded model. |
 | `fine_band_size` | `None` | Use a narrower band width for the most frequent words (e.g. `100`), up through `fine_grained_until`. Must be paired with it. |
@@ -311,12 +315,12 @@ Run `python -m lexical_profiler --help` to see every flag at once.
 
 | Parameter | Default | What it does |
 |---|---|---|
-| `path` | *required* | Path to a `.txt` word list file (plain list or `word,frequency` pairs — auto-detected). |
+| `path` | *required* | Path to a `.txt` word list file (plain list or `word,frequency` pairs, auto-detected). |
 | `band_size` | `1000` | Same as above. |
 | `lowercase` | `True` | Lowercase every word on load. |
 | `has_frequencies` | `None` (auto) | Force `True`/`False` instead of auto-detecting whether each line has a frequency column. |
 | `delimiter` | `None` (auto) | Force a specific delimiter between word and frequency; auto-detects tab/comma/whitespace otherwise. |
-| `language` | `"en"` | Used later when tokenizing *target* texts profiled against this reference — doesn't affect how the list itself is parsed. |
+| `language` | `"en"` | Used later when tokenizing *target* texts profiled against this reference; doesn't affect how the list itself is parsed. |
 | `fine_band_size` / `fine_grained_until` | `None` | Same as above. |
 | `encoding` | `"utf-8"` | Same as above. |
 
@@ -352,9 +356,10 @@ The return value of every profiling call above. Key fields/methods:
 |---|---|
 | `total_tokens` / `total_types` | Total word count / unique word count for the text. |
 | `band_token_counts`, `band_token_pct`, `band_type_counts`, `band_type_pct` | Per-band coverage, by dict of band number → value. |
-| `off_list_tokens`, `off_list_types`, `off_list_pct_tokens`, `off_list_words` | Words absent from the reference entirely — `off_list_words` is the **full** list, most-frequent-first (not just a sample). |
+| `cumulative_token_pct` | Running total of `band_token_pct` through each band (dict of band number → value): "how much of the text is covered by the N most frequent bands," the classic Lexical Frequency Profile coverage curve. Compare against the standard 95%/98% reading-comprehension coverage thresholds. |
+| `off_list_tokens`, `off_list_types`, `off_list_pct_tokens`, `off_list_words` | Words absent from the reference entirely; `off_list_words` is the **full** list, most-frequent-first (not just a sample). |
 | `ignored_tokens`, `ignored_types`, `ignored_pct_tokens`, `ignored_words` | Same, for words matched by `ignore_words`. |
-| `.summary(max_bands_shown=None, max_off_list_shown=20)` | Human-readable report string. The `max_*_shown` params only limit *this printed view* — the underlying `off_list_words`/`ignored_words` fields always have everything. |
+| `.summary(max_bands_shown=None, max_off_list_shown=20)` | Human-readable report string. The `max_*_shown` params only limit *this printed view*; the underlying `off_list_words`/`ignored_words` fields always have everything. |
 | `.to_dict()` | JSON/API-friendly dict of everything above (also unabridged). |
 | `.band_label(band)` | Human-readable band label, e.g. `"1-999"`. |
 
@@ -404,17 +409,25 @@ isn't writable, instead of a raw OS traceback.
 
 For each text, `ProfileResult` reports, per frequency band and overall:
 
-- **Token counts / percentages** — coverage by running word count (how
+- **Token counts / percentages**: coverage by running word count (how
   much of the text, word-for-word, is "easy"/common vocabulary).
-- **Type counts / percentages** — coverage by unique word (vocabulary
+- **Type counts / percentages**: coverage by unique word (vocabulary
   breadth per band, independent of repetition).
-- **Type/Token counts** — both overall and per band, so you can see
+- **Type/Token counts**: both overall and per band, so you can see
   vocabulary breadth (unique words) alongside raw word usage.
-- **Off-list words** — words absent from the reference entirely (not in
+- **Cumulative token coverage**: the running total of token % through
+  each band (band 1, then bands 1-2, then bands 1-3, ...), i.e. "what
+  share of the text is accounted for by the N most frequent bands." This
+  is the classic Lexical Frequency Profile coverage curve, and the number
+  to compare against reading-comprehension research: roughly 95% coverage
+  is the threshold for "adequate" comprehension of a text, 98% for
+  "comfortable" comprehension without needing to guess unknown words from
+  context (Laufer & Ravenhorst-Kalovski, 2010).
+- **Off-list words**: words absent from the reference entirely (not in
   any band), useful for spotting rare, technical, or misspelled
   vocabulary, or vocabulary specific to a domain not covered by the
   reference.
-- **Ignored words** — words you deliberately excluded from scoring (via
+- **Ignored words**: words you deliberately excluded from scoring (via
   `ignore_words`), such as proper nouns, still counted in the totals but
   broken out separately instead of polluting the off-list.
 
@@ -425,7 +438,7 @@ For each text, `ProfileResult` reports, per frequency band and overall:
   else raises a clear error explaining what to do about it, rather than
   silently mis-reading a binary file as text.
 - Errors throughout the package are written for the person running the
-  tool, not just the person who wrote it — a bad path, a missing folder,
+  tool, not just the person who wrote it. A bad path, a missing folder,
   or a corrupted saved reference all explain what's wrong and what to try
   next, instead of a raw Python traceback.
 - Tokenization uses spaCy, so word-boundary rules are language-aware
@@ -447,7 +460,7 @@ For each text, `ProfileResult` reports, per frequency band and overall:
   `word,frequency` pairs or is just an ordered word list; you can force
   either interpretation via `has_frequencies=True/False`. Its `language`
   parameter only affects how *target* texts are later tokenized when
-  profiled against that reference — not how the list itself is read.
+  profiled against that reference; not how the list itself is read.
 - Bands are labeled as real rank ranges (e.g. "1-999", "1000-1999",
   "2000-2999", ...), not the "K1/K2/K3..." shorthand, so it's immediately
   clear which word ranks each band covers. Default band width is 1000

@@ -27,7 +27,7 @@ dependencies = [
     "spacy>=3.7",
     # spacy imports click at module load time (via its own CLI), but some
     # resolved versions of its `typer` dependency don't pull click in on
-    # their own -- pin it directly so a plain `pip install` doesn't leave
+    # their own; pin it directly so a plain `pip install` doesn't leave
     # `import lexical_profiler` crashing with ModuleNotFoundError: click.
     "click>=8.0",
 ]

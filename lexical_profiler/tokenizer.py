@@ -11,8 +11,8 @@ Two levels of support per language:
   1. A full installed pipeline (e.g. `en_core_web_sm`), which gives
      proper part-of-speech-aware lemmatization.
   2. A "blank" pipeline (`spacy.blank(lang)`), which spaCy can construct
-     for essentially any supported language code without any download —
-     this gives good tokenization but no lemmatizer.
+     for essentially any supported language code without any download.
+     This gives good tokenization but no lemmatizer.
 
 If a full pipeline isn't installed for a requested language,
 `tokenize(..., lemmatize=True)` will automatically and silently fall
@@ -34,7 +34,7 @@ from spacy.language import Language
 # Common ISO 639-1 language codes mapped to spaCy's small pipeline package
 # names. This covers spaCy's officially supported languages with trained
 # pipelines as of spaCy 3.x. See https://spacy.io/models for the full,
-# up-to-date list -- pass a full model name directly (e.g. 'en_core_web_lg')
+# up-to-date list. Pass a full model name directly (e.g. 'en_core_web_lg')
 # to bypass this map entirely.
 LANGUAGE_MODEL_MAP = {
     "ca": "ca_core_news_sm",
@@ -95,7 +95,7 @@ def download_model(language: str) -> bool:
     if model_name is None:
         return False
     try:
-        # Shell out to `python -m spacy download ...` -- this is exactly
+        # Shell out to `python -m spacy download ...`. This is exactly
         # what spaCy's own CLI does, and reusing it means we don't have to
         # duplicate its model-resolution/installation logic here.
         subprocess.run(
@@ -135,7 +135,7 @@ def _load_pipeline(language: str) -> tuple[Language, bool]:
             nlp = spacy.load(model_name, exclude=["parser", "ner"])
             has_lemmatizer = "lemmatizer" in nlp.pipe_names or "morphologizer" in nlp.pipe_names
         except OSError:
-            # Model name is known but not installed locally -- fall through
+            # Model name is known but not installed locally; fall through
             # to the blank-pipeline attempt below.
             nlp = None
 
@@ -198,7 +198,7 @@ def tokenize(text: str, language: str = "en", lowercase: bool = True,
     doc = nlp(text)
 
     # Only actually lemmatize if the caller asked for it *and* we have a
-    # pipeline capable of it -- otherwise silently fall back to surface
+    # pipeline capable of it; otherwise silently fall back to surface
     # forms rather than erroring (see module docstring for rationale).
     do_lemmatize = lemmatize and has_lemmatizer
 

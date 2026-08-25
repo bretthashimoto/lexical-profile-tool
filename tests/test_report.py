@@ -34,7 +34,10 @@ def test_export_csv(tmp_path, results):
     with open(path, newline="", encoding="utf-8") as f:
         rows = list(csv.reader(f))
 
-    assert rows[0] == ["text", "band", "tokens", "pct_tokens", "types", "pct_types"]
+    assert rows[0] == [
+        "text", "band", "tokens", "pct_tokens", "cumulative_pct_tokens",
+        "types", "pct_types",
+    ]
     body_texts = {row[0] for row in rows[1:]}
     body_categories = {row[1] for row in rows[1:]}
     assert body_texts == {"essay.txt"}
