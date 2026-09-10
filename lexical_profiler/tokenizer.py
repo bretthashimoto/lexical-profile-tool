@@ -171,6 +171,15 @@ def _cached_pipeline(language: str) -> tuple[Language, bool]:
     return _load_pipeline(language)
 
 
+def pipeline_for(language: str = "en") -> tuple[Language, bool]:
+    """Public accessor for the cached spaCy pipeline for `language`,
+    returning (nlp, has_lemmatizer). Useful for callers that need the raw
+    spaCy tokens themselves (surface text + trailing whitespace), rather
+    than just the flat token list `tokenize()` returns -- e.g. rendering
+    original text with a per-token annotation without losing spacing."""
+    return _cached_pipeline(language)
+
+
 def tokenize(text: str, language: str = "en", lowercase: bool = True,
              lemmatize: bool = False, min_length: int = 1):
     """Tokenize raw text into a list of word tokens using spaCy.

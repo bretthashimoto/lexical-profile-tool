@@ -119,3 +119,30 @@ def test_summary_and_to_dict(small_reference):
     assert as_dict["total_tokens"] == 3
     assert as_dict["off_list_words"] == ["mouse"]
     assert as_dict["cumulative_token_pct"]["1-1"] == pytest.approx(100 / 3)
+
+
+def test_highlight_classifies_and_preserves_original_text(small_reference):
+    profiler = LexicalProfiler(small_reference, ignore_words=["mouse"])
+    text = "The cat, mouse!"
+    tokens = profiler.highlight(text)
+
+    # Reconstructing text + whitespace for every token must give back the
+    # original string exactly, so rendering never drops/garbles anything.
+    assert "".join(t.text + t.whitespace for t in tokens) == text
+
+    by_text = {t.text: t for t in tokens}
+    assert by_text["The"].status == "band"
+    assert by_text["The"].band == 1  # "the" is band 1 in small_reference
+    assert by_text["cat"].status == "band"
+    assert by_text["cat"].band == 2
+    assert by_text["mouse"].status == "ignored"
+    assert by_text[","].status == "skipped"
+    assert by_text["!"].status == "skipped"
+
+
+def test_highlight_off_list_word(small_reference):
+    profiler = LexicalProfiler(small_reference)
+    tokens = profiler.highlight("the zebra")
+    by_text = {t.text: t for t in tokens}
+    assert by_text["zebra"].status == "off_list"
+    assert by_text["zebra"].band is None

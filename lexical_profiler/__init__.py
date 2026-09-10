@@ -26,12 +26,12 @@ Typical usage:
     print(result.summary())
 """
 
-from .profiler import LexicalProfiler, ProfileResult
+from .profiler import HighlightedToken, LexicalProfiler, ProfileResult
 from .reference import Reference
 from .tokenizer import download_model, lemmatizer_available, tokenize
 
 __all__ = [
-    "Reference", "LexicalProfiler", "ProfileResult",
+    "Reference", "LexicalProfiler", "ProfileResult", "HighlightedToken",
     "tokenize", "lemmatizer_available", "download_model",
 ]
 __version__ = "0.2.0"

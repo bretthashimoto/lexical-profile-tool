@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from .reference import Reference, open_text_file, require_txt_extension
-from .tokenizer import tokenize
+from .tokenizer import pipeline_for, tokenize
 
 
 @dataclass
@@ -131,6 +131,22 @@ class ProfileResult:
         }
 
 
+@dataclass
+class HighlightedToken:
+    """One token of a text annotated for rendering, e.g. as per-word
+    colored HTML (in the style of LexTutor VocabProfile / AntWordProfiler).
+
+    Preserves the original surface form and trailing whitespace/punctuation
+    so the full original text can be reconstructed by concatenating
+    `text + whitespace` for every token in order.
+    """
+
+    text: str               # original surface form, as it appeared in the text
+    whitespace: str         # whitespace/nothing following this token in the original text
+    status: str             # "band", "off_list", "ignored", or "skipped" (non-word token)
+    band: int | None = None  # set only when status == "band"
+
+
 class LexicalProfiler:
     """Profiles target text(s) against a Reference frequency model."""
 
@@ -172,6 +188,50 @@ class LexicalProfiler:
         """Profile a single text string against the reference."""
         tokens = self._tokenize(text)
         return self._profile_tokens(tokens)
+
+    def highlight(self, text: str) -> list[HighlightedToken]:
+        """Classify every token of `text` the same way `profile_text` does,
+        but keep each token's original surface form and trailing
+        whitespace/punctuation instead of collapsing it to a flat word
+        list. Meant for rendering the original text back out with a
+        per-word annotation (e.g. color-coded by frequency band), the way
+        LexTutor's VocabProfile or AntWordProfiler display a marked-up
+        text.
+
+        Returns a list of HighlightedToken, in original order. Joining
+        `tok.text + tok.whitespace` for every token reconstructs the
+        original text exactly.
+        """
+        nlp, has_lemmatizer = pipeline_for(self.reference.language)
+        do_lemmatize = self.reference.lemmatize and has_lemmatizer
+
+        tokens: list[HighlightedToken] = []
+        for tok in nlp(text):
+            surface = tok.text
+            # Mirror tokenize()'s rules exactly: drop tokens with no
+            # alphabetic character, and anything shorter than min_length
+            # (checked post-lowercase, pre-lemmatize, same as tokenize()).
+            if not any(ch.isalpha() for ch in surface):
+                tokens.append(HighlightedToken(surface, tok.whitespace_, "skipped"))
+                continue
+
+            word = tok.lemma_ if (do_lemmatize and tok.lemma_) else surface
+            if self.reference.lowercase:
+                word = word.lower()
+            if len(word) < self.min_length:
+                tokens.append(HighlightedToken(surface, tok.whitespace_, "skipped"))
+                continue
+
+            if word in self.ignore_words:
+                tokens.append(HighlightedToken(surface, tok.whitespace_, "ignored"))
+                continue
+
+            band = self.reference.band_of(word)
+            if band is None:
+                tokens.append(HighlightedToken(surface, tok.whitespace_, "off_list"))
+            else:
+                tokens.append(HighlightedToken(surface, tok.whitespace_, "band", band=band))
+        return tokens
 
     def profile_texts(self, texts: dict[str, str]) -> dict[str, ProfileResult]:
         """Profile multiple named texts (e.g. {filename: content, ...}).

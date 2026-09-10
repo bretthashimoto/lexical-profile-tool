@@ -295,6 +295,55 @@ python -m lexical_profiler \
 
 Run `python -m lexical_profiler --help` to see every flag at once.
 
+## Web app
+
+Prefer clicking buttons over writing Python? There's a Streamlit web UI that
+wraps the same library: upload your own corpus (or a word list), profile
+target texts, and explore the results interactively, including a
+color-coded text view in the style of LexTutor VocabProfile / AntWordProfiler
+(each word shaded by which frequency band it falls in; off-list words in
+red).
+
+```bash
+pip install -e ".[webapp]"   # installs streamlit, altair, pandas
+streamlit run webapp/app.py
+```
+
+This opens in your browser at `http://localhost:8501`. Click **Load bundled
+example data** in the sidebar for an instant demo using the same
+`examples/` files as the tutorial above, or upload your own `.txt` corpus
+files / word list and target texts. Band coverage charts, the highlighted
+text view, and CSV/JSON export are all available from the results section.
+
+If you turn on **Lemmatize** for a language that doesn't have a spaCy
+pipeline installed yet, the sidebar shows a **Download spaCy model** button
+that fetches one on the spot (wrapping `lexical_profiler.download_model`);
+if it can't (e.g. the host doesn't allow installing packages at runtime),
+it falls back to surface forms, same as the library does everywhere else.
+
+### Deploying it for free
+
+The app itself is just a Python process — running it locally (as above)
+costs nothing, since it only uses your own machine. If you want a
+shareable URL without running anything yourself, **Streamlit Community
+Cloud** (share.streamlit.io) hosts public Streamlit apps for free:
+
+1. Push this repo to GitHub (it already lives at
+   `bretthashimoto/lexical-profile-tool`).
+2. On [share.streamlit.io](https://share.streamlit.io), create a new app
+   from that repo, with **main file path** set to `webapp/app.py`.
+3. Dependencies are picked up automatically from `webapp/requirements.txt`
+   (kept separate from the root `requirements.txt` so a plain `pip install
+   -r requirements.txt` for the library/CLI doesn't pull in Streamlit).
+   It pre-installs spaCy pipelines for English, Spanish, French, and
+   German so lemmatization works immediately for those; any other
+   language still tokenizes correctly and can fetch its own model via the
+   in-app download button (see above).
+
+Free-tier apps sleep after a period of inactivity and cold-start on the
+next visit, and have modest memory limits (~1GB) -- fine for this tool's
+per-session, on-demand usage pattern.
+
 ## Parameter reference
 
 ### `Reference.from_corpus(...)`
@@ -484,6 +533,9 @@ lexical_profiler/
   report.py             # CSV/JSON export helpers
   cli.py                  # command-line interface
   __main__.py                # `python -m lexical_profiler` entry point
+webapp/
+  app.py                            # Streamlit web UI (`streamlit run webapp/app.py`)
+  requirements.txt                       # deploy-time deps (Streamlit Community Cloud picks this up)
 examples/
   corpus/                       # sample reference corpus used in the tutorial
   targets/                      # sample target essays used in the tutorial
