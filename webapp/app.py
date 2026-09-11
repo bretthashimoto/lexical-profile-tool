@@ -39,6 +39,7 @@ from lexical_profiler import (  # noqa: E402
 )
 from lexical_profiler import report as report_mod  # noqa: E402
 from lexical_profiler.reference import BUILTIN_WORD_LISTS  # noqa: E402
+from lexical_profiler.tokenizer import LANGUAGE_DISPLAY_NAMES  # noqa: E402
 
 st.set_page_config(page_title="LEAH — Lexical Analysis", page_icon="📖", layout="wide")
 
@@ -212,32 +213,36 @@ with st.sidebar:
     )
 
     band_size = int(st.number_input("Band size", min_value=1, value=1000, step=100))
-    language = st.text_input(
-        "Language code", value="en", help="ISO 639-1 code (en, es, de, fr, ...)",
+    language_codes = sorted(LANGUAGE_DISPLAY_NAMES, key=lambda code: LANGUAGE_DISPLAY_NAMES[code])
+    language = st.selectbox(
+        "Language", language_codes, index=language_codes.index("en"),
+        format_func=lambda code: LANGUAGE_DISPLAY_NAMES[code],
+        help="Used for tokenization and (optional) lemmatization.",
     )
     lemmatize = st.checkbox(
         "Lemmatize", value=False,
         help="Requires a spaCy pipeline installed for the language; silently falls back to "
              "surface forms otherwise.",
     )
-    if lemmatize and language:
+    language_name = LANGUAGE_DISPLAY_NAMES[language]
+    if lemmatize:
         if lemmatizer_available(language):
-            st.caption(f"✅ Lemmatizer model available for '{language}'.")
+            st.caption(f"✅ Lemmatizer model available for {language_name}.")
         else:
             st.caption(
-                f"⚠️ No lemmatizer model installed for '{language}' yet — words will use "
+                f"⚠️ No lemmatizer model installed for {language_name} yet — words will use "
                 f"their surface form instead of a lemma until one is installed."
             )
-            if st.button(f"Download spaCy model for '{language}'"):
-                with st.spinner(f"Downloading a spaCy model for '{language}'..."):
+            if st.button(f"Download spaCy model for {language_name}"):
+                with st.spinner(f"Downloading a spaCy model for {language_name}..."):
                     installed = download_model(language)
                 if installed:
-                    st.success(f"Installed a model for '{language}'.")
+                    st.success(f"Installed a model for {language_name}.")
                     st.rerun()
                 else:
                     st.error(
-                        f"Couldn't download a model for '{language}'. Either this language "
-                        f"code doesn't have a trained spaCy pipeline (see spacy.io/models), "
+                        f"Couldn't download a model for {language_name}. Either this language "
+                        f"doesn't have a trained spaCy pipeline (see spacy.io/models), "
                         f"or this host doesn't allow installing packages at runtime."
                     )
 

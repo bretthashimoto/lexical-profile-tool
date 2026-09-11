@@ -63,6 +63,35 @@ LANGUAGE_MODEL_MAP = {
     "uk": "uk_core_news_sm",
 }
 
+# Human-readable names for LANGUAGE_MODEL_MAP's codes, for UIs (e.g. the web
+# app's language dropdown) that want a friendly label instead of a bare code.
+LANGUAGE_DISPLAY_NAMES: dict[str, str] = {
+    "ca": "Catalan",
+    "zh": "Chinese",
+    "hr": "Croatian",
+    "da": "Danish",
+    "nl": "Dutch",
+    "en": "English",
+    "fi": "Finnish",
+    "fr": "French",
+    "de": "German",
+    "el": "Greek",
+    "it": "Italian",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "lt": "Lithuanian",
+    "mk": "Macedonian",
+    "nb": "Norwegian Bokmål",
+    "pl": "Polish",
+    "pt": "Portuguese",
+    "ro": "Romanian",
+    "ru": "Russian",
+    "sl": "Slovenian",
+    "es": "Spanish",
+    "sv": "Swedish",
+    "uk": "Ukrainian",
+}
+
 # Fallback used when nothing better is known/installed for a language and
 # no blank tokenizer works either. spaCy's multi-language tokenizer is a
 # reasonable generic default.
