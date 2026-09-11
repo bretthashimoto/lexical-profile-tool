@@ -60,6 +60,30 @@ def test_profile_texts_are_independent(small_reference):
     assert results["b"].off_list_words == ["mouse"]
 
 
+def test_profile_texts_reports_progress(small_reference):
+    profiler = LexicalProfiler(small_reference)
+    calls = []
+    results = profiler.profile_texts(
+        {"a": "the cat", "b": "dog mouse"},
+        progress_callback=lambda current, total, message: calls.append(
+            (current, total, message)
+        ),
+    )
+    assert set(results.keys()) == {"a", "b"}
+    # One initial call at 0, then one call per text as it finishes, in order.
+    assert [c[0] for c in calls] == [0, 1, 2]
+    assert all(c[1] == 2 for c in calls)
+    assert "a" in calls[1][2]
+    assert "b" in calls[2][2]
+
+
+def test_profile_texts_without_progress_callback_still_works(small_reference):
+    # progress_callback is optional; omitting it must not raise.
+    profiler = LexicalProfiler(small_reference)
+    results = profiler.profile_texts({"a": "the cat"})
+    assert results["a"].total_tokens == 2
+
+
 def test_profile_document(tmp_path, small_reference):
     target = tmp_path / "essay.txt"
     target.write_text("the cat mouse", encoding="utf-8")
