@@ -460,23 +460,6 @@ with st.sidebar:
     ignore_file = st.file_uploader("Upload ignore list (.txt)", type=["txt"], key="ignore_file")
     ignore_text = st.text_area("...or paste words, one per line", key="ignore_text")
 
-    st.divider()
-    with st.expander("📄 How to cite"):
-        st.caption("This tool")
-        st.code(
-            "Hashimoto, B. (2026). lexical_profiler (Version 0.2.0) [Computer software]. "
-            "https://github.com/bretthashimoto/lexical-profile-tool",
-            language=None,
-        )
-        st.caption(
-            "Built-in word lists -- cite whichever one you actually used as your "
-            "reference, not the tool that reads it:"
-        )
-        for _name in sorted(BUILTIN_WORD_LISTS):
-            _entry = BUILTIN_WORD_LISTS[_name]
-            st.markdown(f"**{_entry['label']}**")
-            st.code(_entry["citation"], language=None)
-
 # ---------------------------------------------------------------------------
 # Main area
 # ---------------------------------------------------------------------------
@@ -517,215 +500,341 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-if not st.session_state.reference:
-    st.info(
-        "Build a reference in the sidebar (or click **Load bundled example data**) to get started."
-    )
-    st.stop()
+tab_profile, tab_cite, tab_about, tab_guide, tab_about_me = st.tabs([
+    "🔤 Profile a text", "📄 How to cite", "📚 About lexical frequency profiling",
+    "🧭 Step-by-step guide", "👤 About me",
+])
 
-reference = st.session_state.reference
-
-st.header("3. Profile target text(s)")
-tab_upload, tab_paste = st.tabs(["Upload files", "Paste text"])
-target_texts: dict[str, str] = {}
-with tab_upload:
-    target_files = st.file_uploader(
-        "Upload .txt/.docx/.pdf files to profile", type=["txt", "docx", "pdf"],
-        accept_multiple_files=True, key="targets",
-        help="Select multiple files, or drag a whole folder onto this box.",
-    )
-    if target_files:
-        for name, text in read_uploaded_texts(target_files):
-            target_texts[name] = text
-with tab_paste:
-    pasted_name = st.text_input("Name for this text", value="pasted_text")
-    pasted = st.text_area("Paste text to profile", height=200)
-    if pasted.strip():
-        target_texts[pasted_name] = pasted
-
-if st.button("Profile", type="primary", disabled=not target_texts):
-    ignore_words = []
-    if ignore_file:
-        ignore_words += read_word_list(ignore_file.getvalue().decode("utf-8", errors="ignore"))
-    if ignore_text:
-        ignore_words += read_word_list(ignore_text)
-
-    profiler = LexicalProfiler(reference, ignore_words=ignore_words)
-    st.session_state.profiler = profiler
-    st.session_state.results = profiler.profile_texts(target_texts)
-    st.session_state.target_texts = target_texts
-
-# ---------------------------------------------------------------------------
-# Results
-# ---------------------------------------------------------------------------
-if st.session_state.results:
-    results = st.session_state.results
-    all_target_texts = st.session_state.target_texts
-    profiler = st.session_state.profiler
-
-    st.header("4. Results")
-
-    summary_rows = [
-        {
-            "text": name,
-            "tokens": r.total_tokens,
-            "types": r.total_types,
-            "off-list %": f"{r.off_list_pct_tokens:.2f}%",
-            "ignored %": f"{r.ignored_pct_tokens:.2f}%",
-        }
-        for name, r in results.items()
-    ]
-    st.dataframe(pd.DataFrame(summary_rows), width="stretch", hide_index=True)
-
-    selected_name = st.selectbox("View text", list(results.keys()))
-    result = results[selected_name]
-    text = all_target_texts[selected_name]
-
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("Tokens", result.total_tokens)
-    col2.metric("Types", result.total_types)
-    col3.metric("Off-list %", f"{result.off_list_pct_tokens:.1f}%")
-
-    def band_for_coverage(target_pct: float):
-        return next(
-            (
-                b for b in sorted(result.cumulative_token_pct)
-                if result.cumulative_token_pct[b] >= target_pct
-            ),
-            None,
+with tab_profile:
+    if not st.session_state.reference:
+        st.info(
+            "Build a reference in the sidebar (or click **Load bundled example data**) "
+            "to get started."
         )
+    else:
+        reference = st.session_state.reference
 
-    band_95 = band_for_coverage(95)
-    band_98 = band_for_coverage(98)
-    col4.metric("Bands for 95% coverage", band_95 if band_95 else "N/A",
-                help=None if band_95 else "95% coverage is not reached by any band")
-    col5.metric("Bands for 98% coverage", band_98 if band_98 else "N/A",
-                help=None if band_98 else "98% coverage is not reached by any band")
+        st.header("3. Profile target text(s)")
+        tab_upload, tab_paste = st.tabs(["Upload files", "Paste text"])
+        target_texts: dict[str, str] = {}
+        with tab_upload:
+            target_files = st.file_uploader(
+                "Upload .txt/.docx/.pdf files to profile", type=["txt", "docx", "pdf"],
+                accept_multiple_files=True, key="targets",
+                help="Select multiple files, or drag a whole folder onto this box.",
+            )
+            if target_files:
+                for name, text in read_uploaded_texts(target_files):
+                    target_texts[name] = text
+        with tab_paste:
+            pasted_name = st.text_input("Name for this text", value="pasted_text")
+            pasted = st.text_area("Paste text to profile", height=200)
+            if pasted.strip():
+                target_texts[pasted_name] = pasted
 
-    st.subheader("Band coverage")
-    bands = sorted(result.band_token_counts.keys())
-    chart_df = pd.DataFrame({
-        "band": [result.band_label(b) for b in bands],
-        "band_num": bands,
-        "pct_tokens": [result.band_token_pct[b] for b in bands],
-        "cumulative_pct": [result.cumulative_token_pct[b] for b in bands],
-    })
-    chart_df["pct_tokens_label"] = chart_df["pct_tokens"].map(lambda v: f"{v:.2f}%")
-    chart_df["cumulative_pct_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.2f}%")
-    chart_df["cumulative_pct_data_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.0f}%")
-    bar = alt.Chart(chart_df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-        x=alt.X("band:N", sort=None, title="Frequency band", axis=alt.Axis(labelAngle=-45)),
-        y=alt.Y("pct_tokens:Q", title="% of tokens", scale=alt.Scale(domain=[0, 100])),
-        color=alt.Color("band_num:Q", scale=alt.Scale(range=BAND_RAMP), legend=None),
-        tooltip=[
-            alt.Tooltip("band:N", title="Band"),
-            alt.Tooltip("pct_tokens_label:N", title="% tokens"),
-            alt.Tooltip("cumulative_pct_label:N", title="Cumulative %"),
-        ],
-    )
-    line = alt.Chart(chart_df).mark_line(color="#eb6834", point=True).encode(
-        x=alt.X("band:N", sort=None),
-        y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
-    )
-    line_labels = alt.Chart(chart_df).mark_text(
-        dy=-10, color="#eb6834", fontSize=11, angle=0,
-    ).encode(
-        x=alt.X("band:N", sort=None),
-        y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
-        text=alt.Text("cumulative_pct_data_label:N"),
-    )
-    threshold_df = pd.DataFrame({"y": [95, 98]})
-    thresholds = alt.Chart(threshold_df).mark_rule(strokeDash=[4, 4], color="#898781").encode(
-        y="y:Q",
-    )
-    st.altair_chart((bar + line + line_labels + thresholds).properties(height=400), width="stretch")
-    st.caption(
-        "Bars: % of tokens in each band. Orange line: cumulative coverage. "
-        "Dashed lines: 95%/98% reading-comprehension coverage thresholds "
-        "(Laufer & Ravenhorst-Kalovski, 2010)."
-    )
+        if st.button("Profile", type="primary", disabled=not target_texts):
+            ignore_words = []
+            if ignore_file:
+                ignore_words += read_word_list(ignore_file.getvalue().decode("utf-8", errors="ignore"))
+            if ignore_text:
+                ignore_words += read_word_list(ignore_text)
 
-    with st.expander("Band coverage table"):
-        table_df = chart_df[["band", "pct_tokens_label", "cumulative_pct_label"]].copy()
-        table_df.columns = ["Band", "% tokens", "Cumulative %"]
-        extra_rows = [{
-            "Band": "Off-list", "% tokens": f"{result.off_list_pct_tokens:.2f}%",
-            "Cumulative %": None,
-        }]
-        if result.ignored_tokens or result.ignored_words:
-            extra_rows.append({
-                "Band": "Ignored", "% tokens": f"{result.ignored_pct_tokens:.2f}%",
-                "Cumulative %": None,
+            profiler = LexicalProfiler(reference, ignore_words=ignore_words)
+            st.session_state.profiler = profiler
+            st.session_state.results = profiler.profile_texts(target_texts)
+            st.session_state.target_texts = target_texts
+
+        # ---------------------------------------------------------------------------
+        # Results
+        # ---------------------------------------------------------------------------
+        if st.session_state.results:
+            results = st.session_state.results
+            all_target_texts = st.session_state.target_texts
+            profiler = st.session_state.profiler
+
+            st.header("4. Results")
+
+            summary_rows = [
+                {
+                    "text": name,
+                    "tokens": r.total_tokens,
+                    "types": r.total_types,
+                    "off-list %": f"{r.off_list_pct_tokens:.2f}%",
+                    "ignored %": f"{r.ignored_pct_tokens:.2f}%",
+                }
+                for name, r in results.items()
+            ]
+            st.dataframe(pd.DataFrame(summary_rows), width="stretch", hide_index=True)
+
+            selected_name = st.selectbox("View text", list(results.keys()))
+            result = results[selected_name]
+            text = all_target_texts[selected_name]
+
+            col1, col2, col3, col4, col5 = st.columns(5)
+            col1.metric("Tokens", result.total_tokens)
+            col2.metric("Types", result.total_types)
+            col3.metric("Off-list %", f"{result.off_list_pct_tokens:.1f}%")
+
+            def band_for_coverage(target_pct: float):
+                return next(
+                    (
+                        b for b in sorted(result.cumulative_token_pct)
+                        if result.cumulative_token_pct[b] >= target_pct
+                    ),
+                    None,
+                )
+
+            band_95 = band_for_coverage(95)
+            band_98 = band_for_coverage(98)
+            col4.metric("Bands for 95% coverage", band_95 if band_95 else "N/A",
+                        help=None if band_95 else "95% coverage is not reached by any band")
+            col5.metric("Bands for 98% coverage", band_98 if band_98 else "N/A",
+                        help=None if band_98 else "98% coverage is not reached by any band")
+
+            st.subheader("Band coverage")
+            bands = sorted(result.band_token_counts.keys())
+            chart_df = pd.DataFrame({
+                "band": [result.band_label(b) for b in bands],
+                "band_num": bands,
+                "pct_tokens": [result.band_token_pct[b] for b in bands],
+                "cumulative_pct": [result.cumulative_token_pct[b] for b in bands],
             })
-        table_df = pd.concat([table_df, pd.DataFrame(extra_rows)], ignore_index=True)
-        st.dataframe(table_df, width="stretch", hide_index=True)
+            chart_df["pct_tokens_label"] = chart_df["pct_tokens"].map(lambda v: f"{v:.2f}%")
+            chart_df["cumulative_pct_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.2f}%")
+            chart_df["cumulative_pct_data_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.0f}%")
+            bar = alt.Chart(chart_df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+                x=alt.X("band:N", sort=None, title="Frequency band", axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y("pct_tokens:Q", title="% of tokens", scale=alt.Scale(domain=[0, 100])),
+                color=alt.Color("band_num:Q", scale=alt.Scale(range=BAND_RAMP), legend=None),
+                tooltip=[
+                    alt.Tooltip("band:N", title="Band"),
+                    alt.Tooltip("pct_tokens_label:N", title="% tokens"),
+                    alt.Tooltip("cumulative_pct_label:N", title="Cumulative %"),
+                ],
+            )
+            line = alt.Chart(chart_df).mark_line(color="#eb6834", point=True).encode(
+                x=alt.X("band:N", sort=None),
+                y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
+            )
+            line_labels = alt.Chart(chart_df).mark_text(
+                dy=-10, color="#eb6834", fontSize=11, angle=0,
+            ).encode(
+                x=alt.X("band:N", sort=None),
+                y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
+                text=alt.Text("cumulative_pct_data_label:N"),
+            )
+            threshold_df = pd.DataFrame({"y": [95, 98]})
+            thresholds = alt.Chart(threshold_df).mark_rule(strokeDash=[4, 4], color="#898781").encode(
+                y="y:Q",
+            )
+            st.altair_chart((bar + line + line_labels + thresholds).properties(height=400), width="stretch")
+            st.caption(
+                "Bars: % of tokens in each band. Orange line: cumulative coverage. "
+                "Dashed lines: 95%/98% reading-comprehension coverage thresholds "
+                "(Laufer & Ravenhorst-Kalovski, 2010)."
+            )
 
-    st.subheader("Highlighted text")
-    num_bands = reference.num_bands
-    legend_bands = bands
-    legend_swatches = "".join(
-        span_html(
-            result.band_label(b), band_color(b, num_bands),
-            readable_text_color(band_color(b, num_bands)), margin_right="6px",
-        )
-        for b in legend_bands
+            with st.expander("Band coverage table"):
+                table_df = chart_df[["band", "pct_tokens_label", "cumulative_pct_label"]].copy()
+                table_df.columns = ["Band", "% tokens", "Cumulative %"]
+                extra_rows = [{
+                    "Band": "Off-list", "% tokens": f"{result.off_list_pct_tokens:.2f}%",
+                    "Cumulative %": None,
+                }]
+                if result.ignored_tokens or result.ignored_words:
+                    extra_rows.append({
+                        "Band": "Ignored", "% tokens": f"{result.ignored_pct_tokens:.2f}%",
+                        "Cumulative %": None,
+                    })
+                table_df = pd.concat([table_df, pd.DataFrame(extra_rows)], ignore_index=True)
+                st.dataframe(table_df, width="stretch", hide_index=True)
+
+            st.subheader("Highlighted text")
+            num_bands = reference.num_bands
+            legend_bands = bands
+            legend_swatches = "".join(
+                span_html(
+                    result.band_label(b), band_color(b, num_bands),
+                    readable_text_color(band_color(b, num_bands)), margin_right="6px",
+                )
+                for b in legend_bands
+            )
+            legend_swatches += span_html("off-list", OFF_LIST_COLOR, margin_right="6px")
+            legend_swatches += span_html("ignored", IGNORED_COLOR)
+            st.markdown(legend_swatches, unsafe_allow_html=True)
+
+            spans = []
+            for tok in profiler.highlight(text):
+                surface = escape(tok.text)
+                ws = escape(tok.whitespace)
+                if tok.status == "band":
+                    color = band_color(tok.band, num_bands)
+                    fg = readable_text_color(color)
+                    title = f"Band {result.band_label(tok.band)}"
+                    spans.append(span_html(surface, color, fg, title, pad="0 1px") + ws)
+                elif tok.status == "off_list":
+                    spans.append(span_html(surface, OFF_LIST_COLOR, title="Off-list", pad="0 1px") + ws)
+                elif tok.status == "ignored":
+                    spans.append(span_html(surface, IGNORED_COLOR, title="Ignored", pad="0 1px") + ws)
+                else:
+                    spans.append(f"{surface}{ws}")
+
+            st.markdown(
+                f'<div style="line-height:2.2; font-size:1.05rem; padding:1rem; '
+                f'border:1px solid rgba(128,128,128,0.3); border-radius:8px; max-height:500px; '
+                f'overflow-y:auto;">{"".join(spans)}</div>',
+                unsafe_allow_html=True,
+            )
+
+            col_off, col_ign = st.columns(2)
+            with col_off:
+                off_label = (
+                    f"Off-list words ({result.off_list_types} unique, {result.off_list_tokens} tokens)"
+                )
+                with st.expander(off_label):
+                    off_df = word_table(result.off_list_words, result.word_counts, reference.pos_tagged)
+                    st.dataframe(off_df, width="stretch", hide_index=True)
+            if result.ignored_words:
+                with col_ign:
+                    with st.expander(f"Ignored words ({result.ignored_types} unique)"):
+                        ign_df = word_table(result.ignored_words, result.word_counts, reference.pos_tagged)
+                        st.dataframe(ign_df, width="stretch", hide_index=True)
+
+            st.subheader("Export")
+            dl1, dl2, dl3, dl4 = st.columns(4)
+            dl1.download_button(
+                "Band coverage (CSV)", export_to_bytes(report_mod.export_csv, results, ".csv"),
+                "band_coverage.csv", "text/csv",
+            )
+            dl2.download_button(
+                "Full report (JSON)", export_to_bytes(report_mod.export_json, results, ".json"),
+                "full_report.json", "application/json",
+            )
+            dl3.download_button(
+                "Off-list words (CSV)", export_to_bytes(report_mod.export_off_list_csv, results, ".csv"),
+                "off_list_words.csv", "text/csv",
+            )
+            dl4.download_button(
+                "Ignored words (CSV)", export_to_bytes(report_mod.export_ignored_csv, results, ".csv"),
+                "ignored_words.csv", "text/csv",
+            )
+
+with tab_cite:
+    st.header("How to cite")
+
+    st.subheader("This tool")
+    st.code(
+        "Hashimoto, B. (2026). lexical_profiler (Version 0.2.0) [Computer software]. "
+        "https://github.com/bretthashimoto/lexical-profile-tool",
+        language=None,
     )
-    legend_swatches += span_html("off-list", OFF_LIST_COLOR, margin_right="6px")
-    legend_swatches += span_html("ignored", IGNORED_COLOR)
-    st.markdown(legend_swatches, unsafe_allow_html=True)
 
-    spans = []
-    for tok in profiler.highlight(text):
-        surface = escape(tok.text)
-        ws = escape(tok.whitespace)
-        if tok.status == "band":
-            color = band_color(tok.band, num_bands)
-            fg = readable_text_color(color)
-            title = f"Band {result.band_label(tok.band)}"
-            spans.append(span_html(surface, color, fg, title, pad="0 1px") + ws)
-        elif tok.status == "off_list":
-            spans.append(span_html(surface, OFF_LIST_COLOR, title="Off-list", pad="0 1px") + ws)
-        elif tok.status == "ignored":
-            spans.append(span_html(surface, IGNORED_COLOR, title="Ignored", pad="0 1px") + ws)
-        else:
-            spans.append(f"{surface}{ws}")
+    st.subheader("Built-in word lists")
+    st.caption(
+        "Cite whichever list you actually used as your reference -- not this tool -- "
+        "since the tool just reads a published list, it didn't create one."
+    )
+    for _name in sorted(BUILTIN_WORD_LISTS):
+        _entry = BUILTIN_WORD_LISTS[_name]
+        st.markdown(f"**{_entry['label']}**")
+        st.code(_entry["citation"], language=None)
 
+with tab_about:
+    st.header("About lexical frequency profiling")
     st.markdown(
-        f'<div style="line-height:2.2; font-size:1.05rem; padding:1rem; '
-        f'border:1px solid rgba(128,128,128,0.3); border-radius:8px; max-height:500px; '
-        f'overflow-y:auto;">{"".join(spans)}</div>',
-        unsafe_allow_html=True,
+        """
+Lexical frequency profiling measures how much of a text's vocabulary falls
+into common vs. rare/unknown frequency bands, relative to a reference --
+either a frequency-ranked word list (like the AVL or NGSL) or a corpus of
+your own texts. It's widely used in vocabulary research, reading/materials
+research, and ESL/EFL text leveling.
+
+**Frequency bands.** Every word in the reference is ranked by frequency and
+grouped into bands (band 1 = most frequent). Profiling a text tells you what
+percentage of its tokens fall in each band -- a text dominated by band 1-2
+words uses mostly very common vocabulary, while a text with a long tail in
+higher bands uses more specialized or rare vocabulary.
+
+**Off-list vs. ignored words.** A word that doesn't appear anywhere in the
+reference is "off-list" -- it's outside the vocabulary the reference
+describes (this is often what a profile is really trying to measure: how
+much of a text a reader who knows the reference vocabulary would *not*
+recognize). "Ignored" words are ones you've deliberately excluded, such as
+proper nouns or names, so they don't get counted as off-list.
+
+**Coverage thresholds.** A common way to use band coverage: how many bands
+does it take to reach 95% or 98% of a text's tokens? These particular
+thresholds come from vocabulary-size research on reading comprehension --
+Laufer & Ravenhorst-Kalovski (2010) argue 95% coverage is a minimal
+threshold and 98% an optimal one for unassisted reading comprehension,
+building on Nation (2006), who estimated the vocabulary size needed to
+reach each threshold for written and spoken English.
+
+**Lemmas, word forms, and part of speech.** Some references (like AVL,
+NGSL, NAWL) match by lemma, so "runs", "running", and "ran" all count as
+the word family "run". COCA-based profiling in this tool also tags part of
+speech, so "record" as a verb is scored separately from "record" as a noun.
+
+References:
+- Laufer, B., & Ravenhorst-Kalovski, G. C. (2010). Lexical threshold
+  revisited: Lexical text coverage, learners' vocabulary size and reading
+  comprehension. *Reading in a Foreign Language, 22*(1), 15-30.
+- Nation, P. (2006). How large a vocabulary is needed for reading and
+  listening? *Canadian Modern Language Review, 63*(1), 59-82.
+"""
     )
 
-    col_off, col_ign = st.columns(2)
-    with col_off:
-        off_label = (
-            f"Off-list words ({result.off_list_types} unique, {result.off_list_tokens} tokens)"
-        )
-        with st.expander(off_label):
-            off_df = word_table(result.off_list_words, result.word_counts, reference.pos_tagged)
-            st.dataframe(off_df, width="stretch", hide_index=True)
-    if result.ignored_words:
-        with col_ign:
-            with st.expander(f"Ignored words ({result.ignored_types} unique)"):
-                ign_df = word_table(result.ignored_words, result.word_counts, reference.pos_tagged)
-                st.dataframe(ign_df, width="stretch", hide_index=True)
+with tab_guide:
+    st.header("Step-by-step guide")
+    st.markdown(
+        """
+1. **Build a reference** (sidebar, step 1). Pick one:
+   - **Built-in word list** -- profile against a published list (AVL, NGSL,
+     NAWL, or COCA) with no file to find or format.
+   - **Corpus of texts** -- upload your own .txt/.docx/.pdf files (or pick a
+     whole folder) and the reference builds automatically from their word
+     frequencies.
+   - **Word list** -- upload your own plain-text or word,frequency list.
+   - **Saved reference (.json)** -- reload a reference you exported earlier.
 
-    st.subheader("Export")
-    dl1, dl2, dl3, dl4 = st.columns(4)
-    dl1.download_button(
-        "Band coverage (CSV)", export_to_bytes(report_mod.export_csv, results, ".csv"),
-        "band_coverage.csv", "text/csv",
+   While you're at it, set the **band size**, **language**, and whether to
+   **lemmatize** -- these affect how words are grouped and matched, so set
+   them before building rather than after.
+
+2. **Add an ignore list (optional)** (sidebar, step 2). Upload or paste
+   proper nouns, names, or made-up words you don't want counted as
+   off-list.
+
+3. **Profile target text(s)** (the "Profile a text" tab, step 3). Upload
+   files or paste text directly, then click **Profile**.
+
+4. **Read the results** (step 4):
+   - The summary table and metrics show tokens, types, and off-list % per
+     text.
+   - The **band coverage** chart shows what % of tokens fall in each band,
+     plus cumulative coverage against the 95%/98% thresholds.
+   - **Highlighted text** color-codes every word by band (or off-list/
+     ignored), so you can see at a glance which words are driving the
+     score.
+   - **Export** lets you download the band coverage, full report, and
+     off-list/ignored word lists as CSV/JSON.
+
+Not sure what any of this means? See the **About lexical frequency
+profiling** tab for background on bands, coverage thresholds, and how
+lemmas/POS matching work.
+"""
     )
-    dl2.download_button(
-        "Full report (JSON)", export_to_bytes(report_mod.export_json, results, ".json"),
-        "full_report.json", "application/json",
-    )
-    dl3.download_button(
-        "Off-list words (CSV)", export_to_bytes(report_mod.export_off_list_csv, results, ".csv"),
-        "off_list_words.csv", "text/csv",
-    )
-    dl4.download_button(
-        "Ignored words (CSV)", export_to_bytes(report_mod.export_ignored_csv, results, ".csv"),
-        "ignored_words.csv", "text/csv",
+
+with tab_about_me:
+    st.header("About me")
+    st.markdown(
+        """
+**Brett Hashimoto**
+
+- [BYU faculty page](https://hum.byu.edu/directory/brett-hashimoto)
+- [Personal research website](https://sites.google.com/site/brettjameshashimoto/)
+- [Google Scholar profile](https://scholar.google.com/citations?user=V4CzV4AAAAAJ&hl=en)
+
+Contact: brett_hashimoto@byu.edu
+"""
     )
