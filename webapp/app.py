@@ -263,9 +263,18 @@ with st.sidebar:
     source_kind = st.radio(
         "Reference source",
         ["Built-in word list", "Corpus of texts", "Word list", "Saved reference (.json)"],
+        help="What to profile target texts against: a published word list bundled "
+             "with this app, your own corpus of texts, your own word list file, or "
+             "a reference you built earlier and downloaded as .json.",
     )
 
-    band_size = int(st.number_input("Band size", min_value=1, value=1000, step=100))
+    band_size = int(st.number_input(
+        "Band size", min_value=1, value=1000, step=100,
+        help="How many words make up each frequency band, e.g. band 1 = the "
+             "1000 most frequent words, band 2 = the next 1000, and so on. "
+             "Smaller values give more (narrower) bands; doesn't affect which "
+             "words end up off-list.",
+    ))
     language_codes = sorted(WEBAPP_LANGUAGES, key=lambda code: LANGUAGE_DISPLAY_NAMES[code])
     language = st.selectbox(
         "Language", language_codes, index=language_codes.index("en"),
@@ -299,25 +308,57 @@ with st.sidebar:
                     )
 
     with st.expander("Fine-grained bands (optional)"):
-        use_fine = st.checkbox("Use narrower bands for the most frequent words")
+        st.caption(
+            "Split the most frequent words into narrower bands than the rest of "
+            "the list, so a coverage curve doesn't lump e.g. the top 1000 words "
+            "together when finer distinctions there matter most."
+        )
+        use_fine = st.checkbox(
+            "Use narrower bands for the most frequent words",
+            help="E.g. 100-word bands through rank 2000, then normal-size "
+                 "(Band size) bands after that.",
+        )
         fine_band_size = None
         fine_grained_until = None
         if use_fine:
-            fine_band_size = int(st.number_input("Fine band size", min_value=1, value=100))
-            fine_grained_until = int(st.number_input("...through rank", min_value=1, value=2000))
+            fine_band_size = int(st.number_input(
+                "Fine band size", min_value=1, value=100,
+                help="Width of each narrow band, e.g. 100 words per band.",
+            ))
+            fine_grained_until = int(st.number_input(
+                "...through rank", min_value=1, value=2000,
+                help="The rank up to which the narrower band size applies, e.g. "
+                     "2000 for narrow bands through the 2000th most frequent "
+                     "word. Normal-size (Band size) bands apply after that.",
+            ))
 
     with st.expander("Coarse-grained bands (optional)"):
         st.caption(
             "Collapse the long tail of least-frequent words into a handful of wide bands "
             "instead of many normal-size ones."
         )
-        use_coarse = st.checkbox("Use wider bands for the least frequent words")
+        use_coarse = st.checkbox(
+            "Use wider bands for the least frequent words",
+            help="E.g. one 10,000-word band covering everything past rank "
+                 "50,000, instead of dozens of separate normal-size (Band "
+                 "size) bands most profiling runs would never even reach.",
+        )
         coarse_band_size = None
         coarse_grained_from = None
         if use_coarse:
-            coarse_band_size = int(st.number_input("Coarse band size", min_value=1, value=10000))
+            coarse_band_size = int(st.number_input(
+                "Coarse band size", min_value=1, value=10000,
+                help="Width of each wide band, e.g. 10,000 words per band.",
+            ))
             coarse_grained_from = int(
-                st.number_input("...from rank", min_value=1, value=50000)
+                st.number_input(
+                    "...from rank", min_value=1, value=50000,
+                    help="The rank from which the wider band size applies, e.g. "
+                         "50000 to start collapsing bands past the 50,000th "
+                         "most frequent word. Normal-size (Band size) bands "
+                         "apply before that (and after the fine-grained section "
+                         "above, if any).",
+                )
             )
 
     if load_example_clicked:
@@ -337,6 +378,8 @@ with st.sidebar:
             format_func=lambda name: BUILTIN_WORD_LISTS[name].get(
                 "label", BUILTIN_WORD_LISTS[name]["description"],
             ),
+            help="Which published reference word list to profile against. See the "
+                 "\"How to cite\" tab for how to cite whichever one you use.",
         )
         if BUILTIN_WORD_LISTS[builtin_choice].get("pos_tagged"):
             st.caption(
@@ -419,10 +462,19 @@ with st.sidebar:
                         st.error(str(e))
 
     elif source_kind == "Word list":
-        wordlist_file = st.file_uploader("Upload a word list .txt file", type=["txt"])
+        wordlist_file = st.file_uploader(
+            "Upload a word list .txt file", type=["txt"],
+            help="One word per line, ranked most-frequent-first -- or "
+                 "\"word,frequency\" pairs (frequency used only to break ties/"
+                 "confirm ranking, not required to be exact counts).",
+        )
         with st.expander("Advanced word list options"):
             freq_choice = st.selectbox(
                 "Format", ["Auto-detect", "word,frequency pairs", "Plain word list"],
+                help="\"Auto-detect\" checks whether each line has a "
+                     "\"word,frequency\" pair or just a bare word, and works for "
+                     "almost every file -- only override it if auto-detection "
+                     "guesses wrong for your file.",
             )
             has_frequencies = {"Auto-detect": None, "word,frequency pairs": True,
                                 "Plain word list": False}[freq_choice]
@@ -451,7 +503,12 @@ with st.sidebar:
                 Path(tmp_path).unlink(missing_ok=True)
 
     else:  # Saved reference
-        ref_file = st.file_uploader("Upload a saved reference .json file", type=["json"])
+        ref_file = st.file_uploader(
+            "Upload a saved reference .json file", type=["json"],
+            help="A reference previously exported with the \"Download this "
+                 "reference (.json)\" button below, so you don't have to rebuild "
+                 "it from a corpus/word list again.",
+        )
         if ref_file and st.session_state.get("_saved_ref_sig") != ref_file.file_id:
             with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
                 tmp.write(ref_file.getvalue())
@@ -480,8 +537,15 @@ with st.sidebar:
     st.caption("Specific words (names, made-up words, etc.) to exclude from "
                "band/off-list scoring -- see below for proper nouns and numerals "
                "as whole categories.")
-    ignore_file = st.file_uploader("Upload ignore list (.txt)", type=["txt"], key="ignore_file")
-    ignore_text = st.text_area("...or paste words, one per line", key="ignore_text")
+    ignore_file = st.file_uploader(
+        "Upload ignore list (.txt)", type=["txt"], key="ignore_file",
+        help="One word per line. Matched case-insensitively if the reference "
+             "lowercases tokens (the default).",
+    )
+    ignore_text = st.text_area(
+        "...or paste words, one per line", key="ignore_text",
+        help="Merged with the uploaded file above, if both are given.",
+    )
 
     st.divider()
     st.header("3. Proper nouns & numerals (optional)")
@@ -493,9 +557,9 @@ with st.sidebar:
     exclude_proper_nouns = st.checkbox(
         "Exclude proper nouns", value=False,
         help="Detected via the language's part-of-speech tagger, so this requires "
-             "a trained pipeline to be installed for the selected language (see "
-             "the lemmatizer availability note above); with none installed, this "
-             "has no effect.",
+             "a trained pipeline to be installed for the selected language; with "
+             "none installed, this has no effect (proper nouns are just profiled "
+             "like any other word).",
     )
     exclude_numerals = st.checkbox(
         "Exclude numerals", value=False,
@@ -571,7 +635,12 @@ with tab_profile:
                 for name, text in read_uploaded_texts(target_files):
                     target_texts[name] = text
         with tab_paste:
-            pasted_name = st.text_input("Name for this text", value="pasted_text")
+            pasted_name = st.text_input(
+                "Name for this text", value="pasted_text",
+                help="Label used to identify this text in the results table and "
+                     "exports -- change it if you paste more than one text so "
+                     "they don't overwrite each other.",
+            )
             pasted = st.text_area("Paste text to profile", height=200)
             if pasted.strip():
                 target_texts[pasted_name] = pasted
