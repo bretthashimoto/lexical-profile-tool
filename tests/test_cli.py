@@ -71,3 +71,18 @@ def test_cli_rejects_non_txt_target(wordlist_path, tmp_path):
             "--reference-wordlist", wordlist_path,
             "--target", str(bad_target),
         ])
+
+
+def test_cli_exclude_numerals_writes_numerals_csv(wordlist_path, tmp_path):
+    target_path = tmp_path / "essay.txt"
+    target_path.write_text("the cat 42", encoding="utf-8")
+    out_path = tmp_path / "numerals.csv"
+    main([
+        "--reference-wordlist", wordlist_path,
+        "--target", str(target_path),
+        "--exclude-numerals",
+        "--out-numerals-csv", str(out_path),
+    ])
+    rows = out_path.read_text(encoding="utf-8").splitlines()
+    assert rows[0] == "text,word,count"
+    assert rows[1] == "essay.txt,42,1"

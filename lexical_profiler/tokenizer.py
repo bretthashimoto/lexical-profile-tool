@@ -274,6 +274,77 @@ def pipeline_for(language: str = "en") -> tuple[Language, bool]:
     return _cached_pipeline(language)
 
 
+def classify_tokens(text: str, language: str = "en", lowercase: bool = True,
+                     lemmatize: bool = False, min_length: int = 1,
+                     pos_tag: bool = False) -> list[tuple[str, str]]:
+    """Like `tokenize()`, but returns (word, category) pairs instead of a
+    flat word list, where category is "word", "proper_noun", or "numeral".
+    This is what lets a caller (see LexicalProfiler's
+    exclude_proper_nouns/exclude_numerals) report proper nouns and
+    numerals separately from ordinary running text instead of profiling
+    them like any other word.
+
+    Two differences from `tokenize()`:
+      - A numeral token (e.g. "42", "3.14") is kept and categorized
+        "numeral" instead of being dropped outright for having no
+        alphabetic character -- `tokenize()` itself still drops these
+        (it's built on top of this function, filtering "numeral" out),
+        so existing callers see no change.
+      - Every kept token is tagged "word", "proper_noun", or "numeral".
+
+    "proper_noun" classification uses the language's POS tagger, so (like
+    `lemmatize`/`pos_tag`) it requires a trained pipeline for `language`
+    to be installed; with none installed, no token is ever classified
+    "proper_noun" -- everything that isn't a numeral is just "word".
+
+    Args: same as `tokenize()`.
+    """
+    nlp, has_lemmatizer = _cached_pipeline(language)
+    doc = nlp(text)
+
+    # Only actually lemmatize/tag if the caller asked for it *and* we have
+    # a pipeline capable of it; otherwise silently fall back to surface
+    # forms rather than erroring (see module docstring for rationale).
+    do_lemmatize = lemmatize and has_lemmatizer
+    do_pos_tag = pos_tag and has_lemmatizer
+
+    tokens: list[tuple[str, str]] = []
+    for tok in doc:
+        surface = tok.text
+        # tok.like_num catches both digit numerals ("42") and number
+        # words ("forty-two"), via spaCy's rule-based lexical attributes
+        # -- it works even with a blank (no trained pipeline) tokenizer,
+        # unlike POS-based proper-noun detection below.
+        is_numeral = tok.like_num
+        # Keep only tokens containing at least one alphabetic character
+        # (drops pure punctuation, whitespace, symbols) while still
+        # allowing internal apostrophes/hyphens (e.g. "don't") -- unless
+        # it's a numeral, which is kept regardless.
+        if not is_numeral and not any(ch.isalpha() for ch in surface):
+            continue
+        # tok.lemma_ can come back empty for some tokens even when a
+        # lemmatizer is active, so fall back to the surface form in that
+        # case rather than emitting an empty string.
+        word = tok.lemma_ if (do_lemmatize and tok.lemma_) else surface
+        if lowercase:
+            word = word.lower()
+        if len(word) < min_length:
+            continue
+        if do_pos_tag:
+            code = pos_suffix(tok)
+            if code:
+                word = f"{word}_{code}"
+
+        if is_numeral:
+            category = "numeral"
+        elif has_lemmatizer and tok.pos_ == "PROPN":
+            category = "proper_noun"
+        else:
+            category = "word"
+        tokens.append((word, category))
+    return tokens
+
+
 def tokenize(text: str, language: str = "en", lowercase: bool = True,
              lemmatize: bool = False, min_length: int = 1, pos_tag: bool = False):
     """Tokenize raw text into a list of word tokens using spaCy.
@@ -301,36 +372,12 @@ def tokenize(text: str, language: str = "en", lowercase: bool = True,
             classify keeps no suffix at all.
 
     Returns:
-        List of token strings, in order of appearance.
+        List of token strings, in order of appearance. Pure numerals
+        (e.g. "42") are dropped, same as pure punctuation -- use
+        `classify_tokens()` if you need to see them.
     """
-    nlp, has_lemmatizer = _cached_pipeline(language)
-    doc = nlp(text)
-
-    # Only actually lemmatize/tag if the caller asked for it *and* we have
-    # a pipeline capable of it; otherwise silently fall back to surface
-    # forms rather than erroring (see module docstring for rationale).
-    do_lemmatize = lemmatize and has_lemmatizer
-    do_pos_tag = pos_tag and has_lemmatizer
-
-    tokens = []
-    for tok in doc:
-        surface = tok.text
-        # Keep only tokens containing at least one alphabetic character
-        # (drops pure punctuation, numbers, whitespace, symbols) while
-        # still allowing internal apostrophes/hyphens, e.g. "don't".
-        if not any(ch.isalpha() for ch in surface):
-            continue
-        # tok.lemma_ can come back empty for some tokens even when a
-        # lemmatizer is active, so fall back to the surface form in that
-        # case rather than emitting an empty string.
-        word = tok.lemma_ if (do_lemmatize and tok.lemma_) else surface
-        if lowercase:
-            word = word.lower()
-        if len(word) < min_length:
-            continue
-        if do_pos_tag:
-            code = pos_suffix(tok)
-            if code:
-                word = f"{word}_{code}"
-        tokens.append(word)
-    return tokens
+    classified = classify_tokens(
+        text, language=language, lowercase=lowercase, lemmatize=lemmatize,
+        min_length=min_length, pos_tag=pos_tag,
+    )
+    return [word for word, category in classified if category != "numeral"]

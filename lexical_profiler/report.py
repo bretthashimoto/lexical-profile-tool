@@ -79,13 +79,23 @@ def export_csv(results: dict[str, ProfileResult], path: str) -> None:
                 name, "off_list", r.off_list_tokens,
                 f"{r.off_list_pct_tokens:.4f}", "", r.off_list_types, "",
             ])
-            # Only add the "ignored" row if an ignore list was actually
-            # used and matched something; keeps the CSV unchanged for
-            # callers who never pass ignore_words.
+            # Only add the "ignored"/"proper_noun"/"numeral" rows if that
+            # category was actually used and matched something; keeps the
+            # CSV unchanged for callers who never touch those options.
             if r.ignored_tokens or r.ignored_words:
                 writer.writerow([
                     name, "ignored", r.ignored_tokens,
                     f"{r.ignored_pct_tokens:.4f}", "", r.ignored_types, "",
+                ])
+            if r.proper_noun_tokens or r.proper_noun_words:
+                writer.writerow([
+                    name, "proper_noun", r.proper_noun_tokens,
+                    f"{r.proper_noun_pct_tokens:.4f}", "", r.proper_noun_types, "",
+                ])
+            if r.numeral_tokens or r.numeral_words:
+                writer.writerow([
+                    name, "numeral", r.numeral_tokens,
+                    f"{r.numeral_pct_tokens:.4f}", "", r.numeral_types, "",
                 ])
 
 
@@ -106,4 +116,26 @@ def export_ignored_csv(results: dict[str, ProfileResult], path: str) -> None:
         writer.writerow(["text", "word", "count"])
         for name, r in results.items():
             for word in r.ignored_words:
+                writer.writerow([name, word, r.word_counts[word]])
+
+
+def export_proper_nouns_csv(results: dict[str, ProfileResult], path: str) -> None:
+    """Write a CSV of proper nouns per text, with counts (only populated
+    when the profiler was run with exclude_proper_nouns=True)."""
+    with _open_output_file(path, newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["text", "word", "count"])
+        for name, r in results.items():
+            for word in r.proper_noun_words:
+                writer.writerow([name, word, r.word_counts[word]])
+
+
+def export_numerals_csv(results: dict[str, ProfileResult], path: str) -> None:
+    """Write a CSV of numerals per text, with counts (only populated when
+    the profiler was run with exclude_numerals=True)."""
+    with _open_output_file(path, newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["text", "word", "count"])
+        for name, r in results.items():
+            for word in r.numeral_words:
                 writer.writerow([name, word, r.word_counts[word]])

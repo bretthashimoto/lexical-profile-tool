@@ -148,6 +148,16 @@ def main(argv=None):
     parser.add_argument("--ignore-list", metavar="PATH",
                          help="File of words to ignore, one per line (merged with "
                               "--ignore-words if both are given).")
+    parser.add_argument("--exclude-proper-nouns", action="store_true",
+                         help="Report proper nouns (via the language's POS tagger) "
+                              "separately instead of profiling them like any other "
+                              "word. They still count toward total tokens/types. "
+                              "Requires a trained pipeline for --language; silently "
+                              "has no effect without one.")
+    parser.add_argument("--exclude-numerals", action="store_true",
+                         help="Report numerals (e.g. '42', 'twelve') separately "
+                              "instead of profiling them like any other word. They "
+                              "still count toward total tokens/types.")
 
     parser.add_argument("--out-json", metavar="PATH", help="Write full results as JSON.")
     parser.add_argument("--out-csv", metavar="PATH", help="Write a tidy band-coverage CSV.")
@@ -155,6 +165,12 @@ def main(argv=None):
                          help="Write a CSV of off-list (unknown) words per text.")
     parser.add_argument("--out-ignored-csv", metavar="PATH",
                          help="Write a CSV of ignored words per text.")
+    parser.add_argument("--out-proper-nouns-csv", metavar="PATH",
+                         help="Write a CSV of proper nouns per text (populated only "
+                              "when --exclude-proper-nouns is set).")
+    parser.add_argument("--out-numerals-csv", metavar="PATH",
+                         help="Write a CSV of numerals per text (populated only "
+                              "when --exclude-numerals is set).")
     parser.add_argument("--max-off-list-shown", type=int, default=20,
                          help="How many off-list words to show in the console summary.")
 
@@ -236,8 +252,11 @@ def main(argv=None):
         ignore_words = _collect_ignore_words(args)
     except ValueError as e:
         parser.error(str(e))
-    profiler = LexicalProfiler(reference, min_length=args.min_length,
-                                ignore_words=ignore_words)
+    profiler = LexicalProfiler(
+        reference, min_length=args.min_length, ignore_words=ignore_words,
+        exclude_proper_nouns=args.exclude_proper_nouns,
+        exclude_numerals=args.exclude_numerals,
+    )
     results = profiler.profile_texts(targets)
 
     for name, result in results.items():
@@ -259,6 +278,12 @@ def main(argv=None):
         if args.out_ignored_csv:
             report_mod.export_ignored_csv(results, args.out_ignored_csv)
             print(f"Wrote ignored-words CSV to {args.out_ignored_csv}", file=sys.stderr)
+        if args.out_proper_nouns_csv:
+            report_mod.export_proper_nouns_csv(results, args.out_proper_nouns_csv)
+            print(f"Wrote proper-nouns CSV to {args.out_proper_nouns_csv}", file=sys.stderr)
+        if args.out_numerals_csv:
+            report_mod.export_numerals_csv(results, args.out_numerals_csv)
+            print(f"Wrote numerals CSV to {args.out_numerals_csv}", file=sys.stderr)
     except ValueError as e:
         parser.error(str(e))
 

@@ -1,6 +1,6 @@
 import pytest
 
-from lexical_profiler.tokenizer import lemmatizer_available, tokenize
+from lexical_profiler.tokenizer import classify_tokens, lemmatizer_available, tokenize
 
 
 def test_tokenize_lowercases_by_default():
@@ -70,3 +70,50 @@ def test_pos_tag_distinguishes_noun_and_verb_usage():
         "He records the record.", lemmatize=True, pos_tag=True,
     )
     assert tokens == ["he_p", "record_v", "the_d", "record_n"]
+
+
+# ---------- classify_tokens ----------
+
+def test_classify_tokens_tags_plain_words():
+    assert classify_tokens("Hello world") == [("hello", "word"), ("world", "word")]
+
+
+def test_classify_tokens_tags_numerals_and_keeps_pure_digits():
+    # Unlike tokenize(), a pure-digit token isn't dropped -- it's kept and
+    # categorized "numeral" instead.
+    tokens = classify_tokens("I have 42 apples and 3.14 pies")
+    assert ("42", "numeral") in tokens
+    assert ("3.14", "numeral") in tokens
+    assert ("apples", "word") in tokens
+
+
+def test_tokenize_still_drops_numerals_via_classify_tokens():
+    # tokenize() is built on classify_tokens() but filters "numeral" out,
+    # so its documented behavior (pure numbers are dropped) is unchanged.
+    assert tokenize("I have 42 apples") == ["i", "have", "apples"]
+
+
+def test_classify_tokens_number_word_is_a_numeral():
+    tokens = classify_tokens("twelve apples")
+    assert ("twelve", "numeral") in tokens
+    assert ("apples", "word") in tokens
+
+
+def test_classify_tokens_no_pipeline_never_tags_proper_noun():
+    # Without a trained pipeline, proper-noun detection can't run (same
+    # silent-fallback convention as lemmatize/pos_tag), so even an
+    # obviously-capitalized name is just "word".
+    tokens = classify_tokens("Everest is tall", language="zznotalang")
+    assert ("everest", "word") in tokens
+
+
+@pytest.mark.skipif(
+    not lemmatizer_available("en"),
+    reason="requires a trained en pipeline (python -m spacy download en_core_web_sm)",
+)
+def test_classify_tokens_detects_proper_nouns_with_trained_pipeline():
+    tokens = classify_tokens("Brett visited Paris")
+    by_word = dict(tokens)
+    assert by_word["brett"] == "proper_noun"
+    assert by_word["paris"] == "proper_noun"
+    assert by_word["visited"] == "word"

@@ -60,6 +60,8 @@ BAND_RAMP = ["#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6",
              "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b"]
 OFF_LIST_COLOR = "#d03b3b"
 IGNORED_COLOR = "#898781"
+PROPER_NOUN_COLOR = "#8a5cc7"
+NUMERAL_COLOR = "#c78a3a"
 
 # The LEAH mark: an open book whose pages are bars decaying like a Zipf
 # curve (tall/light on the left, falling into a long low/dark tail on the
@@ -456,9 +458,31 @@ with st.sidebar:
 
     st.divider()
     st.header("2. Ignore list (optional)")
-    st.caption("Proper nouns, names, or made-up words to exclude from band/off-list scoring.")
+    st.caption("Specific words (names, made-up words, etc.) to exclude from "
+               "band/off-list scoring -- see below for proper nouns and numerals "
+               "as whole categories.")
     ignore_file = st.file_uploader("Upload ignore list (.txt)", type=["txt"], key="ignore_file")
     ignore_text = st.text_area("...or paste words, one per line", key="ignore_text")
+
+    st.divider()
+    st.header("3. Proper nouns & numerals (optional)")
+    st.caption(
+        "By default, proper nouns and numerals are profiled like any other word "
+        "(usually landing off-list). Exclude either to report it as its own "
+        "category in the results instead."
+    )
+    exclude_proper_nouns = st.checkbox(
+        "Exclude proper nouns", value=False,
+        help="Detected via the language's part-of-speech tagger, so this requires "
+             "a trained pipeline to be installed for the selected language (see "
+             "the lemmatizer availability note above); with none installed, this "
+             "has no effect.",
+    )
+    exclude_numerals = st.checkbox(
+        "Exclude numerals", value=False,
+        help="Catches both digit numerals (e.g. \"42\") and number words (e.g. "
+             "\"twelve\") -- works regardless of language pipeline availability.",
+    )
 
 # ---------------------------------------------------------------------------
 # Main area
@@ -514,7 +538,7 @@ with tab_profile:
     else:
         reference = st.session_state.reference
 
-        st.header("3. Profile target text(s)")
+        st.header("4. Profile target text(s)")
         tab_upload, tab_paste = st.tabs(["Upload files", "Paste text"])
         target_texts: dict[str, str] = {}
         with tab_upload:
@@ -539,7 +563,11 @@ with tab_profile:
             if ignore_text:
                 ignore_words += read_word_list(ignore_text)
 
-            profiler = LexicalProfiler(reference, ignore_words=ignore_words)
+            profiler = LexicalProfiler(
+                reference, ignore_words=ignore_words,
+                exclude_proper_nouns=exclude_proper_nouns,
+                exclude_numerals=exclude_numerals,
+            )
             st.session_state.profiler = profiler
             st.session_state.results = profiler.profile_texts(target_texts)
             st.session_state.target_texts = target_texts
@@ -552,7 +580,7 @@ with tab_profile:
             all_target_texts = st.session_state.target_texts
             profiler = st.session_state.profiler
 
-            st.header("4. Results")
+            st.header("5. Results")
 
             summary_rows = [
                 {
@@ -561,6 +589,8 @@ with tab_profile:
                     "types": r.total_types,
                     "off-list %": f"{r.off_list_pct_tokens:.2f}%",
                     "ignored %": f"{r.ignored_pct_tokens:.2f}%",
+                    "proper nouns %": f"{r.proper_noun_pct_tokens:.2f}%",
+                    "numerals %": f"{r.numeral_pct_tokens:.2f}%",
                 }
                 for name, r in results.items()
             ]
@@ -646,6 +676,16 @@ with tab_profile:
                         "Band": "Ignored", "% tokens": f"{result.ignored_pct_tokens:.2f}%",
                         "Cumulative %": None,
                     })
+                if result.proper_noun_tokens or result.proper_noun_words:
+                    extra_rows.append({
+                        "Band": "Proper nouns", "% tokens": f"{result.proper_noun_pct_tokens:.2f}%",
+                        "Cumulative %": None,
+                    })
+                if result.numeral_tokens or result.numeral_words:
+                    extra_rows.append({
+                        "Band": "Numerals", "% tokens": f"{result.numeral_pct_tokens:.2f}%",
+                        "Cumulative %": None,
+                    })
                 table_df = pd.concat([table_df, pd.DataFrame(extra_rows)], ignore_index=True)
                 st.dataframe(table_df, width="stretch", hide_index=True)
 
@@ -660,7 +700,11 @@ with tab_profile:
                 for b in legend_bands
             )
             legend_swatches += span_html("off-list", OFF_LIST_COLOR, margin_right="6px")
-            legend_swatches += span_html("ignored", IGNORED_COLOR)
+            legend_swatches += span_html("ignored", IGNORED_COLOR, margin_right="6px")
+            if profiler.exclude_proper_nouns:
+                legend_swatches += span_html("proper noun", PROPER_NOUN_COLOR, margin_right="6px")
+            if profiler.exclude_numerals:
+                legend_swatches += span_html("numeral", NUMERAL_COLOR)
             st.markdown(legend_swatches, unsafe_allow_html=True)
 
             spans = []
@@ -676,6 +720,12 @@ with tab_profile:
                     spans.append(span_html(surface, OFF_LIST_COLOR, title="Off-list", pad="0 1px") + ws)
                 elif tok.status == "ignored":
                     spans.append(span_html(surface, IGNORED_COLOR, title="Ignored", pad="0 1px") + ws)
+                elif tok.status == "proper_noun":
+                    spans.append(
+                        span_html(surface, PROPER_NOUN_COLOR, title="Proper noun", pad="0 1px") + ws
+                    )
+                elif tok.status == "numeral":
+                    spans.append(span_html(surface, NUMERAL_COLOR, title="Numeral", pad="0 1px") + ws)
                 else:
                     spans.append(f"{surface}{ws}")
 
@@ -700,6 +750,24 @@ with tab_profile:
                         ign_df = word_table(result.ignored_words, result.word_counts, reference.pos_tagged)
                         st.dataframe(ign_df, width="stretch", hide_index=True)
 
+            if result.proper_noun_words or result.numeral_words:
+                col_propn, col_num = st.columns(2)
+                if result.proper_noun_words:
+                    with col_propn:
+                        label = f"Proper nouns ({result.proper_noun_types} unique)"
+                        with st.expander(label):
+                            propn_df = word_table(
+                                result.proper_noun_words, result.word_counts, reference.pos_tagged,
+                            )
+                            st.dataframe(propn_df, width="stretch", hide_index=True)
+                if result.numeral_words:
+                    with col_num:
+                        with st.expander(f"Numerals ({result.numeral_types} unique)"):
+                            num_df = word_table(
+                                result.numeral_words, result.word_counts, reference.pos_tagged,
+                            )
+                            st.dataframe(num_df, width="stretch", hide_index=True)
+
             st.subheader("Export")
             dl1, dl2, dl3, dl4 = st.columns(4)
             dl1.download_button(
@@ -718,6 +786,20 @@ with tab_profile:
                 "Ignored words (CSV)", export_to_bytes(report_mod.export_ignored_csv, results, ".csv"),
                 "ignored_words.csv", "text/csv",
             )
+            if any(r.proper_noun_words or r.numeral_words for r in results.values()):
+                dl5, dl6, _, _ = st.columns(4)
+                if any(r.proper_noun_words for r in results.values()):
+                    dl5.download_button(
+                        "Proper nouns (CSV)",
+                        export_to_bytes(report_mod.export_proper_nouns_csv, results, ".csv"),
+                        "proper_nouns.csv", "text/csv",
+                    )
+                if any(r.numeral_words for r in results.values()):
+                    dl6.download_button(
+                        "Numerals (CSV)",
+                        export_to_bytes(report_mod.export_numerals_csv, results, ".csv"),
+                        "numerals.csv", "text/csv",
+                    )
 
 with tab_cite:
     st.header("How to cite")
@@ -759,8 +841,15 @@ higher bands uses more specialized or rare vocabulary.
 reference is "off-list" -- it's outside the vocabulary the reference
 describes (this is often what a profile is really trying to measure: how
 much of a text a reader who knows the reference vocabulary would *not*
-recognize). "Ignored" words are ones you've deliberately excluded, such as
-proper nouns or names, so they don't get counted as off-list.
+recognize). "Ignored" words are specific words you've deliberately
+excluded (via the ignore list), so they don't get counted as off-list.
+
+**Proper nouns and numerals.** Names, places, and numbers are usually not
+meaningful vocabulary knowledge -- most published Lexical Frequency
+Profile tools exclude them by convention rather than counting them
+off-list. This tool profiles them like any other word by default, but you
+can exclude either category (sidebar, step 3) to report it separately
+instead, the same way an ignore list works.
 
 **Coverage thresholds.** A common way to use band coverage: how many bands
 does it take to reach 95% or 98% of a text's tokens? These particular
@@ -802,22 +891,27 @@ with tab_guide:
    them before building rather than after.
 
 2. **Add an ignore list (optional)** (sidebar, step 2). Upload or paste
-   proper nouns, names, or made-up words you don't want counted as
+   specific words (names, made-up words, etc.) you don't want counted as
    off-list.
 
-3. **Profile target text(s)** (the "Profile a text" tab, step 3). Upload
+3. **Proper nouns & numerals (optional)** (sidebar, step 3). By default
+   these are profiled like any other word. Check either box to report it
+   as its own category in the results instead of folding it into
+   off-list.
+
+4. **Profile target text(s)** (the "Profile a text" tab, step 4). Upload
    files or paste text directly, then click **Profile**.
 
-4. **Read the results** (step 4):
-   - The summary table and metrics show tokens, types, and off-list % per
-     text.
+5. **Read the results** (step 5):
+   - The summary table and metrics show tokens, types, and off-list %
+     (plus ignored/proper noun/numeral %, if applicable) per text.
    - The **band coverage** chart shows what % of tokens fall in each band,
      plus cumulative coverage against the 95%/98% thresholds.
    - **Highlighted text** color-codes every word by band (or off-list/
-     ignored), so you can see at a glance which words are driving the
-     score.
+     ignored/proper noun/numeral), so you can see at a glance which words
+     are driving the score.
    - **Export** lets you download the band coverage, full report, and
-     off-list/ignored word lists as CSV/JSON.
+     off-list/ignored/proper-noun/numeral word lists as CSV/JSON.
 
 Not sure what any of this means? See the **About lexical frequency
 profiling** tab for background on bands, coverage thresholds, and how

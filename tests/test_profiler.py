@@ -149,6 +149,77 @@ def test_highlight_off_list_word(small_reference):
     assert by_text["zebra"].band is None
 
 
+def test_highlight_numeral_included_by_default(small_reference):
+    profiler = LexicalProfiler(small_reference)
+    tokens = profiler.highlight("the 42")
+    by_text = {t.text: t for t in tokens}
+    # Not excluded, so it's just profiled normally -- lands off-list since
+    # small_reference has no numeral vocabulary.
+    assert by_text["42"].status == "off_list"
+
+
+def test_highlight_numeral_excluded(small_reference):
+    profiler = LexicalProfiler(small_reference, exclude_numerals=True)
+    tokens = profiler.highlight("the 42")
+    by_text = {t.text: t for t in tokens}
+    assert by_text["42"].status == "numeral"
+
+
+# ---------- proper nouns / numerals ----------
+
+def test_numerals_included_by_default_and_counted_off_list(small_reference):
+    # exclude_numerals defaults to False: numerals are profiled like any
+    # other word -- and since no reference lists them, they land off-list
+    # rather than vanishing the way they used to (pre-classify_tokens).
+    profiler = LexicalProfiler(small_reference)
+    result = profiler.profile_text("the cat 42")
+
+    assert result.total_tokens == 3
+    assert result.numeral_tokens == 0
+    assert result.numeral_words == []
+    assert "42" in result.off_list_words
+
+
+def test_exclude_numerals_reports_them_separately(small_reference):
+    profiler = LexicalProfiler(small_reference, exclude_numerals=True)
+    result = profiler.profile_text("the cat 42 42 100")
+
+    assert result.numeral_tokens == 3
+    assert result.numeral_types == 2
+    assert set(result.numeral_words) == {"42", "100"}
+    assert "42" not in result.off_list_words
+    # Numerals still count toward totals, same convention as ignored_words.
+    assert result.total_tokens == 5
+    assert result.off_list_tokens == 0
+
+
+def test_exclude_proper_nouns_bypassed_without_trained_pipeline(small_reference):
+    # _profile_tokens is fed pre-classified tokens directly here, so this
+    # exercises the bucketing logic without needing spaCy's tagger.
+    profiler = LexicalProfiler(small_reference, exclude_proper_nouns=True)
+    result = profiler._profile_tokens([
+        ("the", "word"), ("brett", "proper_noun"), ("zebra", "word"),
+    ])
+
+    assert result.proper_noun_tokens == 1
+    assert result.proper_noun_words == ["brett"]
+    assert "brett" not in result.off_list_words
+    assert result.off_list_words == ["zebra"]
+    assert result.total_tokens == 3
+
+
+def test_ignore_words_takes_priority_over_exclude_categories(small_reference):
+    # A word matching both ignore_words and an auto-detected category
+    # should be reported as ignored, not proper_noun/numeral.
+    profiler = LexicalProfiler(
+        small_reference, ignore_words=["brett"], exclude_proper_nouns=True,
+    )
+    result = profiler._profile_tokens([("brett", "proper_noun")])
+
+    assert result.ignored_words == ["brett"]
+    assert result.proper_noun_words == []
+
+
 # ---------- pos_tagged matching ----------
 
 @pytest.fixture
@@ -163,11 +234,14 @@ def pos_tagged_reference(tmp_path):
 
 def test_profile_tokens_matches_by_lemma_and_pos(pos_tagged_reference):
     profiler = LexicalProfiler(pos_tagged_reference)
-    # Bypass _tokenize (which needs a real spaCy pipeline to actually tag
-    # POS) and feed already-tagged tokens directly, to test the matching
-    # logic on its own: record_n (band 1) and record_v (band 2) must be
-    # scored as distinct words, not merged.
-    result = profiler._profile_tokens(["record_n", "record_v", "record_n", "apple_n"])
+    # Bypass _classify (which needs a real spaCy pipeline to actually tag
+    # POS) and feed already-tagged (word, category) pairs directly, to
+    # test the matching logic on its own: record_n (band 1) and record_v
+    # (band 2) must be scored as distinct words, not merged.
+    result = profiler._profile_tokens([
+        ("record_n", "word"), ("record_v", "word"),
+        ("record_n", "word"), ("apple_n", "word"),
+    ])
 
     assert result.band_token_counts[1] == 2  # record_n x2
     assert result.band_token_counts[2] == 1  # record_v x1
