@@ -115,6 +115,26 @@ def test_from_word_list_empty_file_raises(tmp_path):
         Reference.from_word_list(str(path))
 
 
+# ---------- Reference.from_builtin ----------
+
+def test_from_builtin_loads_avl():
+    ref = Reference.from_builtin("avl", band_size=100)
+    assert "study" in ref  # a high-frequency AVL word
+    assert ref.rank_of("study") == 1
+    assert len(ref) > 2000
+    assert "avl" in ref.source_description.lower()
+
+
+def test_from_builtin_is_case_insensitive():
+    ref = Reference.from_builtin("AVL", band_size=100)
+    assert "study" in ref
+
+
+def test_from_builtin_unknown_name_raises():
+    with pytest.raises(ValueError):
+        Reference.from_builtin("not-a-real-list")
+
+
 # ---------- save / load ----------
 
 def test_save_and_load_round_trip(tmp_path):

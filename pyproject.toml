@@ -42,6 +42,9 @@ lexical-profiler = "lexical_profiler.cli:main"
 [tool.setuptools.packages.find]
 include = ["lexical_profiler*"]
 
+[tool.setuptools.package-data]
+lexical_profiler = ["data/*.txt"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

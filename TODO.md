@@ -1,6 +1,7 @@
 1. ~~Add in cumulative coverage % in addition to summary by level~~ (done)
-2. Port in reference lists (maybe AVL?)
-3. Word families? not just lemmas? 
+2. ~~Port in reference lists (maybe AVL?)~~ (done -- AVL bundled as `--reference-builtin avl`)
+3. add other frequency lists that are lemma based, including the NGSL, NAWL, COCA, BNC freq, CELEX? 
+4. Word families? not just lemmas? 
 4. get help testing out features
 5. ~~Add bands for 98% coverage to the app~~ (done)
 6. Add good baseline frequency data to use as a default for English

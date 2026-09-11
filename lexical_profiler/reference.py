@@ -25,6 +25,21 @@ from dataclasses import dataclass, field
 
 from .tokenizer import tokenize
 
+_DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+
+# Reference word lists bundled with the package, keyed by the name passed to
+# Reference.from_builtin(...). Add an entry here (plus the corresponding file
+# under lexical_profiler/data/) to make a new published list available.
+BUILTIN_WORD_LISTS: dict[str, dict[str, str]] = {
+    "avl": {
+        "file": "avl_academic.txt",
+        "description": (
+            "Academic Vocabulary List (AVL) -- Gardner & Davies (2013), "
+            "~2,900 core academic word lemmas from the COCA Academic sub-corpus"
+        ),
+    },
+}
+
 
 def require_txt_extension(path: str) -> None:
     """Raise ValueError unless `path` has a .txt extension.
@@ -467,6 +482,35 @@ class Reference:
                                 f"{'with' if use_freq else 'without'} frequencies, "
                                 f"language={language})",
         )
+
+    @classmethod
+    def from_builtin(cls, name: str, band_size: int = 1000, lowercase: bool = True,
+                      language: str = "en", fine_band_size: int | None = None,
+                      fine_grained_until: int | None = None) -> Reference:
+        """Load one of the reference word lists bundled with this package
+        (see BUILTIN_WORD_LISTS for the available names, e.g. "avl" for the
+        Academic Vocabulary List).
+
+        Args:
+            name: key into BUILTIN_WORD_LISTS, e.g. "avl". Case-insensitive.
+            band_size, lowercase, language, fine_band_size, fine_grained_until:
+                same as from_word_list().
+        """
+        key = name.strip().lower()
+        entry = BUILTIN_WORD_LISTS.get(key)
+        if entry is None:
+            available = ", ".join(sorted(BUILTIN_WORD_LISTS))
+            raise ValueError(
+                f"'{name}' isn't a built-in word list this package ships with. "
+                f"Available options: {available}."
+            )
+        path = os.path.join(_DATA_DIR, entry["file"])
+        reference = cls.from_word_list(
+            path, band_size=band_size, lowercase=lowercase, language=language,
+            fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+        )
+        reference.source_description = f"built-in word list '{key}' ({entry['description']})"
+        return reference
 
     # ---------- persistence ----------
 

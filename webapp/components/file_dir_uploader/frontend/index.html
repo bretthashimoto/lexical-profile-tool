@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #31333f;
+  }
+  .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; padding: 2px 0; }
+  button {
+    padding: 0.35rem 0.9rem;
+    border-radius: 6px;
+    border: 1px solid rgba(49, 51, 63, 0.2);
+    background: #ffffff;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+  button:hover { border-color: rgba(49, 51, 63, 0.5); }
+  button:active { background: #f0f2f6; }
+  #status { font-size: 0.8rem; color: #667085; }
+</style>
+</head>
+<body>
+<div class="row">
+  <button id="filesBtn" type="button">Choose files...</button>
+  <button id="dirBtn" type="button">Choose folder...</button>
+  <span id="status"></span>
+</div>
+<input type="file" id="filesInput" multiple accept=".txt" style="display:none">
+<input type="file" id="dirInput" webkitdirectory directory multiple style="display:none">
+<script>
+(function () {
+  "use strict";
+
+  function post(type, extra) {
+    var msg = Object.assign({ isStreamlitMessage: true, type: type }, extra || {});
+    window.parent.postMessage(msg, "*");
+  }
+
+  function setFrameHeight() {
+    post("streamlit:setFrameHeight", { height: document.documentElement.scrollHeight });
+  }
+
+  function setValue(value) {
+    post("streamlit:setComponentValue", { value: value, dataType: "json" });
+  }
+
+  var statusEl = document.getElementById("status");
+  var filesBtn = document.getElementById("filesBtn");
+  var dirBtn = document.getElementById("dirBtn");
+
+  function setStatus(text) {
+    statusEl.textContent = text;
+    setFrameHeight();
+  }
+
+  function readFiles(fileList) {
+    var all = Array.prototype.slice.call(fileList);
+    var txtFiles = all.filter(function (f) {
+      return f.name.toLowerCase().endsWith(".txt");
+    });
+    if (txtFiles.length === 0) {
+      setStatus(
+        all.length === 0
+          ? "No files selected."
+          : "No .txt files found in the selection (" + all.length + " other file(s) skipped)."
+      );
+      return;
+    }
+    setStatus("Reading " + txtFiles.length + " file(s)...");
+    Promise.all(
+      txtFiles.map(function (f) {
+        return f.text().then(function (text) {
+          return { name: f.webkitRelativePath || f.name, text: text };
+        });
+      })
+    ).then(function (results) {
+      setStatus(results.length + " file(s) loaded.");
+      setValue(results);
+    });
+  }
+
+  filesBtn.addEventListener("click", function () {
+    document.getElementById("filesInput").click();
+  });
+  dirBtn.addEventListener("click", function () {
+    document.getElementById("dirInput").click();
+  });
+  document.getElementById("filesInput").addEventListener("change", function (e) {
+    readFiles(e.target.files);
+  });
+  document.getElementById("dirInput").addEventListener("change", function (e) {
+    readFiles(e.target.files);
+  });
+
+  window.addEventListener("message", function (event) {
+    var data = event.data;
+    if (!data || data.type !== "streamlit:render") return;
+    var args = data.args || {};
+    if (args.label) filesBtn.textContent = args.label;
+    setFrameHeight();
+  });
+
+  post("streamlit:componentReady", { apiVersion: 1 });
+  setFrameHeight();
+})();
+</script>
+</body>
+</html>

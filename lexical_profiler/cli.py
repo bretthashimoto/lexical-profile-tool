@@ -13,6 +13,12 @@ Examples:
         --reference-wordlist wordlists/coca_20k.txt \\
         --target essay.txt --band-size 1000
 
+    # Or use a word list bundled with this package (e.g. the Academic
+    # Vocabulary List) instead of supplying your own file
+    python -m lexical_profiler \\
+        --reference-builtin avl \\
+        --target essay.txt
+
     # Profile every file in a directory, export CSV + JSON
     python -m lexical_profiler \\
         --reference-corpus corpus/ \\
@@ -28,7 +34,7 @@ import sys
 
 from . import report as report_mod
 from .profiler import LexicalProfiler
-from .reference import Reference, open_text_file, require_txt_extension
+from .reference import BUILTIN_WORD_LISTS, Reference, open_text_file, require_txt_extension
 
 
 def _collect_ignore_words(args) -> list:
@@ -86,6 +92,14 @@ def main(argv=None):
                             help="File or directory of texts to derive reference frequencies from.")
     ref_group.add_argument("--reference-wordlist", metavar="PATH",
                             help="Existing word list file (one word per line, or 'word,freq').")
+    ref_group.add_argument(
+        "--reference-builtin", metavar="NAME", choices=sorted(BUILTIN_WORD_LISTS),
+        help="Use a word list bundled with this package instead of your own file. "
+             "Available: " + ", ".join(
+                 f"{name} ({entry['description']})"
+                 for name, entry in sorted(BUILTIN_WORD_LISTS.items())
+             ),
+    )
     ref_group.add_argument("--reference-saved", metavar="PATH",
                             help="A previously saved reference (from --save-reference) to reuse.")
 
@@ -192,6 +206,11 @@ def main(argv=None):
                 min_length=args.min_length, language=args.language,
                 fine_band_size=args.fine_band_size, fine_grained_until=args.fine_until,
                 encoding=args.encoding,
+            )
+        elif args.reference_builtin:
+            reference = Reference.from_builtin(
+                args.reference_builtin, band_size=args.band_size, language=args.language,
+                fine_band_size=args.fine_band_size, fine_grained_until=args.fine_until,
             )
         else:
             reference = Reference.from_word_list(

@@ -15,15 +15,19 @@ words (K1), the next 1000 (K2), and so on, with everything else marked
 > **Trying this out as a tester?** See [TESTING.md](TESTING.md) for a
 > guided setup + things to try, and how to send back feedback.
 
-## Two ways to build the reference
+## Three ways to build the reference
 
 1. **From a corpus of texts**: frequencies are counted directly from
    whatever documents you supply.
 2. **From an existing word list**: a plain word list (one per line,
    ordered by frequency) or a `word,frequency` / `word<TAB>frequency`
    file, such as a published list (GSL, NGSL, COCA-derived lists, etc).
+3. **From a word list bundled with this package**: currently the
+   [Academic Vocabulary List (AVL)](http://www.academicwords.info)
+   (Gardner & Davies, 2013), so you don't have to track down or format
+   the file yourself -- just pass `--reference-builtin avl`.
 
-Both produce the same kind of `Reference` object, so the rest of the
+All three produce the same kind of `Reference` object, so the rest of the
 pipeline (profiling, reporting) doesn't care which one you used.
 
 ## Install
@@ -266,6 +270,14 @@ reference = Reference.from_word_list(
 )
 ```
 
+Or, to profile against an *academic* vocabulary rather than a general
+frequency list, use the bundled Academic Vocabulary List (AVL) directly by
+name -- no file to download or format:
+
+```python
+reference = Reference.from_builtin("avl", band_size=500)
+```
+
 ### Step 8: The same tutorial, from the command line
 
 Everything above has a command-line equivalent, handy for scripting or
@@ -290,6 +302,11 @@ python -m lexical_profiler \
 python -m lexical_profiler \
     --reference-wordlist examples/wordlists/frequency_wordlist.txt \
     --band-size 5 \
+    --target examples/targets/student_essay_2.txt
+
+# Or profile against the bundled Academic Vocabulary List (AVL)
+python -m lexical_profiler \
+    --reference-builtin avl --band-size 500 \
     --target examples/targets/student_essay_2.txt
 ```
 
@@ -373,6 +390,16 @@ per-session, on-demand usage pattern.
 | `fine_band_size` / `fine_grained_until` | `None` | Same as above. |
 | `encoding` | `"utf-8"` | Same as above. |
 
+### `Reference.from_builtin(...)`
+
+| Parameter | Default | What it does |
+|---|---|---|
+| `name` | *required* | Key of a word list bundled with this package (case-insensitive). Currently `"avl"` (Academic Vocabulary List). |
+| `band_size` | `1000` | Same as above. |
+| `lowercase` | `True` | Same as above. |
+| `language` | `"en"` | Same as above. |
+| `fine_band_size` / `fine_grained_until` | `None` | Same as above. |
+
 ### `Reference.save(path)` / `Reference.load(path)`
 
 Save/reload a built reference as JSON, so you don't have to re-tokenize a
@@ -438,6 +465,7 @@ isn't writable, instead of a raw OS traceback.
 |---|---|
 | `--reference-corpus PATH` | Build the reference from a `.txt` file or folder. |
 | `--reference-wordlist PATH` | Build the reference from a word list file instead. |
+| `--reference-builtin NAME` | Build the reference from a word list bundled with this package (currently `avl`). |
 | `--reference-saved PATH` | Reload a reference previously written with `--save-reference`. |
 | `--save-reference PATH` | Save the built reference to this path for reuse. |
 | `--target FILE [FILE ...]` | One or more target files to profile. |
@@ -528,11 +556,12 @@ For each text, `ProfileResult` reports, per frequency band and overall:
 lexical_profiler/
   __init__.py      # public API
   tokenizer.py      # spaCy tokenizer/lemmatizer, multi-language support
-  reference.py       # Reference: build from corpus or word list, save/load
+  reference.py       # Reference: build from corpus, word list, or bundled list; save/load
   profiler.py         # LexicalProfiler + ProfileResult (the core analysis)
   report.py             # CSV/JSON export helpers
   cli.py                  # command-line interface
   __main__.py                # `python -m lexical_profiler` entry point
+  data/                          # word lists bundled with the package (e.g. AVL)
 webapp/
   app.py                            # Streamlit web UI (`streamlit run webapp/app.py`)
   requirements.txt                       # deploy-time deps (Streamlit Community Cloud picks this up)

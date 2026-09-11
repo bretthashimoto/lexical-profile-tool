@@ -29,6 +29,7 @@ sys.path.insert(0, str(REPO_ROOT))
 import altair as alt  # noqa: E402
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
+from components.file_dir_uploader import file_dir_uploader  # noqa: E402
 
 from lexical_profiler import (  # noqa: E402
     LexicalProfiler,
@@ -37,6 +38,7 @@ from lexical_profiler import (  # noqa: E402
     lemmatizer_available,
 )
 from lexical_profiler import report as report_mod  # noqa: E402
+from lexical_profiler.reference import BUILTIN_WORD_LISTS  # noqa: E402
 
 st.set_page_config(page_title="LEAH — Lexical Analysis", page_icon="📖", layout="wide")
 
@@ -155,33 +157,16 @@ def read_uploaded_texts(files) -> list[tuple[str, str]]:
     return out
 
 
-def pick_local_directory() -> str | None:
-    """Opens a native OS folder-picker dialog on the machine running this
-    Streamlit process, via tkinter. Only meaningful when Streamlit is
-    running locally (`streamlit run webapp/app.py` on your own computer) --
-    a hosted, headless deployment (like Streamlit Community Cloud) has no
-    display to open a dialog on and no access to your computer's
-    filesystem anyway, so this raises there; callers should catch that and
-    treat the picker as unavailable."""
-    import tkinter as tk
-    from tkinter import filedialog
-
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
-    try:
-        path = filedialog.askdirectory(title="Select a folder of .txt files")
-    finally:
-        root.destroy()
-    return path or None
-
-
 for key in ("reference", "profiler", "results", "target_texts"):
     st.session_state.setdefault(key, None)
 
 
-def load_example_data():
-    ref = Reference.from_corpus(str(REPO_ROOT / "examples" / "corpus"), band_size=20)
+def load_example_data(*, band_size=20, language="en", lemmatize=False,
+                       fine_band_size=None, fine_grained_until=None):
+    ref = Reference.from_corpus(
+        str(REPO_ROOT / "examples" / "corpus"), band_size=band_size, language=language,
+        lemmatize=lemmatize, fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+    )
     ignore_list_text = (REPO_ROOT / "examples" / "ignore_list.txt").read_text(encoding="utf-8")
     profiler = LexicalProfiler(ref, ignore_words=read_word_list(ignore_list_text))
     targets_dir = REPO_ROOT / "examples" / "targets"
@@ -200,14 +185,13 @@ def load_example_data():
 with st.sidebar:
     st.header("Quick start")
     st.caption("Try the tool with the bundled sample corpus + essays before uploading your own.")
-    if st.button("Load bundled example data"):
-        load_example_data()
-        st.rerun()
+    load_example_clicked = st.button("Load bundled example data")
 
     st.divider()
-    st.header("1. Build a reference")
+    st.header("1. Build a reference or select a word list")
     source_kind = st.radio(
-        "Reference source", ["Corpus of texts", "Word list", "Saved reference (.json)"],
+        "Reference source",
+        ["Built-in word list", "Corpus of texts", "Word list", "Saved reference (.json)"],
     )
 
     band_size = int(st.number_input("Band size", min_value=1, value=1000, step=100))
@@ -248,50 +232,44 @@ with st.sidebar:
             fine_band_size = int(st.number_input("Fine band size", min_value=1, value=100))
             fine_grained_until = int(st.number_input("...through rank", min_value=1, value=2000))
 
-    if source_kind == "Corpus of texts":
-        corpus_tab_files, corpus_tab_folder = st.tabs(["Upload files", "Local folder"])
-        with corpus_tab_files:
-            corpus_files = st.file_uploader(
-                "Upload .txt corpus files", type=["txt", "zip"], accept_multiple_files=True,
-                help="Select multiple files, drag a whole folder onto this box, or zip a "
-                     "directory of .txt files and upload the .zip.",
-            )
-        with corpus_tab_folder:
-            st.caption(
-                "Only works when running `streamlit run webapp/app.py` on your own "
-                "machine -- a hosted deployment (like Streamlit Community Cloud) has no "
-                "access to your computer's filesystem."
-            )
-            if st.button("Browse for a folder…"):
-                try:
-                    chosen_dir = pick_local_directory()
-                except Exception:
-                    chosen_dir = None
-                    st.error(
-                        "Couldn't open a folder picker here -- this only works when "
-                        "running the app locally, not on a hosted deployment."
-                    )
-                if chosen_dir:
-                    st.session_state.corpus_dir = chosen_dir
-            corpus_dir = st.session_state.get("corpus_dir")
-            if corpus_dir:
-                st.success(f"Selected folder: {corpus_dir}")
+    if load_example_clicked:
+        load_example_data(
+            band_size=band_size, language=language, lemmatize=lemmatize,
+            fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+        )
+        st.rerun()
 
-        has_source = bool(corpus_files) or bool(corpus_dir)
-        if st.button("Build reference from corpus", disabled=not has_source):
+    if source_kind == "Built-in word list":
+        st.caption("Profile against a published reference list bundled with this app -- "
+                   "no file to find or format.")
+        builtin_names = sorted(BUILTIN_WORD_LISTS)
+        builtin_choice = st.selectbox(
+            "List", builtin_names,
+            format_func=lambda name: f"{name.upper()} — {BUILTIN_WORD_LISTS[name]['description']}",
+        )
+        if st.button("Use this word list"):
             try:
-                if corpus_dir:
-                    st.session_state.reference = Reference.from_corpus(
-                        corpus_dir, band_size=band_size, language=language,
-                        lemmatize=lemmatize, fine_band_size=fine_band_size,
-                        fine_grained_until=fine_grained_until,
-                    )
-                else:
-                    texts = [text for _, text in read_uploaded_texts(corpus_files)]
-                    st.session_state.reference = Reference.from_corpus(
-                        texts, band_size=band_size, language=language, lemmatize=lemmatize,
-                        fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
-                    )
+                st.session_state.reference = Reference.from_builtin(
+                    builtin_choice, band_size=band_size, language=language,
+                    fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+                )
+                st.session_state.results = None
+            except ValueError as e:
+                st.error(str(e))
+
+    elif source_kind == "Corpus of texts":
+        st.caption("Upload individual .txt files, or use \"Choose folder...\" to pick a "
+                   "whole directory from your computer.")
+        corpus_picked = file_dir_uploader(label="Choose files...", key="corpus_picker")
+        corpus_texts = [item["text"] for item in corpus_picked] if corpus_picked else []
+        if corpus_picked:
+            st.caption(f"{len(corpus_picked)} file(s) ready.")
+        if st.button("Build reference from corpus", disabled=not corpus_texts):
+            try:
+                st.session_state.reference = Reference.from_corpus(
+                    corpus_texts, band_size=band_size, language=language, lemmatize=lemmatize,
+                    fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+                )
                 st.session_state.results = None
             except ValueError as e:
                 st.error(str(e))
@@ -349,7 +327,6 @@ with st.sidebar:
     st.caption("Proper nouns, names, or made-up words to exclude from band/off-list scoring.")
     ignore_file = st.file_uploader("Upload ignore list (.txt)", type=["txt"], key="ignore_file")
     ignore_text = st.text_area("...or paste words, one per line", key="ignore_text")
-    min_length = int(st.number_input("Minimum token length", min_value=1, value=1))
 
 # ---------------------------------------------------------------------------
 # Main area
@@ -425,7 +402,7 @@ if st.button("Profile", type="primary", disabled=not target_texts):
     if ignore_text:
         ignore_words += read_word_list(ignore_text)
 
-    profiler = LexicalProfiler(reference, min_length=min_length, ignore_words=ignore_words)
+    profiler = LexicalProfiler(reference, ignore_words=ignore_words)
     st.session_state.profiler = profiler
     st.session_state.results = profiler.profile_texts(target_texts)
     st.session_state.target_texts = target_texts

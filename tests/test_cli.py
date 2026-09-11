@@ -54,6 +54,15 @@ def test_cli_requires_exactly_one_reference_source(wordlist_path, target_path):
         ])
 
 
+def test_cli_reference_builtin(target_path, capsys):
+    main([
+        "--reference-builtin", "avl",
+        "--target", target_path,
+    ])
+    captured = capsys.readouterr()
+    assert "essay.txt" in captured.out
+
+
 def test_cli_rejects_non_txt_target(wordlist_path, tmp_path):
     bad_target = tmp_path / "essay.pdf"
     bad_target.write_text("the cat mouse", encoding="utf-8")
