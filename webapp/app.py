@@ -36,7 +36,7 @@ from lexical_profiler import (  # noqa: E402
 )
 from lexical_profiler import report as report_mod  # noqa: E402
 
-st.set_page_config(page_title="Lexical Profiler", page_icon="📖", layout="wide")
+st.set_page_config(page_title="LEAH — Lexical Analysis", page_icon="📖", layout="wide")
 
 # ---------------------------------------------------------------------------
 # Color scheme: a validated sequential blue ramp for frequency bands
@@ -233,10 +233,33 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Main area
 # ---------------------------------------------------------------------------
-st.title("📖 Lexical Profiler")
-st.caption(
-    "Measure how much of a text's vocabulary falls into common vs. rare/unknown "
-    "frequency bands, relative to a reference you build from your own corpus."
+st.markdown(
+    f"""
+    <div style="
+        background:linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
+        border-radius:12px;
+        padding:1.6rem 2rem;
+        margin-bottom:1.2rem;
+    ">
+        <div style="display:flex; align-items:baseline; gap:0.6rem;">
+            <span style="font-size:2.6rem; line-height:1;">📖</span>
+            <span style="
+                font-size:2.6rem;
+                font-weight:800;
+                letter-spacing:0.04em;
+                color:#ffffff;
+            ">LEAH</span>
+        </div>
+        <div style="color:#e8f0fc; font-size:1.05rem; margin-top:0.25rem;">
+            <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
+        </div>
+        <div style="color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; max-width:48rem;">
+            Measure how much of a text's vocabulary falls into common vs. rare/unknown
+            frequency bands, relative to a reference you build from your own corpus.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 if not st.session_state.reference:
