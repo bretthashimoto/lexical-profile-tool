@@ -52,7 +52,7 @@ IGNORED_COLOR = "#898781"
 # curve (tall/light on the left, falling into a long low/dark tail on the
 # right) -- a nod to word-frequency distributions, and to the "L" in LEAH.
 _LOGO_SVG_SRC = """
-<svg width="56" height="56" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="84" height="84" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="leahClipLeft">
       <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"/>
@@ -65,17 +65,17 @@ _LOGO_SVG_SRC = """
   <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z" fill="#eef4fc" stroke="#184f95" stroke-width="3"/>
   <g clip-path="url(#leahClipLeft)">
     <rect x="120" y="195" width="20" height="190" fill="#86b6ef"/>
-    <rect x="147" y="318" width="20" height="67" fill="#6da7ec"/>
-    <rect x="174" y="348" width="20" height="37" fill="#5598e7"/>
-    <rect x="201" y="361" width="20" height="24" fill="#3987e5"/>
-    <rect x="228" y="368" width="20" height="17" fill="#2a78d6"/>
+    <rect x="147" y="330" width="20" height="55" fill="#6da7ec"/>
+    <rect x="174" y="359" width="20" height="26" fill="#5598e7"/>
+    <rect x="201" y="369" width="20" height="16" fill="#3987e5"/>
+    <rect x="228" y="375" width="20" height="10" fill="#2a78d6"/>
   </g>
   <g clip-path="url(#leahClipRight)">
-    <rect x="261" y="372" width="20" height="13" fill="#256abf"/>
-    <rect x="288" y="375" width="20" height="10" fill="#1c5cab"/>
-    <rect x="315" y="377" width="20" height="8" fill="#184f95"/>
-    <rect x="342" y="378" width="20" height="7" fill="#104281"/>
-    <rect x="369" y="379" width="20" height="6" fill="#0d366b"/>
+    <rect x="261" y="377" width="20" height="8" fill="#256abf"/>
+    <rect x="288" y="379" width="20" height="6" fill="#1c5cab"/>
+    <rect x="315" y="380" width="20" height="5" fill="#184f95"/>
+    <rect x="342" y="381" width="20" height="4" fill="#104281"/>
+    <rect x="369" y="382" width="20" height="3" fill="#0d366b"/>
   </g>
   <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z" fill="none" stroke="#184f95" stroke-width="3"/>
   <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z" fill="none" stroke="#184f95" stroke-width="3"/>
