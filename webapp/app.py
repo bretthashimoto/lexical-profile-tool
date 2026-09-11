@@ -12,8 +12,10 @@ Run with:
 
 from __future__ import annotations
 
+import io
 import sys
 import tempfile
+import zipfile
 from html import escape
 from pathlib import Path
 
@@ -132,6 +134,27 @@ def read_word_list(raw: str) -> list[str]:
     return [w.strip() for w in raw.splitlines() if w.strip() and not w.strip().startswith("#")]
 
 
+def read_uploaded_texts(files) -> list[tuple[str, str]]:
+    """Expand uploaded files into (name, text) pairs, decoding plain .txt
+    files directly and unzipping any .zip archive into its .txt members --
+    lets a user upload a whole directory of texts as one zipped file, since
+    browsers don't offer a folder picker for a plain file input."""
+    out = []
+    for f in files:
+        if f.name.lower().endswith(".zip"):
+            with zipfile.ZipFile(io.BytesIO(f.getvalue())) as zf:
+                for member in zf.namelist():
+                    name = Path(member).name
+                    if member.endswith("/") or not name.lower().endswith(".txt"):
+                        continue
+                    if name.startswith(".") or member.startswith("__MACOSX/"):
+                        continue
+                    out.append((member, zf.read(member).decode("utf-8", errors="ignore")))
+        else:
+            out.append((f.name, f.getvalue().decode("utf-8", errors="ignore")))
+    return out
+
+
 for key in ("reference", "profiler", "results", "target_texts"):
     st.session_state.setdefault(key, None)
 
@@ -206,10 +229,12 @@ with st.sidebar:
 
     if source_kind == "Corpus of texts":
         corpus_files = st.file_uploader(
-            "Upload .txt corpus files", type=["txt"], accept_multiple_files=True,
+            "Upload .txt corpus files", type=["txt", "zip"], accept_multiple_files=True,
+            help="Select multiple files, drag a whole folder onto this box, or zip a "
+                 "directory of .txt files and upload the .zip.",
         )
         if st.button("Build reference from corpus", disabled=not corpus_files):
-            texts = [f.getvalue().decode("utf-8", errors="ignore") for f in corpus_files]
+            texts = [text for _, text in read_uploaded_texts(corpus_files)]
             try:
                 st.session_state.reference = Reference.from_corpus(
                     texts, band_size=band_size, language=language, lemmatize=lemmatize,
@@ -327,11 +352,14 @@ tab_upload, tab_paste = st.tabs(["Upload files", "Paste text"])
 target_texts: dict[str, str] = {}
 with tab_upload:
     target_files = st.file_uploader(
-        "Upload .txt files to profile", type=["txt"], accept_multiple_files=True, key="targets",
+        "Upload .txt files to profile", type=["txt", "zip"], accept_multiple_files=True,
+        key="targets",
+        help="Select multiple files, drag a whole folder onto this box, or zip a "
+             "directory of .txt files and upload the .zip.",
     )
     if target_files:
-        for f in target_files:
-            target_texts[f.name] = f.getvalue().decode("utf-8", errors="ignore")
+        for name, text in read_uploaded_texts(target_files):
+            target_texts[name] = text
 with tab_paste:
     pasted_name = st.text_input("Name for this text", value="pasted_text")
     pasted = st.text_area("Paste text to profile", height=200)
