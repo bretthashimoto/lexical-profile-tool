@@ -280,9 +280,7 @@ with st.sidebar:
     )
     language_name = LANGUAGE_DISPLAY_NAMES[language]
     if lemmatize:
-        if lemmatizer_available(language):
-            st.caption(f"✅ Lemmatizer model available for {language_name}.")
-        else:
+        if not lemmatizer_available(language):
             st.caption(
                 f"⚠️ No lemmatizer model installed for {language_name} yet — words will use "
                 f"their surface form instead of a lemma until one is installed."
