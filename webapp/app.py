@@ -51,7 +51,7 @@ IGNORED_COLOR = "#898781"
 # The LEAH mark: an open book whose pages are bars decaying like a Zipf
 # curve (tall/light on the left, falling into a long low/dark tail on the
 # right) -- a nod to word-frequency distributions, and to the "L" in LEAH.
-LOGO_SVG = """
+_LOGO_SVG_SRC = """
 <svg width="56" height="56" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="leahClipLeft">
@@ -82,6 +82,10 @@ LOGO_SVG = """
   <line x1="256" y1="146" x2="256" y2="410" stroke="#0d366b" stroke-width="5" stroke-linecap="round"/>
 </svg>
 """
+# Collapsed to one line: a raw HTML block spanning multiple lines with a
+# blank line in it gets split by Streamlit's markdown parser, so anything
+# after the split renders as literal text instead of HTML.
+LOGO_SVG = " ".join(line.strip() for line in _LOGO_SVG_SRC.strip().splitlines())
 
 
 def band_color(band: int, num_bands: int) -> str:
@@ -268,36 +272,39 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Main area
 # ---------------------------------------------------------------------------
-st.markdown(
-    f"""
-    <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap">
-    <div style="
-        background:linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
-        border-radius:12px;
-        padding:1.6rem 2rem;
-        margin-bottom:1.2rem;
-    ">
-        <div style="display:flex; align-items:center; gap:0.7rem;">
-            {LOGO_SVG}
-            <span style="
-                font-family:'Space Grotesk', sans-serif;
-                font-weight:700;
-                font-style:italic;
-                font-size:2.8rem;
-                letter-spacing:0.02em;
-                color:#ffffff;
-            ">LEAH</span>
-        </div>
-        <div style="color:#e8f0fc; font-size:1.05rem; margin-top:0.25rem;">
-            <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
-        </div>
-        <div style="color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; max-width:48rem;">
-            Measure how much of a text's vocabulary falls into common vs. rare/unknown
-            frequency bands, relative to a reference you build from your own corpus.
-        </div>
+_banner_html = f"""
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap">
+<div style="
+    background:linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
+    border-radius:12px;
+    padding:1.6rem 2rem;
+    margin-bottom:1.2rem;
+">
+    <div style="display:flex; align-items:center; gap:0.7rem;">
+        {LOGO_SVG}
+        <span style="
+            font-family:'Space Grotesk', sans-serif;
+            font-weight:700;
+            font-style:italic;
+            font-size:2.8rem;
+            letter-spacing:0.02em;
+            color:#ffffff;
+        ">LEAH</span>
     </div>
-    """,
+    <div style="color:#e8f0fc; font-size:1.05rem; margin-top:0.25rem;">
+        <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
+    </div>
+    <div style="color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; max-width:48rem;">
+        Measure how much of a text's vocabulary falls into common vs. rare/unknown
+        frequency bands, relative to a reference you build from your own corpus.
+    </div>
+</div>
+"""
+# Collapsed to one line for the same reason as LOGO_SVG above: a blank line
+# inside a raw HTML block passed to st.markdown breaks it into two blocks,
+# and everything after the break renders as literal text instead of HTML.
+st.markdown(
+    " ".join(line.strip() for line in _banner_html.strip().splitlines()),
     unsafe_allow_html=True,
 )
 
