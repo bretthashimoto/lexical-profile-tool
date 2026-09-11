@@ -260,14 +260,18 @@ _banner_html = f"""
 <link rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap">
 <style>
+/* Streamlit's own header bar (Share/star/edit/GitHub/menu icons) is
+   transparent and sits above everything (z-index far higher than any app
+   content can reach) -- rather than reserving separate space below it, our
+   banner now starts at the very top of the viewport and shows through
+   behind those icons, so they visually sit inside the banner instead of on
+   their own strip above it. */
+header[data-testid="stHeader"] {{
+    background: transparent;
+}}
 div.st-key-header_banner {{
     position: fixed !important;
-    /* Starts right below Streamlit's own header bar (its Deploy/menu
-       button, ~60px tall) rather than at the very top of the viewport --
-       at top:0 it would render underneath that bar instead of below it,
-       since the native header's z-index is far higher than any app
-       content can reach. */
-    top: 60px;
+    top: 0;
     left: 0;
     z-index: 1000;
     width: 100vw !important;
@@ -283,7 +287,7 @@ div.st-key-header_banner {{
    content on screen too instead of letting it scroll normally. */
 div.st-key-top_menu [role="tablist"] {{
     position: sticky;
-    top: 251px;
+    top: 191px;
     z-index: 999;
     background: var(--background-color, #ffffff);
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -303,7 +307,7 @@ div.st-key-top_menu [role="tablist"] {{
 <div style="color:#e8f0fc; font-size:1.05rem; margin-top:0.25rem;">
     <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
 </div>
-<div style="color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; max-width:48rem;">
+<div style="color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem;">
     Profile the frequency of words in users' texts by determining the
     commonness/rarity of words, relative to a reference you build from your
     own corpus or common word lists in English, Spanish, French, and German.
@@ -321,7 +325,7 @@ with st.container(key="header_banner"):
 # pinned full-bleed regardless of scroll), so a spacer of roughly its own
 # rendered height is needed here or the fixed banner would just overlap
 # the top of whatever comes next.
-st.markdown('<div style="height:165px"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:105px"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Top-level tabs
@@ -928,6 +932,16 @@ with tab_cite:
         language=None,
     )
 
+    st.subheader("Built-in word lists")
+    st.caption(
+        "Cite whichever list you actually used as your reference -- not this tool -- "
+        "since the tool just reads a published list, it didn't create one."
+    )
+    for _name in sorted(BUILTIN_WORD_LISTS):
+        _entry = BUILTIN_WORD_LISTS[_name]
+        st.markdown(f"**{_entry['label']}**")
+        st.code(_entry["citation"], language=None)
+
 with tab_about:
     st.header("About lexical frequency profiling")
     st.markdown(
@@ -1064,6 +1078,10 @@ with tab_about_me:
     st.markdown(
         """
 **Brett Hashimoto**
+
+Associate Professor of Linguistics at Brigham Young University. My research
+uses corpus linguistics for applied linguistics purposes, including language
+teaching and learning and legal linguistics.
 
 - [BYU faculty page](https://hum.byu.edu/directory/brett-hashimoto)
 - [Personal research website](https://sites.google.com/site/brettjameshashimoto/)
