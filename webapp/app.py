@@ -527,6 +527,7 @@ if st.session_state.results:
     })
     chart_df["pct_tokens_label"] = chart_df["pct_tokens"].map(lambda v: f"{v:.2f}%")
     chart_df["cumulative_pct_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.2f}%")
+    chart_df["cumulative_pct_data_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.0f}%")
     bar = alt.Chart(chart_df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
         x=alt.X("band:N", sort=None, title="Frequency band", axis=alt.Axis(labelAngle=-45)),
         y=alt.Y("pct_tokens:Q", title="% of tokens", scale=alt.Scale(domain=[0, 100])),
@@ -546,7 +547,7 @@ if st.session_state.results:
     ).encode(
         x=alt.X("band:N", sort=None),
         y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
-        text=alt.Text("cumulative_pct_label:N"),
+        text=alt.Text("cumulative_pct_data_label:N"),
     )
     threshold_df = pd.DataFrame({"y": [95, 98]})
     thresholds = alt.Chart(threshold_df).mark_rule(strokeDash=[4, 4], color="#898781").encode(
@@ -576,7 +577,7 @@ if st.session_state.results:
 
     st.subheader("Highlighted text")
     num_bands = reference.num_bands
-    legend_bands = sorted({1, max(1, num_bands // 2), num_bands})
+    legend_bands = bands
     legend_swatches = "".join(
         span_html(
             result.band_label(b), band_color(b, num_bands),
