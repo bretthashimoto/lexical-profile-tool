@@ -48,6 +48,41 @@ BAND_RAMP = ["#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6",
 OFF_LIST_COLOR = "#d03b3b"
 IGNORED_COLOR = "#898781"
 
+# The LEAH mark: an open book whose pages are bars decaying like a Zipf
+# curve (tall/light on the left, falling into a long low/dark tail on the
+# right) -- a nod to word-frequency distributions, and to the "L" in LEAH.
+LOGO_SVG = """
+<svg width="56" height="56" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="leahClipLeft">
+      <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"/>
+    </clipPath>
+    <clipPath id="leahClipRight">
+      <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z"/>
+    </clipPath>
+  </defs>
+  <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z" fill="#eef4fc" stroke="#184f95" stroke-width="3"/>
+  <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z" fill="#eef4fc" stroke="#184f95" stroke-width="3"/>
+  <g clip-path="url(#leahClipLeft)">
+    <rect x="120" y="195" width="20" height="190" fill="#86b6ef"/>
+    <rect x="147" y="318" width="20" height="67" fill="#6da7ec"/>
+    <rect x="174" y="348" width="20" height="37" fill="#5598e7"/>
+    <rect x="201" y="361" width="20" height="24" fill="#3987e5"/>
+    <rect x="228" y="368" width="20" height="17" fill="#2a78d6"/>
+  </g>
+  <g clip-path="url(#leahClipRight)">
+    <rect x="261" y="372" width="20" height="13" fill="#256abf"/>
+    <rect x="288" y="375" width="20" height="10" fill="#1c5cab"/>
+    <rect x="315" y="377" width="20" height="8" fill="#184f95"/>
+    <rect x="342" y="378" width="20" height="7" fill="#104281"/>
+    <rect x="369" y="379" width="20" height="6" fill="#0d366b"/>
+  </g>
+  <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z" fill="none" stroke="#184f95" stroke-width="3"/>
+  <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z" fill="none" stroke="#184f95" stroke-width="3"/>
+  <line x1="256" y1="146" x2="256" y2="410" stroke="#0d366b" stroke-width="5" stroke-linecap="round"/>
+</svg>
+"""
+
 
 def band_color(band: int, num_bands: int) -> str:
     if num_bands <= 1:
@@ -236,26 +271,28 @@ with st.sidebar:
 st.markdown(
     f"""
     <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500&display=swap">
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap">
     <div style="
         background:linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
         border-radius:12px;
         padding:1.6rem 2rem;
         margin-bottom:1.2rem;
     ">
-        <div style="display:flex; align-items:baseline; gap:0.6rem;">
-            <span style="font-size:2.6rem; line-height:1;">📖</span>
+        <div style="display:flex; align-items:center; gap:0.7rem;">
+            {LOGO_SVG}
             <span style="
-                font-family:'Instrument Serif', serif;
-                font-size:3.4rem;
+                font-family:'Space Grotesk', sans-serif;
+                font-weight:700;
+                font-style:italic;
+                font-size:2.8rem;
                 letter-spacing:0.02em;
                 color:#ffffff;
             ">LEAH</span>
         </div>
-        <div style="font-family:'Instrument Sans', sans-serif; color:#e8f0fc; font-size:1.05rem; margin-top:0.25rem;">
+        <div style="color:#e8f0fc; font-size:1.05rem; margin-top:0.25rem;">
             <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
         </div>
-        <div style="font-family:'Instrument Sans', sans-serif; color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; max-width:48rem;">
+        <div style="color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; max-width:48rem;">
             Measure how much of a text's vocabulary falls into common vs. rare/unknown
             frequency bands, relative to a reference you build from your own corpus.
         </div>
