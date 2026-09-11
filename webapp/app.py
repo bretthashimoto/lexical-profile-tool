@@ -43,6 +43,14 @@ from lexical_profiler.tokenizer import LANGUAGE_DISPLAY_NAMES, POS_DISPLAY_NAMES
 
 st.set_page_config(page_title="LEAH — Lexical Analysis", page_icon="📖", layout="wide")
 
+# Languages this deployment actually pre-installs a trained spaCy pipeline
+# for (see the model wheels in webapp/requirements.txt) -- the dropdown is
+# limited to these so lemmatization always works out of the box, rather
+# than offering languages that would silently fall back to surface forms
+# until a model is downloaded. Other languages still work fine via the
+# library directly (Reference.from_corpus(..., language="ja"), etc.).
+WEBAPP_LANGUAGES = ["en", "es", "fr", "de"]
+
 # ---------------------------------------------------------------------------
 # Color scheme: a validated sequential blue ramp for frequency bands
 # (light = most frequent/easiest, dark = least frequent), plus fixed status
@@ -254,11 +262,12 @@ with st.sidebar:
     )
 
     band_size = int(st.number_input("Band size", min_value=1, value=1000, step=100))
-    language_codes = sorted(LANGUAGE_DISPLAY_NAMES, key=lambda code: LANGUAGE_DISPLAY_NAMES[code])
+    language_codes = sorted(WEBAPP_LANGUAGES, key=lambda code: LANGUAGE_DISPLAY_NAMES[code])
     language = st.selectbox(
         "Language", language_codes, index=language_codes.index("en"),
         format_func=lambda code: LANGUAGE_DISPLAY_NAMES[code],
-        help="Used for tokenization and (optional) lemmatization.",
+        help="Used for tokenization and lemmatization (models for these languages are "
+             "pre-installed).",
     )
     lemmatize = st.checkbox(
         "Lemmatize", value=True,
