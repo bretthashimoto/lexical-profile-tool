@@ -39,7 +39,7 @@ from lexical_profiler import (  # noqa: E402
 )
 from lexical_profiler import report as report_mod  # noqa: E402
 from lexical_profiler.reference import BUILTIN_WORD_LISTS  # noqa: E402
-from lexical_profiler.tokenizer import LANGUAGE_DISPLAY_NAMES  # noqa: E402
+from lexical_profiler.tokenizer import LANGUAGE_DISPLAY_NAMES, POS_DISPLAY_NAMES  # noqa: E402
 
 st.set_page_config(page_title="LEAH — Lexical Analysis", page_icon="📖", layout="wide")
 
@@ -119,6 +119,29 @@ def span_html(inner: str, bg: str, fg: str = "#fff", title: str = "",
         f"margin-right:{margin_right};"
     )
     return f'<span style="{style}"{title_attr}>{inner}</span>'
+
+
+def word_table(words: list[str], word_counts, pos_tagged: bool) -> pd.DataFrame:
+    """Build a {word, count} table for a list of off-list/ignored words --
+    or, for a POS-tagged reference, split each "lemma_code" entry into
+    separate "word" and "part of speech" columns instead of showing the
+    raw composite string, since that's the one place such a word is
+    displayed directly to the user."""
+    if not pos_tagged:
+        return pd.DataFrame({
+            "word": words,
+            "count": [word_counts[w] for w in words],
+        })
+    lemmas, parts_of_speech = [], []
+    for w in words:
+        lemma, _, code = w.rpartition("_")
+        lemmas.append(lemma if lemma else w)
+        parts_of_speech.append(POS_DISPLAY_NAMES.get(code, code))
+    return pd.DataFrame({
+        "word": lemmas,
+        "part of speech": parts_of_speech,
+        "count": [word_counts[w] for w in words],
+    })
 
 
 def export_to_bytes(export_fn, results, suffix) -> bytes:
@@ -289,11 +312,18 @@ with st.sidebar:
                 "label", BUILTIN_WORD_LISTS[name]["description"],
             ),
         )
+        if BUILTIN_WORD_LISTS[builtin_choice].get("pos_tagged"):
+            st.caption(
+                "This list matches by lemma *and* part of speech (e.g. \"record\" as a "
+                "verb is scored separately from \"record\" as a noun), so lemmatization "
+                "is always applied for it, regardless of the checkbox above."
+            )
         if st.button("Use this word list"):
             try:
                 st.session_state.reference = Reference.from_builtin(
                     builtin_choice, band_size=band_size, language=language,
                     fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+                    lemmatize=lemmatize,
                 )
                 st.session_state.results = None
             except ValueError as e:
@@ -307,6 +337,12 @@ with st.sidebar:
         corpus_texts = cached_decode(corpus_picked, "_corpus_picked")
         if corpus_picked:
             st.caption(f"{len(corpus_picked)} file(s) ready.")
+        pos_tag_corpus = st.checkbox(
+            "Tag part of speech", value=False,
+            help="Match target text by lemma *and* part of speech (e.g. \"record\" as a "
+                 "verb scored separately from \"record\" as a noun), instead of by lemma "
+                 "alone. Always uses lemmatization, regardless of the checkbox above.",
+        )
 
         # Auto-build (no button): rebuild whenever the selected files or any
         # of the build parameters change, tracked via a signature so we
@@ -314,6 +350,7 @@ with st.sidebar:
         build_sig = (
             tuple(sorted(corpus_texts)),
             band_size, language, lemmatize, fine_band_size, fine_grained_until,
+            pos_tag_corpus,
         )
         if corpus_texts and st.session_state.get("_corpus_build_sig") != build_sig:
             try:
@@ -322,6 +359,7 @@ with st.sidebar:
                         corpus_texts, band_size=band_size, language=language,
                         lemmatize=lemmatize, fine_band_size=fine_band_size,
                         fine_grained_until=fine_grained_until, progress_callback=cb,
+                        pos_tagged=pos_tag_corpus,
                     )
                 )
                 st.session_state.results = None
@@ -362,7 +400,7 @@ with st.sidebar:
                                 "Plain word list": False}[freq_choice]
         wordlist_sig = (
             wordlist_file.file_id if wordlist_file else None,
-            band_size, language, has_frequencies, fine_band_size, fine_grained_until,
+            band_size, language, has_frequencies, fine_band_size, fine_grained_until, lemmatize,
         )
         if wordlist_file and st.session_state.get("_wordlist_sig") != wordlist_sig:
             with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp:
@@ -373,6 +411,7 @@ with st.sidebar:
                     tmp_path, band_size=band_size, language=language,
                     has_frequencies=has_frequencies,
                     fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+                    lemmatize=lemmatize,
                 )
                 st.session_state.results = None
                 st.session_state._wordlist_sig = wordlist_sig
@@ -638,18 +677,12 @@ if st.session_state.results:
             f"Off-list words ({result.off_list_types} unique, {result.off_list_tokens} tokens)"
         )
         with st.expander(off_label):
-            off_df = pd.DataFrame({
-                "word": result.off_list_words,
-                "count": [result.word_counts[w] for w in result.off_list_words],
-            })
+            off_df = word_table(result.off_list_words, result.word_counts, reference.pos_tagged)
             st.dataframe(off_df, width="stretch", hide_index=True)
     if result.ignored_words:
         with col_ign:
             with st.expander(f"Ignored words ({result.ignored_types} unique)"):
-                ign_df = pd.DataFrame({
-                    "word": result.ignored_words,
-                    "count": [result.word_counts[w] for w in result.ignored_words],
-                })
+                ign_df = word_table(result.ignored_words, result.word_counts, reference.pos_tagged)
                 st.dataframe(ign_df, width="stretch", hide_index=True)
 
     st.subheader("Export")

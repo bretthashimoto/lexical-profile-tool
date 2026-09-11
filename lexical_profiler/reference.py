@@ -30,7 +30,7 @@ _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 # Reference word lists bundled with the package, keyed by the name passed to
 # Reference.from_builtin(...). Add an entry here (plus the corresponding file
 # under lexical_profiler/data/) to make a new published list available.
-BUILTIN_WORD_LISTS: dict[str, dict[str, str]] = {
+BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     "avl": {
         "file": "avl_academic.txt",
         "label": "Academic Vocabulary List (AVL): Gardner & Davies (2013)",
@@ -58,10 +58,13 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str]] = {
     },
     "coca": {
         "file": "coca.txt",
-        "label": "COCA top 100,000 words (Davies, 2008-)",
+        "label": "COCA top 100,000 lemma+POS entries (Davies, 2008-)",
+        "pos_tagged": True,
         "description": (
             "Corpus of Contemporary American English (COCA) -- Davies (2008-), "
-            "top 100,000 wordforms by frequency, part-of-speech variants merged"
+            "top 100,000 lemma+part-of-speech entries; matches by lemma and part "
+            "of speech, so e.g. 'record' as a verb is scored separately from "
+            "'record' as a noun"
         ),
     },
 }
@@ -215,7 +218,7 @@ def _read_source_item(kind: str, value: str, catch_open_errors: bool,
 
 def _tokenize_corpus(
     source: str | Iterable[str] | dict[str, str], *, language: str, lowercase: bool,
-    lemmatize: bool, min_length: int, encoding: str,
+    lemmatize: bool, min_length: int, encoding: str, pos_tagged: bool,
     progress_callback: Callable[[int, int, str], None] | None,
     counter: Counter,
 ) -> int:
@@ -243,7 +246,7 @@ def _tokenize_corpus(
             continue
         n_docs += 1
         tokens = tokenize(text, language=language, lowercase=lowercase,
-                           lemmatize=lemmatize, min_length=min_length)
+                           lemmatize=lemmatize, min_length=min_length, pos_tag=pos_tagged)
         counter.update(tokens)
         if progress_callback:
             suffix = f" {name}" if name else ""
@@ -332,6 +335,14 @@ class Reference:
             plain word lists with no frequency data, e.g. rank-only lists)
         lowercase: whether reference words are lowercased
         lemmatize: whether reference words were lemmatized when built
+        pos_tagged: whether known words are keyed as "lemma_CODE" (e.g.
+            "record_V" vs "record_N") rather than plain lemmas -- see
+            tokenizer.POS_DISPLAY_NAMES for what each code means. When
+            True, target texts are tokenized the same way before lookup,
+            so e.g. "record" used as a verb only matches a "record_V"
+            entry, not "record_N". Implies lemmatize=True (POS-aware
+            matching against a lemma-keyed reference is meaningless
+            against inflected surface forms).
     """
 
     word_to_rank: dict[str, int]
@@ -344,6 +355,7 @@ class Reference:
     counts: dict[str, int] = field(default_factory=dict)
     lowercase: bool = True
     lemmatize: bool = False
+    pos_tagged: bool = False
     language: str = "en"
     source_description: str = ""
 
@@ -357,6 +369,7 @@ class Reference:
                      fine_grained_until: int | None = None,
                      encoding: str = "utf-8",
                      progress_callback: Callable[[int, int, str], None] | None = None,
+                     pos_tagged: bool = False,
                      ) -> Reference:
         """Build a reference frequency model from a corpus of texts.
 
@@ -393,13 +406,24 @@ class Reference:
                 starts, once per document as it's tokenized/lemmatized, and
                 once more before frequency bands are computed. Useful for
                 driving a progress bar for a large corpus.
+            pos_tagged: key known words as "lemma_CODE" (e.g. "record_V")
+                instead of a plain lemma, so profiling only matches a word
+                used with the same part of speech (see tokenizer.
+                POS_DISPLAY_NAMES for what each code means). Requires the
+                same trained spaCy pipeline as lemmatize; silently produces
+                a plain (non-POS) reference otherwise. Forces lemmatize=True
+                regardless of what was passed, since POS-aware matching
+                against surface forms is meaningless.
         """
+        if pos_tagged:
+            lemmatize = True
+
         # Tokenize every document in the corpus and tally raw word counts.
         # Frequency (not the source text's order) is what determines rank.
         counter: Counter = Counter()
         n_docs = _tokenize_corpus(
             source, language=language, lowercase=lowercase, lemmatize=lemmatize,
-            min_length=min_length, encoding=encoding,
+            min_length=min_length, encoding=encoding, pos_tagged=pos_tagged,
             progress_callback=progress_callback, counter=counter,
         )
 
@@ -440,6 +464,7 @@ class Reference:
             counts=dict(counter),
             lowercase=lowercase,
             lemmatize=lemmatize,
+            pos_tagged=pos_tagged,
             language=language,
             source_description=f"corpus ({n_docs} document(s), {len(ranked)} unique words, "
                                 f"language={language})",
@@ -451,7 +476,8 @@ class Reference:
                         delimiter: str | None = None, language: str = "en",
                         fine_band_size: int | None = None,
                         fine_grained_until: int | None = None,
-                        encoding: str = "utf-8") -> Reference:
+                        encoding: str = "utf-8", lemmatize: bool = False,
+                        pos_tagged: bool = False) -> Reference:
         """Load an existing frequency/rank word list from a file.
 
         Accepted formats (auto-detected unless overridden):
@@ -490,7 +516,24 @@ class Reference:
             encoding: text encoding used to read the word list file
                 (default 'utf-8'). Bytes that don't decode are dropped
                 rather than raising (errors='ignore').
+            lemmatize: whether *target* texts profiled against this
+                reference should be lemmatized before comparison (the
+                word list's own entries are used as-is either way --
+                this doesn't re-process them). Requires a trained spaCy
+                pipeline for `language`; falls back to surface forms
+                silently otherwise.
+            pos_tagged: whether this word list's entries are already in
+                "lemma_CODE" form (e.g. "record_V") rather than plain
+                lemmas -- see tokenizer.POS_DISPLAY_NAMES for what each
+                code means. This doesn't change how the file is read; it
+                only tells profiling to tokenize target text the same way
+                before matching. Forces lemmatize=True regardless of what
+                was passed, since POS-aware matching against surface forms
+                is meaningless.
         """
+        if pos_tagged:
+            lemmatize = True
+
         # Read the file into memory first (word lists are small enough that
         # this is fine) so we can peek at the first row to auto-detect the
         # format before deciding how to parse the rest.
@@ -580,7 +623,8 @@ class Reference:
             fine_grained_until=fine_grained_until,
             counts=counts if use_freq else {},
             lowercase=lowercase,
-            lemmatize=False,
+            lemmatize=lemmatize,
+            pos_tagged=pos_tagged,
             language=language,
             source_description=f"word list '{os.path.basename(path)}' "
                                 f"({len(ordered_words)} words, "
@@ -618,6 +662,7 @@ class Reference:
         n_docs = _tokenize_corpus(
             source, language=self.language, lowercase=self.lowercase,
             lemmatize=self.lemmatize, min_length=1, encoding=encoding,
+            pos_tagged=self.pos_tagged,
             progress_callback=progress_callback, counter=counter,
         )
 
@@ -646,6 +691,7 @@ class Reference:
             counts=dict(counter),
             lowercase=self.lowercase,
             lemmatize=self.lemmatize,
+            pos_tagged=self.pos_tagged,
             language=self.language,
             source_description=f"{self.source_description} + {n_docs} more document(s) "
                                 f"added ({len(ranked)} unique words total)",
@@ -654,15 +700,19 @@ class Reference:
     @classmethod
     def from_builtin(cls, name: str, band_size: int = 1000, lowercase: bool = True,
                       language: str = "en", fine_band_size: int | None = None,
-                      fine_grained_until: int | None = None) -> Reference:
+                      fine_grained_until: int | None = None,
+                      lemmatize: bool = False) -> Reference:
         """Load one of the reference word lists bundled with this package
         (see BUILTIN_WORD_LISTS for the available names, e.g. "avl" for the
         Academic Vocabulary List).
 
         Args:
             name: key into BUILTIN_WORD_LISTS, e.g. "avl". Case-insensitive.
-            band_size, lowercase, language, fine_band_size, fine_grained_until:
-                same as from_word_list().
+            band_size, lowercase, language, fine_band_size, fine_grained_until,
+            lemmatize: same as from_word_list().
+
+        Whether the list is POS-tagged (e.g. "coca") is a property of the
+        file itself, read from BUILTIN_WORD_LISTS -- not a caller choice.
         """
         key = name.strip().lower()
         entry = BUILTIN_WORD_LISTS.get(key)
@@ -676,6 +726,7 @@ class Reference:
         reference = cls.from_word_list(
             path, band_size=band_size, lowercase=lowercase, language=language,
             fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+            lemmatize=lemmatize, pos_tagged=entry.get("pos_tagged", False),
         )
         reference.source_description = f"built-in word list '{key}' ({entry['description']})"
         return reference
@@ -694,6 +745,7 @@ class Reference:
             "counts": self.counts,
             "lowercase": self.lowercase,
             "lemmatize": self.lemmatize,
+            "pos_tagged": self.pos_tagged,
             "language": self.language,
             "source_description": self.source_description,
         }
@@ -788,6 +840,7 @@ class Reference:
                 counts=payload.get("counts", {}),
                 lowercase=payload.get("lowercase", True),
                 lemmatize=payload.get("lemmatize", False),
+                pos_tagged=payload.get("pos_tagged", False),
                 language=payload.get("language", "en"),
                 source_description=payload.get("source_description", ""),
             )

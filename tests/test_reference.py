@@ -135,6 +135,38 @@ def test_from_builtin_unknown_name_raises():
         Reference.from_builtin("not-a-real-list")
 
 
+def test_from_builtin_coca_is_pos_tagged():
+    ref = Reference.from_builtin("coca", band_size=1000)
+    assert ref.pos_tagged is True
+    assert ref.lemmatize is True  # pos_tagged forces this on
+    # "record" as a noun and as a verb are distinct entries, not merged.
+    assert "record_n" in ref
+    assert "record_v" in ref
+    assert ref.rank_of("record_n") != ref.rank_of("record_v")
+
+
+# ---------- pos_tagged ----------
+
+def test_from_word_list_pos_tagged_forces_lemmatize(tmp_path):
+    path = tmp_path / "pos_words.txt"
+    path.write_text("record_n\t100\nrecord_v\t50\n", encoding="utf-8")
+    ref = Reference.from_word_list(str(path), band_size=1000, pos_tagged=True)
+    assert ref.pos_tagged is True
+    assert ref.lemmatize is True
+    assert ref.rank_of("record_n") == 1
+    assert ref.rank_of("record_v") == 2
+
+
+def test_from_corpus_pos_tagged_forces_lemmatize():
+    # No trained pipeline is installed, so pos_tag silently degrades to
+    # plain tokens -- this just checks the flag/forcing behavior, not
+    # real tagging (see test_tokenizer.py for that, gated on a real
+    # pipeline being available).
+    ref = Reference.from_corpus(["cat dog"], band_size=1000, pos_tagged=True)
+    assert ref.pos_tagged is True
+    assert ref.lemmatize is True
+
+
 # ---------- save / load ----------
 
 def test_save_and_load_round_trip(tmp_path):
@@ -147,6 +179,16 @@ def test_save_and_load_round_trip(tmp_path):
     assert loaded.band_of("cat") == ref.band_of("cat")
     assert loaded.num_bands == ref.num_bands
     assert loaded.language == ref.language
+
+
+def test_save_and_load_round_trip_preserves_pos_tagged(tmp_path):
+    ref = Reference.from_corpus(["cat dog"], band_size=1000, pos_tagged=True)
+    save_path = tmp_path / "reference.json"
+    ref.save(str(save_path))
+
+    loaded = Reference.load(str(save_path))
+    assert loaded.pos_tagged is True
+    assert loaded.lemmatize == ref.lemmatize
 
 
 def test_load_missing_file_raises():

@@ -2,6 +2,7 @@ import pytest
 
 from lexical_profiler.profiler import LexicalProfiler
 from lexical_profiler.reference import Reference
+from lexical_profiler.tokenizer import lemmatizer_available
 
 
 @pytest.fixture
@@ -146,3 +147,57 @@ def test_highlight_off_list_word(small_reference):
     by_text = {t.text: t for t in tokens}
     assert by_text["zebra"].status == "off_list"
     assert by_text["zebra"].band is None
+
+
+# ---------- pos_tagged matching ----------
+
+@pytest.fixture
+def pos_tagged_reference(tmp_path):
+    # band_size=1 so record_n and record_v land in different bands,
+    # independent of any real spaCy tagging -- exercises the pure
+    # dict-matching side of pos_tagged, not tokenization itself.
+    path = tmp_path / "pos_words.txt"
+    path.write_text("record_n\t100\nrecord_v\t50\nbanana_n\t10\n", encoding="utf-8")
+    return Reference.from_word_list(str(path), band_size=1, pos_tagged=True)
+
+
+def test_profile_tokens_matches_by_lemma_and_pos(pos_tagged_reference):
+    profiler = LexicalProfiler(pos_tagged_reference)
+    # Bypass _tokenize (which needs a real spaCy pipeline to actually tag
+    # POS) and feed already-tagged tokens directly, to test the matching
+    # logic on its own: record_n (band 1) and record_v (band 2) must be
+    # scored as distinct words, not merged.
+    result = profiler._profile_tokens(["record_n", "record_v", "record_n", "apple_n"])
+
+    assert result.band_token_counts[1] == 2  # record_n x2
+    assert result.band_token_counts[2] == 1  # record_v x1
+    assert result.off_list_words == ["apple_n"]
+    assert result.word_counts["record_n"] == 2
+    assert result.word_counts["record_v"] == 1
+
+
+@pytest.mark.skipif(
+    not lemmatizer_available("en"),
+    reason="requires a trained en pipeline (python -m spacy download en_core_web_sm)",
+)
+def test_profile_text_end_to_end_distinguishes_noun_and_verb(pos_tagged_reference):
+    profiler = LexicalProfiler(pos_tagged_reference)
+    result = profiler.profile_text("He records the record.")
+    assert result.word_counts["record_v"] == 1  # "records" (verb)
+    assert result.word_counts["record_n"] == 1  # "record" (noun)
+
+
+@pytest.mark.skipif(
+    not lemmatizer_available("en"),
+    reason="requires a trained en pipeline (python -m spacy download en_core_web_sm)",
+)
+def test_highlight_end_to_end_distinguishes_noun_and_verb(pos_tagged_reference):
+    profiler = LexicalProfiler(pos_tagged_reference)
+    text = "He records the record."
+    tokens = profiler.highlight(text)
+    assert "".join(t.text + t.whitespace for t in tokens) == text
+
+    by_text = {t.text: t for t in tokens}
+    assert by_text["records"].status == "band"
+    assert by_text["record"].status == "band"
+    assert by_text["records"].band != by_text["record"].band

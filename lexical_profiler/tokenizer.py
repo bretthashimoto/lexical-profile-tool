@@ -92,6 +92,60 @@ LANGUAGE_DISPLAY_NAMES: dict[str, str] = {
     "uk": "Ukrainian",
 }
 
+# Maps spaCy's fine-grained Penn-Treebank-style tag (`token.tag_`) to a
+# small set of single-letter part-of-speech codes, used to build composite
+# "lemma_code" keys for POS-aware reference matching (see Reference.
+# pos_tagged). Deliberately coarser than tag_ and NOT the same as spaCy's
+# own Universal POS (`token.pos_`): tag_ tags verb *forms* morphologically
+# (e.g. "is"/"was"/"be" are all VBZ/VBD/VB regardless of auxiliary-vs-main-
+# verb use), which is what lets "be"/"have"/"do" land under the plain verb
+# code "v" here -- routing through the coarser Universal POS instead would
+# tag those as AUX, which silently fails to match a "v"-tagged reference
+# entry. Anything not in this map (numbers, punctuation, symbols, proper
+# nouns, foreign words, ...) has no POS code and can't take part in
+# POS-aware matching. Codes are lowercase because word-list files get
+# lowercased on load (Reference.from_word_list's `lowercase` default) --
+# using uppercase codes here would silently mismatch target-text tokens
+# (which always get a lowercase code) against a loaded reference file.
+_POS_TAG_MAP: dict[str, str] = {
+    "NN": "n", "NNS": "n", "NNP": "n", "NNPS": "n",
+    "VB": "v", "VBD": "v", "VBG": "v", "VBN": "v", "VBP": "v", "VBZ": "v",
+    "MD": "m",
+    "JJ": "j", "JJR": "j", "JJS": "j",
+    "RB": "r", "RBR": "r", "RBS": "r", "RP": "r",
+    "IN": "i",
+    "PRP": "p", "PRP$": "p",
+    "DT": "d", "PDT": "d",
+    "CC": "c",
+    "UH": "u",
+    "WP": "w", "WP$": "w", "WDT": "w", "WRB": "w",
+}
+
+# Human-readable names for _POS_TAG_MAP's codes, for UIs that want a
+# friendly label instead of a bare code (e.g. the web app's off-list word
+# tables). Same pattern as LANGUAGE_DISPLAY_NAMES.
+POS_DISPLAY_NAMES: dict[str, str] = {
+    "n": "noun",
+    "v": "verb",
+    "m": "modal verb",
+    "j": "adjective",
+    "r": "adverb",
+    "i": "preposition",
+    "p": "pronoun",
+    "d": "determiner",
+    "c": "conjunction",
+    "u": "interjection",
+    "w": "wh-word",
+}
+
+
+def pos_suffix(token) -> str | None:
+    """The POS code for one spaCy token (see _POS_TAG_MAP), or None if its
+    tag isn't one we classify -- such a token can't take part in POS-aware
+    matching (it just won't get a "_CODE" suffix)."""
+    return _POS_TAG_MAP.get(token.tag_)
+
+
 # Fallback used when nothing better is known/installed for a language and
 # no blank tokenizer works either. spaCy's multi-language tokenizer is a
 # reasonable generic default.
@@ -210,7 +264,7 @@ def pipeline_for(language: str = "en") -> tuple[Language, bool]:
 
 
 def tokenize(text: str, language: str = "en", lowercase: bool = True,
-             lemmatize: bool = False, min_length: int = 1):
+             lemmatize: bool = False, min_length: int = 1, pos_tag: bool = False):
     """Tokenize raw text into a list of word tokens using spaCy.
 
     Args:
@@ -228,6 +282,12 @@ def tokenize(text: str, language: str = "en", lowercase: bool = True,
             with `download_model(language)`).
         min_length: drop tokens shorter than this (after lowercasing,
             before lemmatizing). Set to 1 to keep single-letter words.
+        pos_tag: append a part-of-speech code to each token, e.g.
+            "record_V" vs "record_N" (see `_POS_TAG_MAP`), for matching
+            against a POS-tagged Reference. Requires the same trained
+            pipeline as `lemmatize`; silently produces plain tokens
+            otherwise. A token whose tag isn't one of the codes we
+            classify keeps no suffix at all.
 
     Returns:
         List of token strings, in order of appearance.
@@ -235,10 +295,11 @@ def tokenize(text: str, language: str = "en", lowercase: bool = True,
     nlp, has_lemmatizer = _cached_pipeline(language)
     doc = nlp(text)
 
-    # Only actually lemmatize if the caller asked for it *and* we have a
-    # pipeline capable of it; otherwise silently fall back to surface
+    # Only actually lemmatize/tag if the caller asked for it *and* we have
+    # a pipeline capable of it; otherwise silently fall back to surface
     # forms rather than erroring (see module docstring for rationale).
     do_lemmatize = lemmatize and has_lemmatizer
+    do_pos_tag = pos_tag and has_lemmatizer
 
     tokens = []
     for tok in doc:
@@ -254,6 +315,11 @@ def tokenize(text: str, language: str = "en", lowercase: bool = True,
         word = tok.lemma_ if (do_lemmatize and tok.lemma_) else surface
         if lowercase:
             word = word.lower()
-        if len(word) >= min_length:
-            tokens.append(word)
+        if len(word) < min_length:
+            continue
+        if do_pos_tag:
+            code = pos_suffix(tok)
+            if code:
+                word = f"{word}_{code}"
+        tokens.append(word)
     return tokens

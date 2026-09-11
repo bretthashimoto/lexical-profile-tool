@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from .reference import Reference, open_text_file, require_txt_extension
-from .tokenizer import pipeline_for, tokenize
+from .tokenizer import pipeline_for, pos_suffix, tokenize
 
 
 @dataclass
@@ -182,6 +182,7 @@ class LexicalProfiler:
             lowercase=self.reference.lowercase,
             lemmatize=self.reference.lemmatize,
             min_length=self.min_length,
+            pos_tag=self.reference.pos_tagged,
         )
 
     def profile_text(self, text: str) -> ProfileResult:
@@ -204,6 +205,7 @@ class LexicalProfiler:
         """
         nlp, has_lemmatizer = pipeline_for(self.reference.language)
         do_lemmatize = self.reference.lemmatize and has_lemmatizer
+        do_pos_tag = self.reference.pos_tagged and has_lemmatizer
 
         tokens: list[HighlightedToken] = []
         for tok in nlp(text):
@@ -221,6 +223,10 @@ class LexicalProfiler:
             if len(word) < self.min_length:
                 tokens.append(HighlightedToken(surface, tok.whitespace_, "skipped"))
                 continue
+            if do_pos_tag:
+                code = pos_suffix(tok)
+                if code:
+                    word = f"{word}_{code}"
 
             if word in self.ignore_words:
                 tokens.append(HighlightedToken(surface, tok.whitespace_, "ignored"))
