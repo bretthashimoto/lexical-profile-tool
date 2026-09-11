@@ -231,10 +231,12 @@ for key in ("reference", "profiler", "results", "target_texts"):
 
 
 def load_example_data(*, band_size=20, language="en", lemmatize=True,
-                       fine_band_size=None, fine_grained_until=None):
+                       fine_band_size=None, fine_grained_until=None,
+                       coarse_band_size=None, coarse_grained_from=None):
     ref = Reference.from_corpus(
         str(REPO_ROOT / "examples" / "corpus"), band_size=band_size, language=language,
         lemmatize=lemmatize, fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+        coarse_band_size=coarse_band_size, coarse_grained_from=coarse_grained_from,
     )
     ignore_list_text = (REPO_ROOT / "examples" / "ignore_list.txt").read_text(encoding="utf-8")
     profiler = LexicalProfiler(ref, ignore_words=read_word_list(ignore_list_text))
@@ -306,10 +308,25 @@ with st.sidebar:
             fine_band_size = int(st.number_input("Fine band size", min_value=1, value=100))
             fine_grained_until = int(st.number_input("...through rank", min_value=1, value=2000))
 
+    with st.expander("Coarse-grained bands (optional)"):
+        st.caption(
+            "Collapse the long tail of least-frequent words into a handful of wide bands "
+            "instead of many normal-size ones."
+        )
+        use_coarse = st.checkbox("Use wider bands for the least frequent words")
+        coarse_band_size = None
+        coarse_grained_from = None
+        if use_coarse:
+            coarse_band_size = int(st.number_input("Coarse band size", min_value=1, value=10000))
+            coarse_grained_from = int(
+                st.number_input("...from rank", min_value=1, value=50000)
+            )
+
     if load_example_clicked:
         load_example_data(
             band_size=band_size, language=language, lemmatize=lemmatize,
             fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+            coarse_band_size=coarse_band_size, coarse_grained_from=coarse_grained_from,
         )
         st.rerun()
 
@@ -334,6 +351,7 @@ with st.sidebar:
                 st.session_state.reference = Reference.from_builtin(
                     builtin_choice, band_size=band_size, language=language,
                     fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+                    coarse_band_size=coarse_band_size, coarse_grained_from=coarse_grained_from,
                     lemmatize=lemmatize,
                 )
                 st.session_state.results = None
@@ -361,7 +379,7 @@ with st.sidebar:
         build_sig = (
             tuple(sorted(corpus_texts)),
             band_size, language, lemmatize, fine_band_size, fine_grained_until,
-            pos_tag_corpus,
+            coarse_band_size, coarse_grained_from, pos_tag_corpus,
         )
         if corpus_texts and st.session_state.get("_corpus_build_sig") != build_sig:
             try:
@@ -370,6 +388,7 @@ with st.sidebar:
                         corpus_texts, band_size=band_size, language=language,
                         lemmatize=lemmatize, fine_band_size=fine_band_size,
                         fine_grained_until=fine_grained_until, progress_callback=cb,
+                        coarse_band_size=coarse_band_size, coarse_grained_from=coarse_grained_from,
                         pos_tagged=pos_tag_corpus,
                     )
                 )
@@ -411,7 +430,8 @@ with st.sidebar:
                                 "Plain word list": False}[freq_choice]
         wordlist_sig = (
             wordlist_file.file_id if wordlist_file else None,
-            band_size, language, has_frequencies, fine_band_size, fine_grained_until, lemmatize,
+            band_size, language, has_frequencies, fine_band_size, fine_grained_until,
+            coarse_band_size, coarse_grained_from, lemmatize,
         )
         if wordlist_file and st.session_state.get("_wordlist_sig") != wordlist_sig:
             with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp:
@@ -422,6 +442,7 @@ with st.sidebar:
                     tmp_path, band_size=band_size, language=language,
                     has_frequencies=has_frequencies,
                     fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+                    coarse_band_size=coarse_band_size, coarse_grained_from=coarse_grained_from,
                     lemmatize=lemmatize,
                 )
                 st.session_state.results = None
@@ -853,11 +874,18 @@ instead, the same way an ignore list works.
 
 **Coverage thresholds.** A common way to use band coverage: how many bands
 does it take to reach 95% or 98% of a text's tokens? These particular
-thresholds come from vocabulary-size research on reading comprehension --
-Laufer & Ravenhorst-Kalovski (2010) argue 95% coverage is a minimal
-threshold and 98% an optimal one for unassisted reading comprehension,
-building on Nation (2006), who estimated the vocabulary size needed to
-reach each threshold for written and spoken English.
+thresholds come from a line of studies linking lexical coverage to reading
+comprehension. Laufer (1989) was the original work establishing a
+threshold, finding that around 95% coverage was needed for a minimal level
+of comprehension (55% on a comprehension test). Hu & Nation (2000) found
+that 98% coverage was needed to reach 71% comprehension across two reading
+tests. Schmitt, Jiang, & Grabe (2011) found that 98% coverage was the
+optimal level for academic texts when 70% comprehension was expected. This
+is where the 95% (minimal) and 98% (optimal) thresholds used in this tool
+come from -- as framed by Laufer & Ravenhorst-Kalovski (2010), building on
+Nation (2006), who estimated the vocabulary size needed to reach each
+threshold for written and spoken English. For a broader look at this
+research, see Laufer (2013).
 
 **Lemmas, word forms, and part of speech.** Some references (like AVL,
 NGSL, NAWL) match by lemma, so "runs", "running", and "ran" all count as
@@ -865,11 +893,22 @@ the word family "run". COCA-based profiling in this tool also tags part of
 speech, so "record" as a verb is scored separately from "record" as a noun.
 
 References:
+- Laufer, B. (1989). What percentage of text-lexis is essential for
+  comprehension? In C. Lauren & M. Nordman (Eds.), *Special language: From
+  humans thinking to thinking machines* (pp. 316-323). Multilingual Matters.
+- Hu, M., & Nation, P. (2000). Unknown vocabulary density and reading
+  comprehension. *Reading in a Foreign Language, 13*(1), 403-430.
+- Nation, P. (2006). How large a vocabulary is needed for reading and
+  listening? *Canadian Modern Language Review, 63*(1), 59-82.
 - Laufer, B., & Ravenhorst-Kalovski, G. C. (2010). Lexical threshold
   revisited: Lexical text coverage, learners' vocabulary size and reading
   comprehension. *Reading in a Foreign Language, 22*(1), 15-30.
-- Nation, P. (2006). How large a vocabulary is needed for reading and
-  listening? *Canadian Modern Language Review, 63*(1), 59-82.
+- Schmitt, N., Jiang, X., & Grabe, W. (2011). The percentage of words known
+  in a text and reading comprehension. *The Modern Language Journal, 95*(1),
+  26-43.
+- Laufer, B. (2013). Lexical thresholds for reading comprehension: What
+  they are and how they can be used for teaching purposes. *TESOL
+  Quarterly, 47*(4), 867-872.
 """
     )
 

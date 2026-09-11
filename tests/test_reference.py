@@ -30,6 +30,52 @@ def test_compute_band_assignment_fine_grained_then_uniform():
     assert band_of_position[2000] == 21
 
 
+def test_compute_band_assignment_coarse_grained_tail():
+    band_of_position, band_ranges = compute_band_assignment(
+        12000, band_size=1000, coarse_band_size=5000, coarse_grained_from=8000,
+    )
+    # Normal 1000-word bands for ranks 1-7999 (the last one truncated to
+    # end right where the coarse section starts), then one 4001-wide
+    # coarse band covering the rest (8000-12000) instead of several more
+    # normal bands -- coarse_band_size is a ceiling, not a fixed width.
+    assert band_ranges[8] == (7001, 7999)
+    assert band_ranges[9] == (8000, 12000)
+    assert len(band_ranges) == 9
+    assert band_of_position[7999] == 9  # rank 8000
+    assert band_of_position[-1] == 9  # rank 12000
+
+
+def test_compute_band_assignment_fine_and_coarse_together():
+    band_of_position, band_ranges = compute_band_assignment(
+        10000, band_size=1000,
+        fine_band_size=100, fine_grained_until=1000,
+        coarse_band_size=5000, coarse_grained_from=8000,
+    )
+    # 10 fine bands (1-1000), normal bands for 1001-7999, one coarse band
+    # for the rest.
+    assert band_ranges[1] == (1, 100)
+    assert band_ranges[10] == (901, 1000)
+    assert band_ranges[11] == (1001, 2000)
+    last_band = max(band_ranges)
+    assert band_ranges[last_band] == (8000, 10000)
+    assert band_of_position[0] == 1
+    assert band_of_position[-1] == last_band
+
+
+def test_compute_band_assignment_coarse_grained_from_overlapping_fine_section():
+    # coarse_grained_from falls inside the fine-grained section -- the
+    # coarse section should start right after the fine one ends instead
+    # of overlapping it.
+    band_of_position, band_ranges = compute_band_assignment(
+        5000, band_size=1000,
+        fine_band_size=500, fine_grained_until=3000,
+        coarse_band_size=777, coarse_grained_from=1000,
+    )
+    assert band_ranges[6] == (2501, 3000)  # last fine-grained band
+    assert band_ranges[7] == (3001, 3777)  # coarse band starts right after
+    assert band_of_position[3000] == 7  # rank 3001 (0-indexed 3000)
+
+
 def test_require_txt_extension_rejects_non_txt():
     with pytest.raises(ValueError):
         require_txt_extension("notes.pdf")
@@ -93,6 +139,24 @@ def test_from_word_list_with_frequencies_sorts_by_freq(tmp_path):
     assert ref.rank_of("be") == 2
     assert ref.rank_of("to") == 3
     assert ref.counts["the"] == 100
+
+
+def test_from_word_list_coarse_grained_tail(tmp_path):
+    path = tmp_path / "words.txt"
+    path.write_text("\n".join(f"word{i}" for i in range(30)), encoding="utf-8")
+    ref = Reference.from_word_list(
+        str(path), band_size=5, coarse_band_size=10, coarse_grained_from=20,
+    )
+    assert ref.coarse_band_size == 10
+    assert ref.coarse_grained_from == 20
+    # Normal 5-word bands for ranks 1-19 (word0-word18), then a 10-word
+    # coarse band for ranks 20-29 (word19-word28), then a final 1-word
+    # band for the last leftover rank (word29).
+    assert ref.band_of("word18") == 4  # rank 19, last of the normal section
+    assert ref.band_of("word19") == 5  # rank 20, first of the coarse section
+    assert ref.band_of("word28") == 5  # rank 29, still in the coarse band
+    assert ref.band_of("word29") == 6  # rank 30, leftover past the coarse band
+    assert ref.num_bands == 6
 
 
 def test_from_word_list_comma_delimiter_autodetected(tmp_path):
@@ -189,6 +253,21 @@ def test_save_and_load_round_trip_preserves_pos_tagged(tmp_path):
     loaded = Reference.load(str(save_path))
     assert loaded.pos_tagged is True
     assert loaded.lemmatize == ref.lemmatize
+
+
+def test_save_and_load_round_trip_preserves_coarse_bands(tmp_path):
+    # 20 words with strictly decreasing frequency, so rank order is stable.
+    text = " ".join(f"word{i}" for i in range(20) for _ in range(20 - i))
+    ref = Reference.from_corpus(
+        [text], band_size=5, coarse_band_size=10, coarse_grained_from=15,
+    )
+    save_path = tmp_path / "reference.json"
+    ref.save(str(save_path))
+
+    loaded = Reference.load(str(save_path))
+    assert loaded.coarse_band_size == 10
+    assert loaded.coarse_grained_from == 15
+    assert loaded.band_ranges == ref.band_ranges
 
 
 def test_load_missing_file_raises():

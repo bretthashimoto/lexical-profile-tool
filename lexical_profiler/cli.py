@@ -123,6 +123,14 @@ def main(argv=None):
                          help="Rank up to which --fine-band-size applies (e.g. 2000 gives "
                               "100-word bands through rank 2000, then normal --band-size "
                               "bands after that).")
+    parser.add_argument("--coarse-band-size", type=int, default=None,
+                         help="Optional wider band width for the least frequent words "
+                              "(e.g. 10000), used from --coarse-from through the end of "
+                              "the list. Must be combined with --coarse-from.")
+    parser.add_argument("--coarse-from", type=int, default=None,
+                         help="Rank from which --coarse-band-size applies (e.g. 50000 "
+                              "collapses the long tail past rank 50000 into a handful "
+                              "of wide bands instead of many normal --band-size ones).")
     parser.add_argument("--language", default="en",
                          help="ISO 639-1 language code (e.g. en, es, de, fr, zh, ja, ru) "
                               "or a full spaCy model name (e.g. en_core_web_sm). "
@@ -208,6 +216,14 @@ def main(argv=None):
             "the missing one, or drop the one you gave to use uniform "
             "--band-size bands throughout."
         )
+    if bool(args.coarse_band_size) != bool(args.coarse_from):
+        parser.error(
+            "Coarse-grained bands need both options set together: "
+            "--coarse-band-size (how wide, e.g. 10000) and --coarse-from "
+            "(from which rank, e.g. 50000); you only gave one of the two. "
+            "Either add the missing one, or drop the one you gave to use "
+            "uniform --band-size bands throughout."
+        )
 
     # Exactly one of these three is set, enforced by the mutually
     # exclusive --reference-* argument group above. Wrapped in try/except
@@ -221,17 +237,20 @@ def main(argv=None):
                 args.reference_corpus, band_size=args.band_size, lemmatize=args.lemmatize,
                 min_length=args.min_length, language=args.language,
                 fine_band_size=args.fine_band_size, fine_grained_until=args.fine_until,
+                coarse_band_size=args.coarse_band_size, coarse_grained_from=args.coarse_from,
                 encoding=args.encoding,
             )
         elif args.reference_builtin:
             reference = Reference.from_builtin(
                 args.reference_builtin, band_size=args.band_size, language=args.language,
                 fine_band_size=args.fine_band_size, fine_grained_until=args.fine_until,
+                coarse_band_size=args.coarse_band_size, coarse_grained_from=args.coarse_from,
             )
         else:
             reference = Reference.from_word_list(
                 args.reference_wordlist, band_size=args.band_size, language=args.language,
                 fine_band_size=args.fine_band_size, fine_grained_until=args.fine_until,
+                coarse_band_size=args.coarse_band_size, coarse_grained_from=args.coarse_from,
                 encoding=args.encoding,
             )
     except ValueError as e:

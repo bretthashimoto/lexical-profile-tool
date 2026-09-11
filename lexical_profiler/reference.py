@@ -277,18 +277,30 @@ def _tokenize_corpus(
 def compute_band_assignment(
     n_words: int, band_size: int,
     fine_band_size: int | None = None, fine_grained_until: int | None = None,
+    coarse_band_size: int | None = None, coarse_grained_from: int | None = None,
 ) -> tuple[list[int], dict[int, tuple[int, int]]]:
     """Assign each of `n_words` ranked words (rank 1 = most frequent) to a band.
 
     Args:
         n_words: total number of ranked words.
-        band_size: width of each band once past the fine-grained section
-            (or for the whole list, if fine-grained args are omitted).
+        band_size: width of each band in the middle section -- the whole
+            list, if neither fine- nor coarse-grained args are given.
         fine_band_size: if given (along with `fine_grained_until`), use
             this narrower band width for ranks 1..fine_grained_until,
             e.g. 100-word bands for the first 2000 words.
         fine_grained_until: the rank up to which `fine_band_size` applies.
-            Bands from there onward use `band_size` as usual.
+            Bands from there onward use `band_size`, until/unless the
+            coarse-grained section (below) takes over.
+        coarse_band_size: if given (along with `coarse_grained_from`), use
+            this wider band width for ranks coarse_grained_from..n_words,
+            e.g. one 50,000-word band covering the entire long tail past
+            rank 50,000, instead of 50 separate 1000-word bands most
+            profiling runs would never even reach.
+        coarse_grained_from: the rank from which `coarse_band_size`
+            applies. If it falls at or before `fine_grained_until` (or
+            wherever the fine-grained section actually ends, if the list
+            is shorter), the coarse section simply starts right after the
+            fine-grained one ends instead -- the two never overlap.
 
     Returns:
         (band_of_position, band_ranges) where:
@@ -317,13 +329,33 @@ def compute_band_assignment(
             band_num += 1
             rank = end + 1
 
-    # Then cover everything else (or the whole list, if no fine-grained
-    # section was requested) using the normal band width. `rank` picks up
-    # right where the fine-grained loop left off, so band numbering is
-    # continuous across the two sections.
+    # Figure out where the coarse-grained section (if requested) should
+    # start -- never before `rank` (the fine-grained section, if any, has
+    # already claimed everything up to there), and never past the end of
+    # the list.
+    coarse_start = None
+    if coarse_band_size and coarse_grained_from:
+        coarse_start = min(max(coarse_grained_from, rank), n_words + 1)
+
+    # Middle section, using the normal band width, covering everything
+    # between the fine-grained section (if any) and the coarse-grained
+    # one (if any) -- or the rest of the list, if neither was requested.
+    middle_end = (coarse_start - 1) if coarse_start else n_words
+    while rank <= middle_end:
+        start = rank
+        end = min(rank + band_size - 1, middle_end)
+        width = end - start + 1
+        band_of_position.extend([band_num] * width)
+        band_ranges[band_num] = (start, end)
+        band_num += 1
+        rank = end + 1
+
+    # Finally, the coarse-grained section (if requested), covering the
+    # long tail from `coarse_grained_from` through the end of the list in
+    # wider bands.
     while rank <= n_words:
         start = rank
-        end = min(rank + band_size - 1, n_words)
+        end = min(rank + coarse_band_size - 1, n_words)
         width = end - start + 1
         band_of_position.extend([band_num] * width)
         band_ranges[band_num] = (start, end)
@@ -343,9 +375,15 @@ class Reference:
         band_ranges: band number -> (start_rank, end_rank), both inclusive.
             Used to label bands as e.g. "1-999", "1000-1999", or, with a
             fine-grained schedule, "1-99", "100-199", ..., "2000-2999".
-        band_size: the (coarse) band width used to build this reference.
+        band_size: the band width used for the middle of the list -- the
+            whole list, if neither fine- nor coarse-grained bands were
+            requested.
         fine_band_size / fine_grained_until: the optional fine-grained
-            banding parameters used to build this reference, if any.
+            (narrower) banding parameters for the most frequent words used
+            to build this reference, if any.
+        coarse_band_size / coarse_grained_from: the optional coarse-grained
+            (wider) banding parameters for the long tail of least frequent
+            words used to build this reference, if any.
         num_bands: total number of bands
         counts: word -> raw frequency count, if known (may be empty for
             plain word lists with no frequency data, e.g. rank-only lists)
@@ -368,6 +406,8 @@ class Reference:
     num_bands: int
     fine_band_size: int | None = None
     fine_grained_until: int | None = None
+    coarse_band_size: int | None = None
+    coarse_grained_from: int | None = None
     counts: dict[str, int] = field(default_factory=dict)
     lowercase: bool = True
     lemmatize: bool = False
@@ -383,6 +423,8 @@ class Reference:
                      min_length: int = 1, language: str = "en",
                      fine_band_size: int | None = None,
                      fine_grained_until: int | None = None,
+                     coarse_band_size: int | None = None,
+                     coarse_grained_from: int | None = None,
                      encoding: str = "utf-8",
                      progress_callback: Callable[[int, int, str], None] | None = None,
                      pos_tagged: bool = False,
@@ -414,6 +456,17 @@ class Reference:
                 of 1000, and `band_size` applies as usual after that.
             fine_grained_until: the rank up to which `fine_band_size`
                 applies. Required if `fine_band_size` is given.
+            coarse_band_size: optionally use a wider band width for the
+                least frequent words (e.g. 10,000), from rank
+                `coarse_grained_from` (e.g. 50,000) through the end of the
+                list, so a long tail most profiling runs never even reach
+                collapses into a handful of bands instead of dozens.
+            coarse_grained_from: the rank from which `coarse_band_size`
+                applies. Required if `coarse_band_size` is given. If it
+                would fall at or before the end of the fine-grained
+                section (or `band_size`'s own range, if there's no
+                fine-grained section), the coarse section simply starts
+                right after that instead of overlapping it.
             encoding: text encoding used to read corpus files (default
                 'utf-8'). Bytes that don't decode are dropped rather than
                 raising (errors='ignore').
@@ -464,6 +517,7 @@ class Reference:
         ranked = [w for w, _ in counter.most_common()]
         band_of_position, band_ranges = compute_band_assignment(
             len(ranked), band_size, fine_band_size, fine_grained_until,
+            coarse_band_size, coarse_grained_from,
         )
         word_to_rank = {w: i + 1 for i, w in enumerate(ranked)}
         word_to_band = {w: band_of_position[i] for i, w in enumerate(ranked)}
@@ -477,6 +531,8 @@ class Reference:
             num_bands=num_bands,
             fine_band_size=fine_band_size,
             fine_grained_until=fine_grained_until,
+            coarse_band_size=coarse_band_size,
+            coarse_grained_from=coarse_grained_from,
             counts=dict(counter),
             lowercase=lowercase,
             lemmatize=lemmatize,
@@ -492,6 +548,8 @@ class Reference:
                         delimiter: str | None = None, language: str = "en",
                         fine_band_size: int | None = None,
                         fine_grained_until: int | None = None,
+                        coarse_band_size: int | None = None,
+                        coarse_grained_from: int | None = None,
                         encoding: str = "utf-8", lemmatize: bool = False,
                         pos_tagged: bool = False) -> Reference:
         """Load an existing frequency/rank word list from a file.
@@ -529,6 +587,12 @@ class Reference:
                 `fine_grained_until` (e.g. 2000).
             fine_grained_until: the rank up to which `fine_band_size`
                 applies. Required if `fine_band_size` is given.
+            coarse_band_size: optionally use a wider band width for the
+                least frequent words (e.g. 10,000), from rank
+                `coarse_grained_from` (e.g. 50,000) through the end of the
+                list.
+            coarse_grained_from: the rank from which `coarse_band_size`
+                applies. Required if `coarse_band_size` is given.
             encoding: text encoding used to read the word list file
                 (default 'utf-8'). Bytes that don't decode are dropped
                 rather than raising (errors='ignore').
@@ -624,6 +688,7 @@ class Reference:
 
         band_of_position, band_ranges = compute_band_assignment(
             len(ordered_words), band_size, fine_band_size, fine_grained_until,
+            coarse_band_size, coarse_grained_from,
         )
         word_to_rank = {w: i + 1 for i, w in enumerate(ordered_words)}
         word_to_band = {w: band_of_position[i] for i, w in enumerate(ordered_words)}
@@ -637,6 +702,8 @@ class Reference:
             num_bands=num_bands,
             fine_band_size=fine_band_size,
             fine_grained_until=fine_grained_until,
+            coarse_band_size=coarse_band_size,
+            coarse_grained_from=coarse_grained_from,
             counts=counts if use_freq else {},
             lowercase=lowercase,
             lemmatize=lemmatize,
@@ -692,6 +759,7 @@ class Reference:
         ranked = [w for w, _ in counter.most_common()]
         band_of_position, band_ranges = compute_band_assignment(
             len(ranked), self.band_size, self.fine_band_size, self.fine_grained_until,
+            self.coarse_band_size, self.coarse_grained_from,
         )
         word_to_rank = {w: i + 1 for i, w in enumerate(ranked)}
         word_to_band = {w: band_of_position[i] for i, w in enumerate(ranked)}
@@ -704,6 +772,8 @@ class Reference:
             num_bands=len(band_ranges),
             fine_band_size=self.fine_band_size,
             fine_grained_until=self.fine_grained_until,
+            coarse_band_size=self.coarse_band_size,
+            coarse_grained_from=self.coarse_grained_from,
             counts=dict(counter),
             lowercase=self.lowercase,
             lemmatize=self.lemmatize,
@@ -717,6 +787,8 @@ class Reference:
     def from_builtin(cls, name: str, band_size: int = 1000, lowercase: bool = True,
                       language: str = "en", fine_band_size: int | None = None,
                       fine_grained_until: int | None = None,
+                      coarse_band_size: int | None = None,
+                      coarse_grained_from: int | None = None,
                       lemmatize: bool = False) -> Reference:
         """Load one of the reference word lists bundled with this package
         (see BUILTIN_WORD_LISTS for the available names, e.g. "avl" for the
@@ -725,7 +797,8 @@ class Reference:
         Args:
             name: key into BUILTIN_WORD_LISTS, e.g. "avl". Case-insensitive.
             band_size, lowercase, language, fine_band_size, fine_grained_until,
-            lemmatize: same as from_word_list().
+            coarse_band_size, coarse_grained_from, lemmatize: same as
+            from_word_list().
 
         Whether the list is POS-tagged (e.g. "coca") is a property of the
         file itself, read from BUILTIN_WORD_LISTS -- not a caller choice.
@@ -742,6 +815,7 @@ class Reference:
         reference = cls.from_word_list(
             path, band_size=band_size, lowercase=lowercase, language=language,
             fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+            coarse_band_size=coarse_band_size, coarse_grained_from=coarse_grained_from,
             lemmatize=lemmatize, pos_tagged=entry.get("pos_tagged", False),
         )
         reference.source_description = f"built-in word list '{key}' ({entry['description']})"
@@ -758,6 +832,8 @@ class Reference:
             "num_bands": self.num_bands,
             "fine_band_size": self.fine_band_size,
             "fine_grained_until": self.fine_grained_until,
+            "coarse_band_size": self.coarse_band_size,
+            "coarse_grained_from": self.coarse_grained_from,
             "counts": self.counts,
             "lowercase": self.lowercase,
             "lemmatize": self.lemmatize,
@@ -853,6 +929,8 @@ class Reference:
                 num_bands=payload["num_bands"],
                 fine_band_size=payload.get("fine_band_size"),
                 fine_grained_until=payload.get("fine_grained_until"),
+                coarse_band_size=payload.get("coarse_band_size"),
+                coarse_grained_from=payload.get("coarse_grained_from"),
                 counts=payload.get("counts", {}),
                 lowercase=payload.get("lowercase", True),
                 lemmatize=payload.get("lemmatize", False),
