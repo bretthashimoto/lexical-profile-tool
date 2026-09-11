@@ -33,7 +33,7 @@ _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     "avl": {
         "file": "avl_academic.txt",
-        "label": "Academic Vocabulary List (AVL): Gardner & Davies (2013)",
+        "label": "Academic Vocabulary List (AVL)",
         "description": (
             "Academic Vocabulary List (AVL) -- Gardner & Davies (2013), "
             "~2,900 core academic word lemmas from the COCA Academic sub-corpus"
@@ -45,7 +45,7 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     },
     "ngsl": {
         "file": "ngsl.txt",
-        "label": "New General Service List (NGSL): Browne & Culligan (2013)",
+        "label": "New General Service List (NGSL)",
         "description": (
             "New General Service List (NGSL) -- Browne & Culligan (2013), "
             "~2,800 core word families for everyday (non-academic) English"
@@ -57,7 +57,7 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     },
     "nawl": {
         "file": "nawl.txt",
-        "label": "New Academic Word List (NAWL): Browne, Culligan & Phillips (2013)",
+        "label": "New Academic Word List (NAWL)",
         "description": (
             "New Academic Word List (NAWL) -- Browne, Culligan & Phillips (2013), "
             "963 academic word families that complement the NGSL; alphabetical, "
