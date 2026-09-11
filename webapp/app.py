@@ -81,18 +81,18 @@ _LOGO_SVG_SRC = """
   <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z"
         fill="#eef4fc" stroke="#184f95" stroke-width="3"/>
   <g clip-path="url(#leahClipLeft)">
-    <rect x="128" y="195" width="20" height="190" fill="#86b6ef"/>
-    <rect x="153" y="330" width="20" height="55" fill="#6da7ec"/>
-    <rect x="178" y="359" width="20" height="26" fill="#5598e7"/>
-    <rect x="203" y="369" width="20" height="16" fill="#3987e5"/>
+    <rect x="132" y="195" width="20" height="190" fill="#86b6ef"/>
+    <rect x="156" y="330" width="20" height="55" fill="#6da7ec"/>
+    <rect x="180" y="359" width="20" height="26" fill="#5598e7"/>
+    <rect x="204" y="369" width="20" height="16" fill="#3987e5"/>
     <rect x="228" y="375" width="20" height="10" fill="#2a78d6"/>
   </g>
   <g clip-path="url(#leahClipRight)">
-    <rect x="261" y="377" width="20" height="8" fill="#256abf"/>
-    <rect x="286" y="379" width="20" height="6" fill="#1c5cab"/>
-    <rect x="311" y="380" width="20" height="5" fill="#184f95"/>
+    <rect x="264" y="377" width="20" height="8" fill="#256abf"/>
+    <rect x="288" y="379" width="20" height="6" fill="#1c5cab"/>
+    <rect x="312" y="380" width="20" height="5" fill="#184f95"/>
     <rect x="336" y="381" width="20" height="4" fill="#104281"/>
-    <rect x="361" y="382" width="20" height="3" fill="#0d366b"/>
+    <rect x="360" y="382" width="20" height="3" fill="#0d366b"/>
   </g>
   <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"
         fill="none" stroke="#184f95" stroke-width="3"/>
