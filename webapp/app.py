@@ -530,8 +530,9 @@ _banner_html = f"""
         <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
     </div>
     <div style="color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; max-width:48rem;">
-        Measure how much of a text's vocabulary falls into common vs. rare/unknown
-        frequency bands, relative to a reference you build from your own corpus.
+        Profile the frequency of words in users' texts by determining the
+        commonness/rarity of words, relative to a reference you build from your
+        own corpus or common word lists in English, Spanish, French, and German.
     </div>
 </div>
 """
@@ -821,16 +822,6 @@ with tab_cite:
         "https://github.com/bretthashimoto/lexical-profile-tool",
         language=None,
     )
-
-    st.subheader("Built-in word lists")
-    st.caption(
-        "Cite whichever list you actually used as your reference -- not this tool -- "
-        "since the tool just reads a published list, it didn't create one."
-    )
-    for _name in sorted(BUILTIN_WORD_LISTS):
-        _entry = BUILTIN_WORD_LISTS[_name]
-        st.markdown(f"**{_entry['label']}**")
-        st.code(_entry["citation"], language=None)
 
 with tab_about:
     st.header("About lexical frequency profiling")
