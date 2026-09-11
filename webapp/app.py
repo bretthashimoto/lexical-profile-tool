@@ -652,7 +652,6 @@ with tab_profile:
             })
             chart_df["pct_tokens_label"] = chart_df["pct_tokens"].map(lambda v: f"{v:.2f}%")
             chart_df["cumulative_pct_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.2f}%")
-            chart_df["cumulative_pct_data_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.0f}%")
             bar = alt.Chart(chart_df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
                 x=alt.X("band:N", sort=None, title="Frequency band", axis=alt.Axis(labelAngle=-45)),
                 y=alt.Y("pct_tokens:Q", title="% of tokens", scale=alt.Scale(domain=[0, 100])),
@@ -667,18 +666,11 @@ with tab_profile:
                 x=alt.X("band:N", sort=None),
                 y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
             )
-            line_labels = alt.Chart(chart_df).mark_text(
-                dy=-10, color="#eb6834", fontSize=11, angle=0,
-            ).encode(
-                x=alt.X("band:N", sort=None),
-                y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
-                text=alt.Text("cumulative_pct_data_label:N"),
-            )
             threshold_df = pd.DataFrame({"y": [95, 98]})
             thresholds = alt.Chart(threshold_df).mark_rule(strokeDash=[4, 4], color="#898781").encode(
                 y="y:Q",
             )
-            st.altair_chart((bar + line + line_labels + thresholds).properties(height=400), width="stretch")
+            st.altair_chart((bar + line + thresholds).properties(height=400), width="stretch")
             st.caption(
                 "Bars: % of tokens in each band. Orange line: cumulative coverage. "
                 "Dashed lines: 95%/98% reading-comprehension coverage thresholds "
