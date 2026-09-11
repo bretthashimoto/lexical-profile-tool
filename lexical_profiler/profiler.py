@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
 from .reference import Reference, open_text_file, require_txt_extension
@@ -322,13 +322,33 @@ class LexicalProfiler:
                 tokens.append(HighlightedToken(surface, tok.whitespace_, "band", band=band))
         return tokens
 
-    def profile_texts(self, texts: dict[str, str]) -> dict[str, ProfileResult]:
+    def profile_texts(
+        self, texts: dict[str, str],
+        progress_callback: Callable[[int, int, str], None] | None = None,
+    ) -> dict[str, ProfileResult]:
         """Profile multiple named texts (e.g. {filename: content, ...}).
 
         Returns a dict of filename -> ProfileResult, run independently
         per text (each text's own token/type counts, not pooled).
+
+        Args:
+            progress_callback: optional `callback(current, total, message)`,
+                called once before starting and once after each text
+                finishes profiling, so a caller (e.g. the web UI) can show
+                real per-document progress instead of a generic spinner
+                while a large batch of texts tokenizes -- the same pattern
+                `Reference.from_corpus` uses while building a reference.
         """
-        return {name: self.profile_text(content) for name, content in texts.items()}
+        total = len(texts)
+        if progress_callback and total:
+            progress_callback(0, total, "Profiling...")
+
+        results = {}
+        for idx, (name, content) in enumerate(texts.items(), start=1):
+            results[name] = self.profile_text(content)
+            if progress_callback:
+                progress_callback(idx, total, f"Profiling {name} ({idx} of {total})")
+        return results
 
     def profile_document(self, path: str, encoding: str = "utf-8") -> ProfileResult:
         """Profile a single target document, given a path to a .txt file.

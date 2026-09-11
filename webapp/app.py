@@ -658,7 +658,9 @@ with tab_profile:
                 exclude_numerals=exclude_numerals,
             )
             st.session_state.profiler = profiler
-            st.session_state.results = profiler.profile_texts(target_texts)
+            st.session_state.results = build_with_progress(
+                lambda cb: profiler.profile_texts(target_texts, progress_callback=cb)
+            )
             st.session_state.target_texts = target_texts
 
         # ---------------------------------------------------------------------------
@@ -683,7 +685,14 @@ with tab_profile:
                 }
                 for name, r in results.items()
             ]
-            st.dataframe(pd.DataFrame(summary_rows), width="stretch", hide_index=True)
+            summary_df = pd.DataFrame(summary_rows)
+            st.dataframe(
+                summary_df, width="stretch", hide_index=True,
+                column_config={
+                    col: st.column_config.Column(alignment="left")
+                    for col in summary_df.columns
+                },
+            )
 
             selected_name = st.selectbox("View text", list(results.keys()))
             result = results[selected_name]
