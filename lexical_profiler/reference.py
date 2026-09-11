@@ -33,6 +33,7 @@ _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 BUILTIN_WORD_LISTS: dict[str, dict[str, str]] = {
     "avl": {
         "file": "avl_academic.txt",
+        "label": "Academic Vocabulary List (AVL): Gardner & Davies (2013)",
         "description": (
             "Academic Vocabulary List (AVL) -- Gardner & Davies (2013), "
             "~2,900 core academic word lemmas from the COCA Academic sub-corpus"

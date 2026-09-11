@@ -245,7 +245,7 @@ with st.sidebar:
         builtin_names = sorted(BUILTIN_WORD_LISTS)
         builtin_choice = st.selectbox(
             "List", builtin_names,
-            format_func=lambda name: f"{name.upper()} — {BUILTIN_WORD_LISTS[name]['description']}",
+            format_func=lambda name: BUILTIN_WORD_LISTS[name]["label"],
         )
         if st.button("Use this word list"):
             try:
@@ -474,11 +474,18 @@ if st.session_state.results:
         x=alt.X("band:N", sort=None),
         y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
     )
+    line_labels = alt.Chart(chart_df).mark_text(
+        dy=-10, color="#eb6834", fontSize=11,
+    ).encode(
+        x=alt.X("band:N", sort=None),
+        y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
+        text=alt.Text("cumulative_pct:Q", format=".1f"),
+    )
     threshold_df = pd.DataFrame({"y": [95, 98]})
     thresholds = alt.Chart(threshold_df).mark_rule(strokeDash=[4, 4], color="#898781").encode(
         y="y:Q",
     )
-    st.altair_chart((bar + line + thresholds).properties(height=400), width="stretch")
+    st.altair_chart((bar + line + line_labels + thresholds).properties(height=400), width="stretch")
     st.caption(
         "Bars: % of tokens in each band. Orange line: cumulative coverage. "
         "Dashed lines: 95%/98% reading-comprehension coverage thresholds "
