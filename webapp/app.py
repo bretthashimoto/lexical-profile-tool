@@ -235,6 +235,8 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 st.markdown(
     f"""
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500&display=swap">
     <div style="
         background:linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
         border-radius:12px;
@@ -244,16 +246,16 @@ st.markdown(
         <div style="display:flex; align-items:baseline; gap:0.6rem;">
             <span style="font-size:2.6rem; line-height:1;">📖</span>
             <span style="
-                font-size:2.6rem;
-                font-weight:800;
-                letter-spacing:0.04em;
+                font-family:'Instrument Serif', serif;
+                font-size:3.4rem;
+                letter-spacing:0.02em;
                 color:#ffffff;
             ">LEAH</span>
         </div>
-        <div style="color:#e8f0fc; font-size:1.05rem; margin-top:0.25rem;">
+        <div style="font-family:'Instrument Sans', sans-serif; color:#e8f0fc; font-size:1.05rem; margin-top:0.25rem;">
             <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
         </div>
-        <div style="color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; max-width:48rem;">
+        <div style="font-family:'Instrument Sans', sans-serif; color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; max-width:48rem;">
             Measure how much of a text's vocabulary falls into common vs. rare/unknown
             frequency bands, relative to a reference you build from your own corpus.
         </div>
