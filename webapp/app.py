@@ -404,15 +404,21 @@ if st.session_state.results:
     result = results[selected_name]
     text = all_target_texts[selected_name]
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Tokens", result.total_tokens)
     col2.metric("Types", result.total_types)
     col3.metric("Off-list %", f"{result.off_list_pct_tokens:.1f}%")
-    band_95 = next(
-        (b for b in sorted(result.cumulative_token_pct) if result.cumulative_token_pct[b] >= 95),
-        None,
-    )
+
+    def band_for_coverage(target_pct: float):
+        return next(
+            (b for b in sorted(result.cumulative_token_pct) if result.cumulative_token_pct[b] >= target_pct),
+            None,
+        )
+
+    band_95 = band_for_coverage(95)
+    band_98 = band_for_coverage(98)
     col4.metric("Bands for 95% coverage", band_95 if band_95 else "not reached")
+    col5.metric("Bands for 98% coverage", band_98 if band_98 else "not reached")
 
     st.subheader("Band coverage")
     bands = sorted(result.band_token_counts.keys())
