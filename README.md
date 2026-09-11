@@ -407,13 +407,15 @@ big corpus every run. `load` raises a clear error if the file is
 missing, unreadable, not valid JSON, or wasn't actually produced by
 `.save(...)`.
 
-### `LexicalProfiler(reference, min_length=1, ignore_words=None)`
+### `LexicalProfiler(reference, min_length=1, ignore_words=None, exclude_proper_nouns=False, exclude_numerals=False)`
 
 | Parameter | Default | What it does |
 |---|---|---|
 | `reference` | *required* | The `Reference` to profile target texts against. |
 | `min_length` | `1` | Minimum token length to include when tokenizing target texts. |
-| `ignore_words` | `None` | Words to pull out of band/off-list scoring entirely (e.g. proper nouns). They still count toward the text's total token/type counts, just reported separately as `ProfileResult.ignored_*`. Matched case-insensitively if the reference lowercases tokens. |
+| `ignore_words` | `None` | Specific words to pull out of band/off-list scoring entirely. They still count toward the text's total token/type counts, just reported separately as `ProfileResult.ignored_*`. Matched case-insensitively if the reference lowercases tokens. Takes priority over `exclude_proper_nouns`/`exclude_numerals` if a word matches both. |
+| `exclude_proper_nouns` | `False` | Pull proper nouns (detected via the language's POS tagger) out of band/off-list scoring, reported separately as `ProfileResult.proper_noun_*` -- same mechanism as `ignore_words`, just automatic. Requires a trained spaCy pipeline for the reference's language; silently has no effect without one. If `False` (default), proper nouns are profiled like any other word. |
+| `exclude_numerals` | `False` | Same, for numerals (e.g. `"42"`, `"twelve"`) -> `ProfileResult.numeral_*`. Works regardless of language pipeline availability. If `False` (default), numerals are profiled like any other word -- in practice usually landing off-list, since reference word lists/corpora don't carry numerals as vocabulary. |
 
 Profiling methods on `LexicalProfiler`:
 
@@ -435,6 +437,8 @@ The return value of every profiling call above. Key fields/methods:
 | `cumulative_token_pct` | Running total of `band_token_pct` through each band (dict of band number → value): "how much of the text is covered by the N most frequent bands," the classic Lexical Frequency Profile coverage curve. Compare against the standard 95%/98% reading-comprehension coverage thresholds. |
 | `off_list_tokens`, `off_list_types`, `off_list_pct_tokens`, `off_list_words` | Words absent from the reference entirely; `off_list_words` is the **full** list, most-frequent-first (not just a sample). |
 | `ignored_tokens`, `ignored_types`, `ignored_pct_tokens`, `ignored_words` | Same, for words matched by `ignore_words`. |
+| `proper_noun_tokens`, `proper_noun_types`, `proper_noun_pct_tokens`, `proper_noun_words` | Same, for proper nouns, when `exclude_proper_nouns=True`. Empty/zero otherwise. |
+| `numeral_tokens`, `numeral_types`, `numeral_pct_tokens`, `numeral_words` | Same, for numerals, when `exclude_numerals=True`. Empty/zero otherwise. |
 | `.summary(max_bands_shown=None, max_off_list_shown=20)` | Human-readable report string. The `max_*_shown` params only limit *this printed view*; the underlying `off_list_words`/`ignored_words` fields always have everything. |
 | `.to_dict()` | JSON/API-friendly dict of everything above (also unabridged). |
 | `.band_label(band)` | Human-readable band label, e.g. `"1-999"`. |
@@ -447,8 +451,10 @@ The return value of every profiling call above. Key fields/methods:
 | `export_csv(results, path)` | One row per band per text, plus an off-list row and (if any) an ignored row. |
 | `export_off_list_csv(results, path)` | One row per off-list word per text, with counts. |
 | `export_ignored_csv(results, path)` | One row per ignored word per text, with counts. |
+| `export_proper_nouns_csv(results, path)` | One row per proper noun per text, with counts (populated only if `exclude_proper_nouns=True`). |
+| `export_numerals_csv(results, path)` | One row per numeral per text, with counts (populated only if `exclude_numerals=True`). |
 
-All four raise a clear error if the output path's folder doesn't exist or
+All six raise a clear error if the output path's folder doesn't exist or
 isn't writable, instead of a raw OS traceback.
 
 ### Other handy functions
@@ -457,7 +463,8 @@ isn't writable, instead of a raw OS traceback.
 |---|---|
 | `lexical_profiler.lemmatizer_available(language)` | Whether a trained spaCy pipeline (capable of lemmatization) is installed for `language`. |
 | `lexical_profiler.download_model(language)` | Download/install the spaCy pipeline for `language`. Returns `True`/`False`. |
-| `lexical_profiler.tokenize(text, language="en", lowercase=True, lemmatize=False, min_length=1)` | The raw tokenizer, if you want tokens without profiling anything. |
+| `lexical_profiler.tokenize(text, language="en", lowercase=True, lemmatize=False, min_length=1)` | The raw tokenizer, if you want tokens without profiling anything. Drops pure numerals (like punctuation). |
+| `lexical_profiler.tokenizer.classify_tokens(text, ...)` | Like `tokenize`, but returns `(word, category)` pairs -- `category` is `"word"`, `"proper_noun"`, or `"numeral"` -- and keeps numerals instead of dropping them. What `LexicalProfiler` uses internally to support `exclude_proper_nouns`/`exclude_numerals`. |
 
 ### Command-line flags
 
@@ -479,7 +486,9 @@ isn't writable, instead of a raw OS traceback.
 | `--encoding NAME` | Text encoding for reading files (default `utf-8`). |
 | `--ignore-words WORD [WORD ...]` | Words to exclude from band/off-list scoring. |
 | `--ignore-list PATH` | Same, from a file (merged with `--ignore-words` if both given). |
-| `--out-json / --out-csv / --out-off-list-csv / --out-ignored-csv PATH` | Export reports. |
+| `--exclude-proper-nouns` | Report proper nouns separately instead of scoring them like any other word. Requires a trained pipeline for `--language`; silently has no effect without one. |
+| `--exclude-numerals` | Report numerals (e.g. `42`, `twelve`) separately instead of scoring them like any other word. |
+| `--out-json / --out-csv / --out-off-list-csv / --out-ignored-csv / --out-proper-nouns-csv / --out-numerals-csv PATH` | Export reports. |
 | `--max-off-list-shown N` | How many off-list words to print in the console summary (default `20`). |
 
 ## What gets measured
@@ -504,9 +513,15 @@ For each text, `ProfileResult` reports, per frequency band and overall:
   any band), useful for spotting rare, technical, or misspelled
   vocabulary, or vocabulary specific to a domain not covered by the
   reference.
-- **Ignored words**: words you deliberately excluded from scoring (via
-  `ignore_words`), such as proper nouns, still counted in the totals but
-  broken out separately instead of polluting the off-list.
+- **Ignored words**: specific words you deliberately excluded from
+  scoring (via `ignore_words`), still counted in the totals but broken
+  out separately instead of polluting the off-list.
+- **Proper nouns / numerals**: names, places, and numbers are profiled
+  like any other word by default (numerals in practice usually land
+  off-list, since reference word lists/corpora don't carry them as
+  vocabulary). Pass `exclude_proper_nouns=True` and/or
+  `exclude_numerals=True` to break either out into its own category
+  instead, the same way `ignore_words` works.
 
 ## Notes & design choices
 
