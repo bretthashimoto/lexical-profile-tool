@@ -460,6 +460,23 @@ with st.sidebar:
     ignore_file = st.file_uploader("Upload ignore list (.txt)", type=["txt"], key="ignore_file")
     ignore_text = st.text_area("...or paste words, one per line", key="ignore_text")
 
+    st.divider()
+    with st.expander("📄 How to cite"):
+        st.caption("This tool")
+        st.code(
+            "Hashimoto, B. (2026). lexical_profiler (Version 0.2.0) [Computer software]. "
+            "https://github.com/bretthashimoto/lexical-profile-tool",
+            language=None,
+        )
+        st.caption(
+            "Built-in word lists -- cite whichever one you actually used as your "
+            "reference, not the tool that reads it:"
+        )
+        for _name in sorted(BUILTIN_WORD_LISTS):
+            _entry = BUILTIN_WORD_LISTS[_name]
+            st.markdown(f"**{_entry['label']}**")
+            st.code(_entry["citation"], language=None)
+
 # ---------------------------------------------------------------------------
 # Main area
 # ---------------------------------------------------------------------------

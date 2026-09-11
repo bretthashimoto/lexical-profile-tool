@@ -38,6 +38,10 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
             "Academic Vocabulary List (AVL) -- Gardner & Davies (2013), "
             "~2,900 core academic word lemmas from the COCA Academic sub-corpus"
         ),
+        "citation": (
+            "Gardner, D., & Davies, M. (2014). A new academic vocabulary list. "
+            "Applied Linguistics, 35(3), 305-327. http://www.academicwords.info"
+        ),
     },
     "ngsl": {
         "file": "ngsl.txt",
@@ -45,6 +49,10 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
         "description": (
             "New General Service List (NGSL) -- Browne & Culligan (2013), "
             "~2,800 core word families for everyday (non-academic) English"
+        ),
+        "citation": (
+            "Browne, C., Culligan, B., & Phillips, J. (2013). The New General "
+            "Service List. http://www.newgeneralservicelist.org"
         ),
     },
     "nawl": {
@@ -54,6 +62,10 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
             "New Academic Word List (NAWL) -- Browne, Culligan & Phillips (2013), "
             "963 academic word families that complement the NGSL; alphabetical, "
             "not frequency-ranked"
+        ),
+        "citation": (
+            "Browne, C., Culligan, B., & Phillips, J. (2013). The New Academic Word "
+            "List. http://www.newgeneralservicelist.org/nawl-new-academic-word-list"
         ),
     },
     "coca": {
@@ -65,6 +77,10 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
             "top 100,000 lemma+part-of-speech entries; matches by lemma and part "
             "of speech, so e.g. 'record' as a verb is scored separately from "
             "'record' as a noun"
+        ),
+        "citation": (
+            "Davies, M. (2008-). The Corpus of Contemporary American English (COCA). "
+            "https://www.english-corpora.org/coca/"
         ),
     },
 }
