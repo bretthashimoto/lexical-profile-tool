@@ -39,6 +39,31 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str]] = {
             "~2,900 core academic word lemmas from the COCA Academic sub-corpus"
         ),
     },
+    "ngsl": {
+        "file": "ngsl.txt",
+        "label": "New General Service List (NGSL): Browne & Culligan (2013)",
+        "description": (
+            "New General Service List (NGSL) -- Browne & Culligan (2013), "
+            "~2,800 core word families for everyday (non-academic) English"
+        ),
+    },
+    "nawl": {
+        "file": "nawl.txt",
+        "label": "New Academic Word List (NAWL): Browne, Culligan & Phillips (2013)",
+        "description": (
+            "New Academic Word List (NAWL) -- Browne, Culligan & Phillips (2013), "
+            "963 academic word families that complement the NGSL; alphabetical, "
+            "not frequency-ranked"
+        ),
+    },
+    "coca": {
+        "file": "coca.txt",
+        "label": "COCA top 100,000 words (Davies, 2008-)",
+        "description": (
+            "Corpus of Contemporary American English (COCA) -- Davies (2008-), "
+            "top 100,000 wordforms by frequency, part-of-speech variants merged"
+        ),
+    },
 }
 
 
@@ -92,7 +117,9 @@ def open_text_file(path: str, encoding: str = "utf-8"):
         ) from None
 
 
-def _expand_sources(source: str | Iterable[str] | dict[str, str]) -> list[tuple[str, str, str | None, bool]]:
+def _expand_sources(
+    source: str | Iterable[str] | dict[str, str],
+) -> list[tuple[str, str, str | None, bool]]:
     """Expand a flexible `source` into a flat list of items to read, without
     reading any file content yet -- just enough work (checking file/
     directory existence, walking directories) to know the total document
