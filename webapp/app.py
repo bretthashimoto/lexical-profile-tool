@@ -61,8 +61,10 @@ _LOGO_SVG_SRC = """
       <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z"/>
     </clipPath>
   </defs>
-  <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z" fill="#eef4fc" stroke="#184f95" stroke-width="3"/>
-  <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z" fill="#eef4fc" stroke="#184f95" stroke-width="3"/>
+  <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"
+        fill="#eef4fc" stroke="#184f95" stroke-width="3"/>
+  <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z"
+        fill="#eef4fc" stroke="#184f95" stroke-width="3"/>
   <g clip-path="url(#leahClipLeft)">
     <rect x="120" y="195" width="20" height="190" fill="#86b6ef"/>
     <rect x="147" y="330" width="20" height="55" fill="#6da7ec"/>
@@ -77,9 +79,12 @@ _LOGO_SVG_SRC = """
     <rect x="342" y="381" width="20" height="4" fill="#104281"/>
     <rect x="369" y="382" width="20" height="3" fill="#0d366b"/>
   </g>
-  <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z" fill="none" stroke="#184f95" stroke-width="3"/>
-  <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z" fill="none" stroke="#184f95" stroke-width="3"/>
-  <line x1="256" y1="146" x2="256" y2="410" stroke="#0d366b" stroke-width="5" stroke-linecap="round"/>
+  <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"
+        fill="none" stroke="#184f95" stroke-width="3"/>
+  <path d="M256,150 C302,140 362,155 394,190 L394,370 C394,398 347,415 256,406 Z"
+        fill="none" stroke="#184f95" stroke-width="3"/>
+  <line x1="256" y1="146" x2="256" y2="410" stroke="#0d366b" stroke-width="5"
+        stroke-linecap="round"/>
 </svg>
 """
 # Collapsed to one line: a raw HTML block spanning multiple lines with a
@@ -273,7 +278,8 @@ with st.sidebar:
 # Main area
 # ---------------------------------------------------------------------------
 _banner_html = f"""
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap">
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap">
 <div style="
     background:linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
     border-radius:12px;
