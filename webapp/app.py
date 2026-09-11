@@ -345,7 +345,11 @@ with st.sidebar:
             )
             has_frequencies = {"Auto-detect": None, "word,frequency pairs": True,
                                 "Plain word list": False}[freq_choice]
-        if st.button("Build reference from word list", disabled=not wordlist_file):
+        wordlist_sig = (
+            wordlist_file.file_id if wordlist_file else None,
+            band_size, language, has_frequencies, fine_band_size, fine_grained_until,
+        )
+        if wordlist_file and st.session_state.get("_wordlist_sig") != wordlist_sig:
             with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp:
                 tmp.write(wordlist_file.getvalue())
                 tmp_path = tmp.name
@@ -356,6 +360,7 @@ with st.sidebar:
                     fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
                 )
                 st.session_state.results = None
+                st.session_state._wordlist_sig = wordlist_sig
             except ValueError as e:
                 st.error(str(e))
             finally:
@@ -363,13 +368,14 @@ with st.sidebar:
 
     else:  # Saved reference
         ref_file = st.file_uploader("Upload a saved reference .json file", type=["json"])
-        if st.button("Load reference", disabled=not ref_file):
+        if ref_file and st.session_state.get("_saved_ref_sig") != ref_file.file_id:
             with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
                 tmp.write(ref_file.getvalue())
                 tmp_path = tmp.name
             try:
                 st.session_state.reference = Reference.load(tmp_path)
                 st.session_state.results = None
+                st.session_state._saved_ref_sig = ref_file.file_id
             except ValueError as e:
                 st.error(str(e))
             finally:
