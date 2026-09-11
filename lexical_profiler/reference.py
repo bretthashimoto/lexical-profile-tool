@@ -70,7 +70,7 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     },
     "coca": {
         "file": "coca.txt",
-        "label": "COCA top 100,000 lemma+POS entries (Davies, 2008-)",
+        "label": "COCA lemmas",
         "pos_tagged": True,
         "description": (
             "Corpus of Contemporary American English (COCA) -- Davies (2008-), "
