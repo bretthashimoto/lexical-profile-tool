@@ -545,9 +545,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tab_profile, tab_cite, tab_about, tab_guide, tab_about_me = st.tabs([
-    "Profile a text", "How to cite", "About lexical frequency profiling",
-    "Step-by-step guide", "About me",
+tab_profile, tab_guide, tab_about, tab_cite, tab_about_me = st.tabs([
+    "Profile a text", "Step-by-step guide", "About lexical frequency profiling",
+    "How to cite", "About me",
 ])
 
 with tab_profile:
