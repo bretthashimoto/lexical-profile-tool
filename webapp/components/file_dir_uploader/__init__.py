@@ -26,7 +26,9 @@ _component_func = components.declare_component(
 
 
 def file_dir_uploader(label: str = "Choose files...", key: str | None = None):
-    """Renders the picker and returns a list of {"name", "text"} dicts for
-    every selected .txt file (decoded as UTF-8 in the browser), or None
-    until the user has picked something."""
+    """Renders the picker and returns a list of {"name", "content_b64"}
+    dicts for every selected .txt/.docx/.pdf file -- raw bytes, base64-
+    encoded in the browser -- or None until the user has picked something.
+    Use `text_extract.extract_text(name, base64.b64decode(content_b64))`
+    to get plain text back out."""
     return _component_func(label=label, key=key, default=None)

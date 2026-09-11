@@ -12,10 +12,9 @@ Run with:
 
 from __future__ import annotations
 
-import io
+import base64
 import sys
 import tempfile
-import zipfile
 from html import escape
 from pathlib import Path
 
@@ -30,6 +29,7 @@ import altair as alt  # noqa: E402
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 from components.file_dir_uploader import file_dir_uploader  # noqa: E402
+from text_extract import extract_text  # noqa: E402
 
 from lexical_profiler import (  # noqa: E402
     LexicalProfiler,
@@ -155,31 +155,49 @@ def read_word_list(raw: str) -> list[str]:
 
 
 def read_uploaded_texts(files) -> list[tuple[str, str]]:
-    """Expand uploaded files into (name, text) pairs, decoding plain .txt
-    files directly and unzipping any .zip archive into its .txt members --
-    lets a user upload a whole directory of texts as one zipped file, since
-    browsers don't offer a folder picker for a plain file input."""
+    """Expand uploaded .txt/.docx/.pdf files into (name, text) pairs,
+    skipping (with a warning) any file whose text couldn't be extracted."""
     out = []
     for f in files:
-        if f.name.lower().endswith(".zip"):
-            with zipfile.ZipFile(io.BytesIO(f.getvalue())) as zf:
-                for member in zf.namelist():
-                    name = Path(member).name
-                    if member.endswith("/") or not name.lower().endswith(".txt"):
-                        continue
-                    if name.startswith(".") or member.startswith("__MACOSX/"):
-                        continue
-                    out.append((member, zf.read(member).decode("utf-8", errors="ignore")))
-        else:
-            out.append((f.name, f.getvalue().decode("utf-8", errors="ignore")))
+        try:
+            out.append((f.name, extract_text(f.name, f.getvalue())))
+        except ValueError as e:
+            st.warning(str(e))
     return out
+
+
+def decode_picked_files(picked) -> dict[str, str]:
+    """Turn file_dir_uploader's {"name", "content_b64"} entries into a
+    {name: extracted_text} dict, skipping (with a warning) any file whose
+    text couldn't be extracted."""
+    out = {}
+    for item in picked or []:
+        try:
+            data = base64.b64decode(item["content_b64"])
+            out[item["name"]] = extract_text(item["name"], data)
+        except ValueError as e:
+            st.warning(str(e))
+    return out
+
+
+def cached_decode(picked, cache_key: str) -> dict[str, str]:
+    """Like decode_picked_files, but skips re-extracting when the same set
+    of files (by name) was already decoded on a previous rerun -- matters
+    now that PDFs/DOCX are supported, since re-parsing them on every
+    unrelated widget interaction/rerun would be wasteful."""
+    names_sig = tuple(sorted(item["name"] for item in picked)) if picked else ()
+    sig_key, texts_key = f"{cache_key}_sig", f"{cache_key}_texts"
+    if st.session_state.get(sig_key) != names_sig:
+        st.session_state[texts_key] = decode_picked_files(picked)
+        st.session_state[sig_key] = names_sig
+    return st.session_state[texts_key]
 
 
 for key in ("reference", "profiler", "results", "target_texts"):
     st.session_state.setdefault(key, None)
 
 
-def load_example_data(*, band_size=20, language="en", lemmatize=False,
+def load_example_data(*, band_size=20, language="en", lemmatize=True,
                        fine_band_size=None, fine_grained_until=None):
     ref = Reference.from_corpus(
         str(REPO_ROOT / "examples" / "corpus"), band_size=band_size, language=language,
@@ -220,9 +238,9 @@ with st.sidebar:
         help="Used for tokenization and (optional) lemmatization.",
     )
     lemmatize = st.checkbox(
-        "Lemmatize", value=False,
+        "Lemmatize", value=True,
         help="Requires a spaCy pipeline installed for the language; silently falls back to "
-             "surface forms otherwise.",
+             "surface forms otherwise. Uncheck to profile against surface word forms instead.",
     )
     language_name = LANGUAGE_DISPLAY_NAMES[language]
     if lemmatize:
@@ -282,12 +300,11 @@ with st.sidebar:
                 st.error(str(e))
 
     elif source_kind == "Corpus of texts":
-        st.caption("Upload individual .txt files, or use \"Choose folder...\" to pick a "
-                   "whole directory from your computer. The reference builds automatically.")
+        st.caption("Upload individual .txt/.docx/.pdf files, or use \"Choose folder...\" to "
+                   "pick a whole directory from your computer. The reference builds "
+                   "automatically.")
         corpus_picked = file_dir_uploader(label="Choose files...", key="corpus_picker")
-        corpus_texts = (
-            {item["name"]: item["text"] for item in corpus_picked} if corpus_picked else {}
-        )
+        corpus_texts = cached_decode(corpus_picked, "_corpus_picked")
         if corpus_picked:
             st.caption(f"{len(corpus_picked)} file(s) ready.")
 
@@ -322,9 +339,7 @@ with st.sidebar:
                 add_picked = file_dir_uploader(
                     label="Choose files to add...", key="corpus_add_picker",
                 )
-                add_texts_dict = (
-                    {item["name"]: item["text"] for item in add_picked} if add_picked else {}
-                )
+                add_texts_dict = cached_decode(add_picked, "_add_picked")
                 if add_picked:
                     st.caption(f"{len(add_picked)} file(s) ready to add.")
                 if st.button("Add to reference", disabled=not add_texts_dict):
@@ -450,10 +465,9 @@ tab_upload, tab_paste = st.tabs(["Upload files", "Paste text"])
 target_texts: dict[str, str] = {}
 with tab_upload:
     target_files = st.file_uploader(
-        "Upload .txt files to profile", type=["txt", "zip"], accept_multiple_files=True,
-        key="targets",
-        help="Select multiple files, drag a whole folder onto this box, or zip a "
-             "directory of .txt files and upload the .zip.",
+        "Upload .txt/.docx/.pdf files to profile", type=["txt", "docx", "pdf"],
+        accept_multiple_files=True, key="targets",
+        help="Select multiple files, or drag a whole folder onto this box.",
     )
     if target_files:
         for name, text in read_uploaded_texts(target_files):
@@ -549,7 +563,7 @@ if st.session_state.results:
         y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
     )
     line_labels = alt.Chart(chart_df).mark_text(
-        dy=-10, color="#eb6834", fontSize=11,
+        dy=-10, color="#eb6834", fontSize=11, angle=0,
     ).encode(
         x=alt.X("band:N", sort=None),
         y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),

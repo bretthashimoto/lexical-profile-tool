@@ -12,6 +12,11 @@ streamlit>=1.30
 altair>=5.0
 pandas>=2.0
 
+# For extracting plain text from uploaded .docx / .pdf files (corpus and
+# target-text uploads both accept these in addition to .txt).
+python-docx>=1.0
+pypdf>=4.0
+
 # Pre-installed spaCy pipelines, so lemmatization works instantly for these
 # languages without needing the in-app "download model" step (which depends
 # on the host allowing a runtime pip install -- not guaranteed on every free

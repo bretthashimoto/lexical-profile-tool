@@ -29,7 +29,7 @@
   <button id="dirBtn" type="button">Choose folder...</button>
   <span id="status"></span>
 </div>
-<input type="file" id="filesInput" multiple accept=".txt" style="display:none">
+<input type="file" id="filesInput" multiple accept=".txt,.docx,.pdf" style="display:none">
 <input type="file" id="dirInput" webkitdirectory directory multiple style="display:none">
 <script>
 (function () {
@@ -57,24 +57,42 @@
     setFrameHeight();
   }
 
+  var ACCEPTED_EXTENSIONS = [".txt", ".docx", ".pdf"];
+
+  function isAccepted(filename) {
+    var lower = filename.toLowerCase();
+    return ACCEPTED_EXTENSIONS.some(function (ext) { return lower.endsWith(ext); });
+  }
+
+  // Encode raw bytes as base64, in chunks to avoid blowing the call stack
+  // on String.fromCharCode.apply for large files.
+  function arrayBufferToBase64(buffer) {
+    var bytes = new Uint8Array(buffer);
+    var binary = "";
+    var chunkSize = 0x8000;
+    for (var i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return window.btoa(binary);
+  }
+
   function readFiles(fileList) {
     var all = Array.prototype.slice.call(fileList);
-    var txtFiles = all.filter(function (f) {
-      return f.name.toLowerCase().endsWith(".txt");
-    });
-    if (txtFiles.length === 0) {
+    var accepted = all.filter(function (f) { return isAccepted(f.name); });
+    if (accepted.length === 0) {
       setStatus(
         all.length === 0
           ? "No files selected."
-          : "No .txt files found in the selection (" + all.length + " other file(s) skipped)."
+          : "No .txt/.docx/.pdf files found in the selection (" + all.length +
+            " other file(s) skipped)."
       );
       return;
     }
-    setStatus("Reading " + txtFiles.length + " file(s)...");
+    setStatus("Reading " + accepted.length + " file(s)...");
     Promise.all(
-      txtFiles.map(function (f) {
-        return f.text().then(function (text) {
-          return { name: f.webkitRelativePath || f.name, text: text };
+      accepted.map(function (f) {
+        return f.arrayBuffer().then(function (buf) {
+          return { name: f.webkitRelativePath || f.name, content_b64: arrayBufferToBase64(buf) };
         });
       })
     ).then(function (results) {
