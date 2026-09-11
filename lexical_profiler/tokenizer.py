@@ -119,6 +119,15 @@ _POS_TAG_MAP: dict[str, str] = {
     "CC": "c",
     "UH": "u",
     "WP": "w", "WP$": "w", "WDT": "w", "WRB": "w",
+    # "to" (infinitive marker AND preposition use) is always tagged TO by
+    # spaCy regardless of function -- it gets its own code rather than
+    # folding into "i" (preposition), since it's one of the most frequent
+    # words in English and deserves to be trackable on its own.
+    "TO": "t",
+    # Existential "there" ("there is/are a...") vs. ordinary locative/
+    # adverbial "there" ("over there") -- EX is a distinct, reliable tag,
+    # not folded into "r" (adverb).
+    "EX": "e",
 }
 
 # Human-readable names for _POS_TAG_MAP's codes, for UIs that want a
@@ -136,6 +145,8 @@ POS_DISPLAY_NAMES: dict[str, str] = {
     "c": "conjunction",
     "u": "interjection",
     "w": "wh-word",
+    "t": "to-marker",
+    "e": "existential there",
 }
 
 

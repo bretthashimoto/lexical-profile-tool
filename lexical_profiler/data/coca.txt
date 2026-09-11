@@ -9,23 +9,28 @@
 # of speech; see lexical_profiler.tokenizer.POS_DISPLAY_NAMES for what
 # each code means: n=noun, v=verb, m=modal verb, j=adjective, r=adverb,
 # i=preposition, p=pronoun, d=determiner, c=conjunction, u=interjection,
-# w=wh-word). Case variants of the same lemma+POS (record_N / Record_N /
-# RECORD_N in the raw source) ARE summed together -- that is just case-
-# folding, consistent with how this tool lowercases everywhere else, not
-# a cross-POS merge.
+# w=wh-word, t=to-marker, e=existential there). Case variants of the same
+# lemma+POS (record_N / Record_N / RECORD_N in the raw source) ARE summed
+# together -- that is just case-folding, consistent with how this tool
+# lowercases everywhere else, not a cross-POS merge.
 #
-# Only these 10 source tags are kept -- they account for 91.6% of all
-# rows in the source data and have clean, unambiguous meanings. The rest
-# of the source's tag codes are transcript/OCR noise (HTML fragments,
-# foreign-language abbreviations, speaker-tag artifacts) with no reliable
-# part-of-speech meaning, so are dropped entirely, along with numeral/
-# punctuation-only tokens (which can never match a real profiled word
-# token anyway). Truncated to the 100,000 most frequent entries remaining.
+# Only these 13 source tags are kept -- the rest of the source's tag
+# codes are transcript/OCR noise (HTML fragments, foreign-language
+# abbreviations, speaker-tag artifacts) with no reliable part-of-speech
+# meaning, so are dropped entirely, along with numeral/punctuation-only
+# tokens (which can never match a real profiled word token anyway).
+# Spelled-out cardinal numbers (one, million, ...) are also dropped
+# specifically from the "c" (conjunction) tag -- a quirk of the source
+# data tags them that way, but real text tags them as a cardinal number,
+# which isn't in our POS map, so they could never actually match here.
+# Truncated to the 100,000 most frequent entries remaining.
 the_d	41871567
 be_v	34951024
+and_c	20723837
 a_d	20669542
 of_i	19744901
 i_p	14512980
+to_t	13726133
 in_i	13582470
 you_p	12441940
 he_p	10244212
@@ -46,6 +51,7 @@ that_d	4870981
 that_i	4029395
 at_i	3797151
 as_i	3794682
+but_c	3775099
 say_v	3564853
 what_w	3246787
 from_i	3128984
@@ -54,6 +60,7 @@ that_w	2879441
 by_i	2861192
 get_v	2805521
 will_m	2790801
+or_c	2781557
 my_p	2534799
 can_m	2518849
 know_v	2406556
@@ -67,6 +74,7 @@ when_w	1921607
 up_r	1879062
 make_v	1862733
 think_v	1764439
+there_e	1714010
 all_d	1711699
 time_n	1665829
 see_v	1653107
@@ -418,6 +426,7 @@ expect_v	200062
 himself_p	199068
 open_v	199049
 education_n	198958
+both_c	198658
 fall_v	198379
 show_n	198285
 policy_n	198061
@@ -740,6 +749,7 @@ no_r	113342
 dr._n	113224
 cell_n	113052
 past_j	112946
+either_c	112733
 likely_j	112625
 behavior_n	112451
 hospital_n	112428
@@ -772,6 +782,7 @@ reduce_v	109107
 rights_n	109083
 message_n	109020
 michael_n	108930
+yet_c	108765
 note_n	108270
 general_j	108063
 animal_n	107825
@@ -1162,6 +1173,7 @@ task_n	71838
 crazy_j	71750
 senate_n	71736
 ship_n	71608
+nor_c	71411
 income_n	71401
 own_v	71386
 individual_j	71201
@@ -1382,6 +1394,7 @@ reform_n	60500
 count_v	60490
 express_v	60370
 capital_n	60367
+plus_c	60352
 commit_v	60301
 jump_v	60253
 connection_n	60218
@@ -1653,6 +1666,7 @@ straight_r	49896
 assessment_n	49891
 threaten_v	49839
 thursday_n	49786
+ii_c	49768
 bus_n	49748
 session_n	49704
 recommend_v	49678
@@ -1908,6 +1922,7 @@ carolina_n	42060
 file_v	42059
 stress_n	42030
 tired_j	42021
+neither_c	42018
 tip_n	41971
 luck_n	41961
 lock_v	41950
@@ -2739,6 +2754,7 @@ roger_n	26649
 relax_v	26644
 gary_n	26609
 tension_n	26603
+dozen_c	26600
 sin_n	26592
 retirement_n	26591
 lewis_n	26573
@@ -2756,6 +2772,7 @@ classic_j	26395
 arrest_n	26392
 implication_n	26392
 arrange_v	26377
+i_c	26371
 split_v	26358
 trick_n	26345
 matthew_n	26341
@@ -3041,6 +3058,7 @@ amy_n	23554
 relative_n	23538
 survival_n	23530
 clinic_n	23496
+k_c	23494
 temple_n	23491
 quote_v	23486
 chemical_j	23484
@@ -3785,6 +3803,7 @@ admire_v	17804
 dump_v	17803
 alexander_n	17798
 physics_n	17787
+iii_c	17786
 phillips_n	17773
 trap_v	17768
 be_n	17766
@@ -3998,6 +4017,7 @@ calm_v	16546
 lap_n	16546
 noon_n	16540
 heal_v	16539
+h>_c	16520
 rapid_j	16519
 transformation_n	16516
 rumor_n	16501
@@ -4753,6 +4773,7 @@ warner_n	13076
 latter_n	13072
 carpet_n	13071
 dole_n	13070
+b_c	13067
 german_n	13056
 beth_n	13051
 rage_n	13048
@@ -4843,6 +4864,7 @@ alert_n	12708
 gallon_n	12707
 charter_n	12696
 fool_v	12694
+m_c	12694
 arkansas_n	12694
 manipulate_v	12692
 iranian_j	12691
@@ -6321,6 +6343,7 @@ harper_n	8610
 invoke_v	8609
 corresponding_v	8608
 comet_n	8608
+not_t	8606
 grin_n	8606
 fog_n	8604
 noah_n	8603
@@ -6608,6 +6631,7 @@ matrix_n	8022
 stephanie_n	8021
 robust_j	8019
 carbohydrate_n	8018
+they_e	8017
 steadily_r	8017
 abby_n	8017
 trim_v	8016
@@ -8904,6 +8928,7 @@ synthesis_n	5045
 polar_j	5044
 clergy_n	5044
 trent_n	5044
+t_t	5040
 -ifill_n	5040
 systemic_j	5040
 boyd_n	5039
@@ -10542,6 +10567,7 @@ gangster_n	3901
 ore_n	3901
 fertile_j	3900
 freddy_n	3900
+iv_c	3899
 gravitational_j	3898
 saul_n	3898
 succumb_v	3897
@@ -13918,6 +13944,7 @@ pulpit_n	2508
 chestnut_n	2508
 patent_v	2507
 fiat_n	2507
+apiece_c	2506
 mower_n	2506
 ortiz_n	2505
 scold_v	2504
@@ -13949,6 +13976,7 @@ topping_n	2499
 -@1ab_n	2499
 birdie_n	2499
 downhill_r	2498
+cubic_c	2498
 mounting_n	2498
 vile_j	2498
 cosmetic_n	2498
@@ -14463,6 +14491,7 @@ harmon_n	2363
 zip_v	2362
 townsend_n	2362
 accelerator_n	2362
+vii_c	2362
 author_v	2361
 murderous_j	2361
 yen_n	2361
@@ -15832,6 +15861,7 @@ fabrication_n	2034
 @1al_n	2034
 gutierrez_n	2034
 plaster_v	2033
+-seven_c	2033
 prey_v	2033
 nibble_v	2033
 ed._n	2033
@@ -16315,6 +16345,7 @@ modesty_n	1939
 emirate_n	1939
 otter_n	1939
 wonderland_n	1939
+5a_c	1938
 serenity_n	1938
 prime_v	1937
 teal_n	1937
@@ -16656,6 +16687,7 @@ psychopath_n	1871
 supremacist_n	1871
 upset_n	1871
 corbett_n	1871
+vi_c	1871
 rated_v	1870
 thumb_v	1870
 wood_v	1870
@@ -17131,6 +17163,7 @@ themed_j	1780
 observable_j	1780
 sack_v	1780
 roz_n	1780
+viii_c	1780
 piazza_n	1780
 supplementary_j	1779
 rudimentary_j	1779
@@ -17427,6 +17460,7 @@ piss_n	1725
 middleton_n	1725
 faux_n	1725
 yolanda_n	1725
+-nine_c	1724
 bombardment_n	1724
 kiddo_n	1724
 sandy_j	1723
@@ -18088,6 +18122,7 @@ brim_v	1616
 lightning_v	1616
 armani_n	1616
 jackass_n	1616
+n10_c	1615
 at-_j	1615
 higgs_n	1615
 responsiveness_n	1615
@@ -18181,6 +18216,7 @@ footer_n	1601
 observance_n	1601
 @!dr-_n	1601
 cabrera_n	1601
+seven-_c	1600
 alpine_j	1600
 paternal_j	1600
 shut_j	1600
@@ -18637,6 +18673,7 @@ chu_n	1540
 fanfare_n	1540
 apa_n	1540
 purse_v	1539
+mm_c	1539
 ordering_n	1539
 herbicide_n	1539
 campaigning_n	1539
@@ -18725,6 +18762,7 @@ dirty_n	1528
 steamer_n	1528
 beyonce_n	1528
 browny_n	1528
+of_t	1527
 disrespect_v	1527
 finley_n	1527
 msm_n	1527
@@ -19442,6 +19480,7 @@ christiane_n	1437
 clad_v	1436
 full-fledged_j	1436
 epistemological_j	1436
+2b_c	1436
 shouting_n	1436
 genitals_n	1436
 accession_n	1436
@@ -19545,6 +19584,7 @@ pesto_n	1425
 @!zahn_n	1425
 federalism_n	1425
 uncontrolled_j	1424
+-five_c	1424
 failings_n	1424
 namesake_n	1424
 eviction_n	1424
@@ -21015,6 +21055,7 @@ effortless_j	1271
 saltwater_n	1271
 y'know_u	1270
 snuff_v	1270
+n5_c	1270
 outsource_n	1270
 staining_n	1270
 senegal_n	1270
@@ -21273,6 +21314,7 @@ methodically_r	1244
 hush_j	1244
 auspices_n	1244
 extol_v	1244
+n1_c	1244
 idle_n	1244
 dior_n	1244
 canine_n	1244
@@ -21678,6 +21720,7 @@ willfully_r	1202
 hairstyle_n	1202
 mastectomy_n	1202
 pompeo_n	1202
+xi_c	1202
 blumenthal_n	1202
 maj_n	1202
 commodore_n	1202
@@ -22266,6 +22309,7 @@ icc_n	1149
 inferiority_n	1149
 acquittal_n	1149
 latitudes_n	1149
+xii_c	1149
 redford_n	1149
 gallo_n	1149
 lhp_n	1149
@@ -22489,6 +22533,7 @@ grub_n	1130
 atp_n	1130
 deepwater_n	1130
 workman_n	1130
+t_c	1130
 indulgent_j	1129
 omg_u	1129
 dilute_v	1129
@@ -22519,6 +22564,7 @@ tenacious_j	1127
 manga_n	1127
 federalist_n	1127
 detailed_v	1126
+n17_c	1126
 westward_r	1126
 antecedent_n	1126
 in-house_j	1126
@@ -22592,6 +22638,7 @@ offline_n	1120
 taj_n	1120
 bedrock_n	1120
 whaling_n	1120
+n11_c	1119
 pretension_n	1119
 netscape_n	1119
 sudanese_j	1119
@@ -23119,6 +23166,7 @@ demi_n	1077
 mute_n	1077
 imax_n	1077
 ringer_n	1077
+1b_c	1076
 floor_v	1076
 peer-reviewed_j	1076
 countenance_n	1076
@@ -23498,6 +23546,7 @@ jodie_n	1048
 relax_n	1048
 knoll_n	1048
 osbourne_n	1048
+2a_c	1047
 corrosive_j	1047
 deft_j	1047
 scrawny_j	1047
@@ -23634,6 +23683,7 @@ inoculate_v	1036
 full-size_j	1036
 noxious_j	1036
 firsthand_r	1036
+n12_c	1036
 frailty_n	1036
 teton_n	1036
 lichen_n	1036
@@ -24516,6 +24566,7 @@ self-regulation_n	970
 funder_n	970
 revve_v	969
 kindred_j	969
+3b_c	969
 fizzle_v	969
 wiggle_n	969
 usgs_n	969
@@ -24674,6 +24725,7 @@ dionne_n	960
 aces_n	960
 botox_n	960
 low-_j	959
+n15_c	959
 handedly_r	959
 armenian_n	959
 enormity_n	959
@@ -24931,6 +24983,7 @@ bia_n	944
 -farnswor_n	944
 biggie_n	944
 consol_v	943
+to-_t	943
 hijacking_n	943
 neiman_n	943
 epithelial_j	943
@@ -25086,6 +25139,7 @@ lyman_n	934
 stopper_n	934
 nada_n	934
 plante_n	934
+n18_c	933
 puree_v	933
 lazily_r	933
 ibsen_n	933
@@ -25296,6 +25350,7 @@ furrow_v	920
 jesuits_n	920
 r.j._n	920
 tumult_n	920
+l_t	920
 launching_n	920
 bismarck_n	920
 overpass_n	920
@@ -26734,6 +26789,7 @@ bibi_n	835
 coulson_n	835
 allegra_n	835
 crackle_n	835
+s1_c	835
 shia_n	835
 gaffney_n	835
 teeth_n	835
@@ -26743,6 +26799,7 @@ sarcastically_r	834
 debunk_v	834
 ministerial_j	834
 kan._n	834
+xiii_c	834
 rebut_v	834
 long-range_j	834
 agonizing_v	834
@@ -26980,6 +27037,7 @@ superhuman_j	821
 upper-class_j	821
 machado_n	821
 esophagus_n	821
+d_t	821
 rayburn_n	821
 goof_n	821
 clade_n	821
@@ -27238,6 +27296,7 @@ mortuary_n	807
 tp_n	807
 radiology_n	807
 velcro_n	807
+one-_c	806
 enamor_v	806
 sectional_j	806
 colo._n	806
@@ -27499,6 +27558,7 @@ jacuzzi_n	795
 chai_n	795
 dichotomous_j	794
 disown_v	794
+n6_c	794
 usd_n	794
 corporeal_j	794
 receptacle_n	794
@@ -27767,6 +27827,7 @@ wah_n	781
 pudgy_j	780
 readjust_v	780
 surly_j	780
+-six_c	780
 farming_v	780
 streetly_n	780
 lorelai_n	780
@@ -27781,6 +27842,7 @@ lasalle_n	780
 dentistry_n	780
 dermatology_n	780
 clamor_v	779
+n4_c	779
 stingy_j	779
 inscrutable_j	779
 forestall_v	779
@@ -28112,6 +28174,7 @@ camaro_n	763
 ream_n	763
 pierson_n	763
 spartan_n	763
+v_c	763
 horses_n	763
 lei_n	763
 humanitarian_n	763
@@ -28915,6 +28978,7 @@ l1_n	725
 gif_n	725
 ke_n	725
 brow_v	724
+n13_c	724
 teleport_v	724
 value-added_j	724
 incomparable_j	724
@@ -29729,6 +29793,7 @@ prentice_n	688
 ringleader_n	688
 patagonia_n	688
 irishman_n	688
+ix_c	688
 updike_n	688
 @!pelley_n	688
 smurf_n	688
@@ -30549,6 +30614,7 @@ daze_v	652
 sprinkling_n	652
 intention_v	652
 acrid_j	652
+a_c	652
 sorrowful_j	652
 traditionalist_j	652
 spatter_n	652
@@ -30769,6 +30835,7 @@ proximate_j	643
 emphasise_v	643
 mid-_j	643
 sheathe_v	643
+o_t	643
 uncertainly_r	643
 antiviru_n	643
 sully_v	643
@@ -30831,6 +30898,7 @@ matrimony_n	641
 souffle_n	641
 renata_n	641
 garter_n	641
+xiv_c	641
 blix_n	641
 kravitz_n	641
 a.b_n	641
@@ -30991,6 +31059,7 @@ jetty_n	635
 rubenstein_n	635
 campo_n	635
 woolsey_n	635
+xvi_c	635
 linguini_n	635
 insect_j	634
 earthen_j	634
@@ -31236,6 +31305,7 @@ liquefy_v	625
 retroactively_r	625
 premarital_j	625
 clump_v	625
+at_t	625
 tired_v	625
 disloyal_j	625
 mucosa_n	625
@@ -31900,6 +31970,7 @@ km_n	603
 mori_n	603
 co-sponsor_v	602
 defamatory_j	602
+1g_c	602
 worth_i	602
 ritz-carlton_n	602
 anglo-american_j	602
@@ -32787,6 +32858,7 @@ botanic_n	572
 libra_n	572
 highlander_n	572
 spud_n	572
+n21_c	571
 usefully_r	571
 candy_v	571
 distantly_r	571
@@ -33067,6 +33139,7 @@ serenade_v	563
 lacquer_v	563
 @!cokiedroberts_n	563
 upriver_r	563
+n20_c	563
 fluently_r	563
 gout_n	563
 preexisting_j	563
@@ -33239,6 +33312,7 @@ fen_n	558
 soma_n	558
 salivate_v	557
 ferociously_r	557
+n30_c	557
 jewel_v	557
 -quarter_j	557
 court-ordered_j	557
@@ -33436,6 +33510,7 @@ ams_n	552
 danson_n	552
 posttest_j	551
 perturbe_v	551
+<h>_c	551
 biggest_j	551
 clitori_n	551
 pleasantry_n	551
@@ -33523,6 +33598,7 @@ inf_n	549
 jaxx_n	549
 salutary_j	548
 recursive_j	548
+6a_c	548
 levitate_v	548
 strenuously_r	548
 variegated_j	548
@@ -33902,6 +33978,7 @@ incredible_n	536
 lis_n	536
 uav_n	536
 plusmn_n	535
+br_c	535
 shirk_v	535
 lemme_p	535
 obviate_v	535
@@ -34219,6 +34296,7 @@ ostensible_j	526
 m@6_n	526
 star-studded_j	526
 collectible_j	526
+4a_c	526
 wimpy_j	526
 w_i	526
 combat_j	526
@@ -34330,6 +34408,7 @@ expository_j	523
 yuppie_j	523
 undeter_v	523
 imperceptibly_r	523
+dot_c	523
 blasphemous_j	523
 globalize_v	523
 scrupulously_r	523
@@ -34455,7 +34534,9 @@ har_n	521
 vitae_n	521
 ain_n	521
 toll_v	520
+350f_c	520
 monolingual_j	520
+n19_c	520
 infected_j	520
 invite_j	520
 baptismal_j	520
@@ -34600,6 +34681,7 @@ wandering_n	517
 @!stensland_n	517
 agar_n	517
 dst_n	517
+xv_c	517
 american-statesman_n	517
 blondie_n	517
 cantina_n	517
@@ -34739,6 +34821,7 @@ ca2_n	513
 interreligious_j	512
 needle_v	512
 unaccountable_j	512
+n28_c	512
 parenting_v	512
 brazenly_r	512
 partway_r	512
@@ -34905,6 +34988,7 @@ pubic_j	508
 legitimate_v	508
 woozy_j	508
 positional_j	508
+-to_t	508
 beach_v	508
 @!gen_n	508
 arendt_n	508
@@ -35531,8 +35615,10 @@ fauci_n	492
 amethyst_n	492
 zarrella_n	492
 miscarry_v	491
+n25_c	491
 fess_v	491
 irreducible_j	491
+b1_c	491
 dismissively_r	491
 desalination_n	491
 dampness_n	491
@@ -36102,6 +36188,7 @@ pirate_v	477
 woah_u	477
 sedimentary_j	477
 affirmatively_r	477
+qwq_c	477
 90th_j	477
 figural_j	477
 sic_r	477
@@ -36619,7 +36706,9 @@ abi_n	466
 kayleen_n	466
 petrochemical_j	465
 aspirational_j	465
+n35_c	465
 changeable_j	465
+3a_c	465
 discolor_v	465
 specious_j	465
 uninhabitable_j	465
@@ -36924,6 +37013,7 @@ pallid_j	458
 stodgy_j	458
 full-body_j	458
 instinctual_j	458
+y2_c	458
 autonomic_j	458
 four-letter_j	458
 cash-strapped_j	458
@@ -37072,6 +37162,7 @@ ashburn_n	456
 croc_n	456
 quay_n	456
 @1f_n	456
+l_c	456
 splendidly_r	455
 accent_v	455
 @!dr-jennifer_j	455
@@ -37081,6 +37172,7 @@ effeminate_j	455
 off-campus_j	455
 spoof_v	455
 elate_v	455
+-four_c	455
 freestanding_j	455
 unimpeded_j	455
 circuitous_j	455
@@ -37619,6 +37711,7 @@ neolithic_j	443
 immovable_j	443
 -stricken_j	443
 defray_v	443
+n37_c	443
 unadulterated_j	443
 inattentive_j	443
 uncommonly_r	443
@@ -37711,6 +37804,7 @@ gt;&gt_n	441
 proportion_v	441
 immeasurably_r	441
 olbernann_n	441
+n14_c	441
 pockmark_v	441
 waitin_j	441
 peruvian_n	441
@@ -38257,6 +38351,7 @@ sae_n	430
 gratified_j	429
 student-centered_j	429
 kooky_j	429
+1080p_c	429
 overrepresent_v	429
 orwellian_j	429
 surround_j	429
@@ -38899,6 +38994,7 @@ unbuttoned_j	416
 @!kestenbaum_n	416
 jaw-dropping_j	416
 juridical_j	416
+n29_c	416
 deaden_v	416
 multi-billion_j	416
 poignancy_n	416
@@ -39134,6 +39230,7 @@ biologic_j	411
 phenomenally_r	411
 speedily_r	411
 pock_v	411
+&lt;.001_c	411
 interstitial_j	411
 ebullient_j	411
 lather_v	411
@@ -39437,6 +39534,7 @@ pee-wee_n	406
 abed_n	406
 moisturizing_n	406
 perle_n	406
+b2_c	406
 egghead_n	406
 canvas_n	406
 @1d_n	406
@@ -39445,6 +39543,7 @@ pro-business_j	405
 conjugate_v	405
 rumpled_j	405
 asexual_j	405
+n27_c	405
 &minus_n	405
 hither_r	405
 i.e_r	405
@@ -40000,6 +40099,7 @@ low-density_j	395
 disenchant_v	395
 gravelly_j	395
 male-_j	395
+n33_c	395
 gamely_r	395
 obfuscation_n	395
 ever-expand_v	395
@@ -40110,6 +40210,7 @@ indecipherable_j	393
 &lsquo_n	393
 moisturize_v	393
 qtd._v	393
+n40_c	393
 soar_j	393
 evangelize_v	393
 offending_n	393
@@ -40212,6 +40313,7 @@ luger_n	392
 apothecary_n	392
 v1_n	392
 dbp_n	392
+en_t	391
 wedge_v	391
 mispronounce_v	391
 cost-cutting_j	391
@@ -40869,6 +40971,7 @@ nimh_n	381
 omer_n	381
 caw_n	381
 op._n	381
+x_c	381
 brain-_j	380
 vainly_r	380
 together_i	380
@@ -41111,6 +41214,7 @@ a.2d_n	377
 -cooper@2_n	377
 cap-and_j	376
 co-produce_v	376
+1a_c	376
 reanimate_v	376
 appetizing_j	376
 beleaguered_j	376
@@ -41176,6 +41280,7 @@ grotesquely_r	375
 liminal_j	375
 incriminating_j	375
 anti-israel_j	375
+n2_c	375
 scuffle_v	375
 quinnipiac_n	375
 afrikaan_n	375
@@ -41350,6 +41455,7 @@ audibly_r	372
 bloating_n	372
 snow-_j	372
 gyrate_v	372
+n31_c	372
 end-stage_j	372
 conscript_v	372
 lever_v	372
@@ -41569,6 +41675,7 @@ overarching_v	368
 just-_j	368
 poof_u	368
 brand-new_j	368
+in_t	368
 providential_j	368
 blocky_j	368
 fitfully_r	368
@@ -41824,12 +41931,14 @@ landing_v	364
 reawaken_v	364
 prioritization_n	364
 maraud_v	364
+cos_c	364
 aplenty_j	364
 hand-_j	364
 inchoate_j	364
 civilize_v	364
 transgendered_j	364
 immunosuppressive_j	364
+r_c	364
 ejaculate_v	364
 tutsis_n	364
 droll_j	364
@@ -42133,6 +42242,7 @@ bifurcate_v	359
 flippant_j	359
 limply_r	359
 motorize_j	359
+ft_c	359
 olden_j	359
 caudell_n	359
 institutionally_r	359
@@ -42844,6 +42954,7 @@ disgorge_v	348
 unanswerable_j	348
 slogg_v	348
 unwillingly_r	348
+n26_c	348
 topless_j	348
 or-treating_j	348
 facto_j	348
@@ -42976,6 +43087,7 @@ inequitable_j	346
 yuuzhan_n	346
 written_v	346
 unmasked_j	346
+n34_c	346
 -nilly_r	346
 co-chair_v	346
 unknowing_j	346
@@ -43289,6 +43401,7 @@ drunkenly_r	341
 cramping_n	341
 octagonal_j	341
 @5voice-over@6_n	341
+n23_c	341
 forthwith_r	341
 @!actress_n	341
 rsv_n	341
@@ -43803,6 +43916,7 @@ png_n	334
 -news_n	334
 asi_n	334
 ends_n	334
+zillion_c	333
 crumble_j	333
 outrank_v	333
 expensively_r	333
@@ -44292,6 +44406,7 @@ summarise_v	326
 overthink_v	326
 gray-_j	326
 denude_v	326
+n38_c	326
 sullenly_r	326
 please_j	326
 falciparum_n	326
@@ -44339,6 +44454,7 @@ syrah_n	326
 @!ms-anderson_n	326
 salvia_n	326
 thon_n	326
+n36_c	325
 lowly_r	325
 snarling_n	325
 slunk_v	325
@@ -44466,6 +44582,7 @@ cease-fire_j	323
 kitschy_j	323
 gentrify_v	323
 multigenerational_j	323
+about_t	323
 trusty_j	323
 putt_v	323
 abscond_v	323
@@ -44610,6 +44727,7 @@ cld_n	322
 precursor_j	321
 punk_v	321
 amicably_r	321
+n47_c	321
 play-_j	321
 interweave_v	321
 aftereffect_n	321
@@ -44829,6 +44947,7 @@ premeditated_j	318
 same_n	318
 unep_n	318
 apace_r	318
+fg_c	318
 inauthentic_j	318
 blubber_v	318
 checkered_j	318
@@ -45113,6 +45232,7 @@ hypertensive_j	314
 overextend_v	314
 premeditation_n	314
 jive_v	314
+ours_e	314
 workin_v	314
 sodomize_v	314
 parliamentariand_n	314
@@ -45316,6 +45436,7 @@ ddr2_n	312
 emichels_n	311
 caffeinate_v	311
 positing_v	311
+s/390_c	311
 beleive_v	311
 off-again_j	311
 line-_j	311
@@ -45748,6 +45869,7 @@ shag_v	305
 copulate_v	305
 hominem_j	305
 maximally_r	305
+-hundred_c	305
 human-_j	305
 positivist_j	305
 dissatisfied_v	305
@@ -45813,6 +45935,7 @@ preachy_j	304
 avow_v	304
 intravenously_r	304
 moneyed_j	304
+mine_c	304
 mameha_n	304
 titillating_j	304
 dissociative_j	304
@@ -45970,6 +46093,7 @@ homeostatic_j	302
 irreversibly_r	302
 stress-related_j	302
 extractive_j	302
+n43_c	302
 axiomatic_j	302
 audience-reaction_n	302
 anshel_n	302
@@ -46033,6 +46157,7 @@ zealander_n	301
 wherefore_w	301
 headkuarters_n	301
 footage-of-_j	301
+n50_c	301
 quadruple_v	301
 doorjamb_n	301
 carport_n	301
@@ -46193,6 +46318,7 @@ maria-shriver@2_n	300
 froggy_n	300
 equestrian_n	300
 hup_n	300
+400f_c	299
 five-time_j	299
 caste_v	299
 winn_v	299
@@ -46547,6 +46673,7 @@ vis--_n	295
 @!barnes_n	295
 sagittal_j	295
 undercooked_j	295
+1997a_c	295
 connive_v	295
 not-too-distant_j	295
 or_n	295
@@ -46626,6 +46753,7 @@ self-efface_v	294
 gel_v	294
 gay_v	294
 will_j	294
+par_c	294
 trawl_v	294
 -pick_v	294
 broadening_n	294
@@ -46772,6 +46900,7 @@ indifferently_r	292
 unremitting_j	292
 invertebrate_j	292
 cant_v	292
+37c_c	292
 acculturate_v	292
 thumbnail_j	292
 sunnydale_n	292
@@ -47004,6 +47133,7 @@ arad_n	290
 casual_n	290
 -golodryga_n	290
 @!kennedy_n	290
+n_c	290
 @1donald-trump_n	290
 triceratops_n	290
 tepco_n	290
@@ -47448,6 +47578,7 @@ dependant_j	284
 gang_v	284
 high-impact_j	284
 congrat_v	284
+n46_c	284
 -wide_j	284
 casserly_n	284
 ldp_n	284
@@ -47547,6 +47678,7 @@ madden_v	283
 lyrically_r	283
 constipated_j	283
 bee_v	283
+p>_c	283
 ax_v	283
 nehemiah_n	283
 knit_j	283
@@ -47892,6 +48024,7 @@ faithless_j	279
 unimaginably_r	279
 atomize_v	279
 misfire_v	279
+n45_c	279
 ramses_n	279
 saintly_j	279
 &ldquo_j	279
@@ -48077,6 +48210,7 @@ conjugation_n	277
 professionalize_v	277
 fingering_n	277
 cardiopulmonary_j	277
+n39_c	277
 screwy_j	277
 ministration_n	277
 secularize_v	277
@@ -48355,6 +48489,7 @@ bemused_j	274
 grievously_r	274
 illumine_v	274
 prom_v	274
+n53_c	274
 anti-tank_j	274
 unalienable_j	274
 showpiece_n	274
@@ -48624,6 +48759,7 @@ bluer_j	271
 conglomeration_n	271
 epistolary_j	271
 one-minute_j	271
+1999a_c	271
 adenoma_n	271
 christological_j	271
 intertextual_j	271
@@ -48810,6 +48946,7 @@ merino_n	270
 can-do_j	269
 or-nothing_j	269
 papadopoulos_n	269
+4b_c	269
 -shape_v	269
 blessedly_r	269
 post-world_j	269
@@ -49271,6 +49408,7 @@ poetically_r	264
 @1through_n	264
 densest_j	264
 dubiously_r	264
+&middot_c	264
 hydrate_j	264
 horse_v	264
 upholstery_j	264
@@ -49359,6 +49497,7 @@ obligingly_r	263
 reprove_v	263
 spay_v	263
 misalignment_n	263
+ye_e	263
 sick_v	263
 inquiry_v	263
 outflank_v	263
@@ -49460,6 +49599,7 @@ ohm_n	263
 goddam_v	262
 blindingly_r	262
 brothers_n	262
+1992a_c	262
 lodging_v	262
 arbitrate_v	262
 doll_v	262
@@ -49470,6 +49610,7 @@ waterboard_v	262
 gadamer_n	262
 four-and_j	262
 free-form_j	262
+n49_c	262
 quack_v	262
 tenaciously_r	262
 feely_j	262
@@ -49772,6 +49913,7 @@ internationalist_j	259
 voorhee_n	259
 contralateral_j	259
 disturbed_j	259
+inch_c	259
 infliction_n	259
 awarding_n	259
 maks_n	259
@@ -50002,8 +50144,10 @@ disinclined_j	257
 non-essential_j	257
 nonfatal_j	257
 droning_n	257
+n24_c	257
 par_v	257
 ill-informed_j	257
+n44_c	257
 gamecocks_n	257
 re-evaluation_n	257
 friedan_n	257
@@ -50090,6 +50234,7 @@ unenviable_j	256
 produced_v	256
 gruffly_r	256
 sho_v	256
+-a_c	256
 gidden_n	256
 amusingly_r	256
 postpartum_j	256
@@ -50208,11 +50353,13 @@ gravitationally_r	255
 harkless_n	255
 five-month_j	255
 untethered_j	255
+//www_c	255
 afrikaner_j	255
 amidala_n	255
 last-second_j	255
 shopping_v	255
 unpleasantly_r	255
+n42_c	255
 anti-soviet_j	255
 justified_v	255
 rancid_j	255
@@ -50406,6 +50553,7 @@ scarab_n	254
 sorter_n	254
 scoot_n	254
 schadenfreude_n	254
+h_c	254
 tenants_n	254
 rossignol_n	254
 lardner_n	254
@@ -50535,6 +50683,7 @@ over-_v	252
 untended_j	252
 over-_r	252
 frumpy_j	252
+n51_c	252
 cambrian_n	252
 flu-like_j	252
 unobtrusively_r	252
@@ -50747,6 +50896,7 @@ singles_v	250
 -spoken_j	250
 rethought_v	250
 unformed_j	250
+n60_c	250
 ballyhoo_v	250
 unwound_v	250
 impartially_r	250
@@ -50833,6 +50983,7 @@ ontv_n	250
 conjunto_n	250
 jardin_n	250
 ska_n	250
+1987a_c	250
 y2_n	250
 mcbrien_n	250
 keteyian_n	250
@@ -50954,6 +51105,7 @@ no-load_j	248
 thusly_r	248
 off-key_j	248
 chivalric_j	248
+n41_c	248
 infrastructural_j	248
 gloomily_r	248
 warehouse_v	248
@@ -51168,6 +51320,7 @@ laughingly_r	246
 leisurely_j	246
 anti-competitive_j	246
 anesthetic_j	246
+n57_c	246
 troupes_n	246
 scurrilous_j	246
 fetishize_v	246
@@ -51184,6 +51337,7 @@ therefrom_r	246
 measly_r	246
 weasel_v	246
 preprogramm_v	246
+n48_c	246
 -first_j	246
 august_j	246
 covered_v	246
@@ -51929,6 +52083,7 @@ sld_n	240
 tri-state_n	240
 pyro_n	240
 -coat_v	239
+1990a_c	239
 convective_j	239
 shelve_v	239
 smoke-filled_j	239
@@ -52209,6 +52364,7 @@ aloofness_n	237
 buff_j	237
 overdressed_j	237
 methinks_r	237
+1989a_c	237
 joint_v	237
 mind-_r	237
 norm_v	237
@@ -52422,6 +52578,7 @@ overhead_v	235
 retouch_v	235
 obstructionism_n	235
 salt-_j	235
+xx_c	235
 hippy_j	235
 spong_v	235
 cantonese_j	235
@@ -52541,6 +52698,7 @@ sophomoric_j	234
 catastrophically_r	234
 t!evans_n	234
 profuse_j	234
+2003a_c	234
 coffee-table_j	234
 front-office_j	234
 disrepute_n	234
@@ -52648,6 +52806,7 @@ bronzed_j	233
 high-security_n	233
 cost-efficient_j	233
 understudy_v	233
+-o_t	233
 fair-haired_j	233
 opposite-sex_j	233
 unfamiliarity_j	233
@@ -52880,6 +53039,7 @@ conformist_j	231
 readmit_v	231
 digital-only_j	231
 futilely_r	231
+to-_c	231
 q._v	231
 frack_v	231
 dang_v	231
@@ -53244,6 +53404,7 @@ gaa_n	229
 @!rep-gephardt_n	229
 bes_n	229
 multi-national_j	228
+1998a_c	228
 co-operative_j	228
 hit_j	228
 celestina_n	228
@@ -53264,6 +53425,7 @@ inebriate_v	228
 shorthand_v	228
 low-carbon_j	228
 oncology_j	228
+n52_c	228
 hard-nosed_j	228
 regiment_v	228
 theme_v	228
@@ -53392,6 +53554,7 @@ pulled_v	227
 totalize_v	227
 goaly_n	227
 childbearing_v	227
+2010a_c	227
 excess_v	227
 off-ramp_n	227
 dorner_n	227
@@ -53992,6 +54155,7 @@ star-crossed_j	222
 holdin_v	222
 tudjman_n	222
 unburden_v	222
+n70_c	222
 case-by-_j	222
 civilizational_j	222
 agran_n	222
@@ -53999,6 +54163,7 @@ easier_j	222
 co-ordinate_v	222
 ponter_n	222
 @!abrams_n	222
+n58_c	222
 interconnect_v	222
 pear-shaped_j	222
 gisselle_n	222
@@ -54138,6 +54303,7 @@ explainable_j	221
 symmetrically_r	221
 one-_r	221
 homeward_r	221
+1991a_c	221
 fortnite_n	221
 hetero_j	221
 neutrally_r	221
@@ -54147,6 +54313,7 @@ bummer_u	221
 lilt_v	221
 dark-haired_j	221
 fat_v	221
+n63_c	221
 snivel_v	221
 lf_i	221
 deaf-blind_j	221
@@ -54260,6 +54427,7 @@ newfangled_j	220
 middle-school_j	220
 resoundingly_r	220
 pole_v	220
+2001a_c	220
 co-sign_v	220
 code-named_j	220
 shorthand_j	220
@@ -54281,6 +54449,7 @@ ctbt_n	220
 amortize_v	220
 x-rated_j	220
 mm-_u	220
+n56_c	220
 encouraging_j	220
 intercut_j	220
 form-fitting_j	220
@@ -54685,6 +54854,7 @@ mcgarrett_n	217
 fascinating_v	217
 dumbstruck_j	217
 cum_v	217
+1993a_c	217
 gt;&gt;&gt_n	217
 voraciously_r	217
 homebound_j	217
@@ -54800,6 +54970,7 @@ b-movie_n	217
 semi-arid_j	216
 pubescent_j	216
 less-expensive_j	216
+uh-_c	216
 molten_j	216
 doty_n	216
 non-_r	216
@@ -54815,6 +54986,7 @@ forestland_n	216
 -flavor_v	216
 indemnify_v	216
 never-_j	216
+pg_c	216
 outclass_v	216
 washingtonians_n	216
 hooray_u	216
@@ -54945,6 +55117,7 @@ c.l._n	215
 farias_n	215
 frightened_j	215
 spring-loaded_j	215
+2011a_c	215
 networked_j	215
 kashmiri_n	215
 sport_j	215
@@ -55066,6 +55239,7 @@ fai_n	215
 tractable_j	214
 remain_n	214
 pro-family_j	214
+n3_c	214
 overpayment_n	214
 weirdo_j	214
 the-_j	214
@@ -55353,6 +55527,7 @@ orange-_j	212
 vyrl_n	212
 lakoff_n	212
 widescreen_j	212
+n65_c	212
 unawares_r	212
 ricochet_v	212
 underused_j	212
@@ -55658,6 +55833,7 @@ monkey_v	210
 phosphorylate_v	210
 yearold_j	210
 disillusion_n	210
+2000a_c	210
 eerdman_n	210
 dusk_j	210
 unaids_n	210
@@ -56055,6 +56231,7 @@ pintrich_n	207
 hevak_n	207
 unrecorded_j	207
 the_u	207
+dl_c	207
 prebiotic_j	207
 hydroponic_j	207
 re-form_v	207
@@ -56225,6 +56402,7 @@ suction_v	206
 berninger_n	206
 whinny_v	206
 -all_j	206
+2009a_c	206
 intersubjective_j	206
 k_v	206
 ya_v	206
@@ -56334,6 +56512,7 @@ seb_n	206
 ugg_n	206
 ait_n	206
 azure_j	205
+bn_c	205
 @1anthony_j	205
 bomb-making_j	205
 prominence_v	205
@@ -56342,6 +56521,7 @@ gash_v	205
 cauterize_v	205
 ou_u	205
 shank_v	205
+n61_c	205
 reschly_n	205
 natured_j	205
 disheartened_j	205
@@ -56359,6 +56539,7 @@ urbino_n	205
 majorly_r	205
 old-line_j	205
 mythologize_v	205
+o157_c	205
 one-point_j	205
 mile-_j	205
 wack_j	205
@@ -56503,6 +56684,7 @@ fair-skinned_j	204
 aggrieved_j	204
 poetical_j	204
 republican-_n	204
+that_c	204
 off-camera_j	204
 pert_j	204
 suzhou_n	204
@@ -56789,6 +56971,7 @@ iste_n	203
 redden_n	203
 leapfroge_v	202
 six-cylinder_n	202
+n59_c	202
 disabling_n	202
 intoxicant_n	202
 home-field_j	202
@@ -56796,6 +56979,7 @@ concatenate_v	202
 though_n	202
 stub_v	202
 unoriginal_j	202
+2004a_c	202
 tattoo_v	202
 opene_v	202
 unmentioned_j	202
@@ -57701,6 +57885,7 @@ surveying_v	196
 anti-islam_j	196
 imbecile_j	196
 haudenosaunee_j	196
+n67_c	196
 @!clarissa_n	196
 precedential_j	196
 redid_v	196
@@ -57712,6 +57897,7 @@ freakin_r	196
 hrothgar_n	196
 window_v	196
 mucky_j	196
+2002a_c	196
 underreporting_n	196
 es_u	196
 multipolar_j	196
@@ -57837,6 +58023,7 @@ pari_n	196
 presi_n	196
 esi_n	196
 dbs_n	196
+n66_c	195
 snarling_v	195
 whit_u	195
 transmissible_j	195
@@ -58156,6 +58343,7 @@ nonrenewable_j	193
 tie-dyed_j	193
 fifteen-_j	193
 conveyer_n	193
+5b_c	193
 hy_i	193
 glom_v	193
 rousseff_n	193
@@ -58168,6 +58356,7 @@ selflessly_r	193
 giants_n	193
 long-sought_j	193
 moltmann_n	193
+2007a_c	193
 relaxant_n	193
 wildland_j	193
 tranquilize_v	193
@@ -58343,6 +58532,7 @@ inexpressible_j	192
 blue-white_j	192
 harder_j	192
 thucydide_n	192
+2012a_c	192
 elbe_n	192
 non-proliferation_j	192
 audio-visual_j	192
@@ -58511,6 +58701,7 @@ bonk_v	191
 they_m	191
 up_j	191
 -oil_v	191
+2008a_c	191
 picking_v	191
 deep-pocketed_j	191
 repurchase_v	191
@@ -58690,6 +58881,7 @@ mcmichael_n	190
 zip-top_j	190
 door-to-_j	190
 vitiate_v	190
+n73_c	190
 high-scoring_j	190
 dismaying_j	190
 single-celled_j	190
@@ -58853,6 +59045,7 @@ above-_j	189
 toot_v	189
 yuu_p	189
 gombe_n	189
+1995a_c	189
 cancer-cause_v	189
 second-most_j	189
 nkrumah_n	189
@@ -58878,6 +59071,7 @@ intimidated_j	189
 -it-_v	189
 starched_j	189
 p_v	189
+n77_c	189
 fiberoptic_j	189
 p>_i	189
 kovu_n	189
@@ -59182,6 +59376,7 @@ chukchi_n	188
 psf_n	188
 ebs_n	188
 housley_n	188
+xvii_c	188
 scp_n	188
 faun_n	188
 yolo_n	188
@@ -59191,6 +59386,7 @@ ors_n	188
 dap_n	188
 facilitative_j	187
 underpowered_j	187
+-one_c	187
 yowl_v	187
 sublimely_r	187
 clausewitz_n	187
@@ -59201,6 +59397,7 @@ multi-media_j	187
 carpathia_n	187
 re-use_v	187
 required_v	187
+n72_c	187
 serologic_j	187
 quote-unquote_j	187
 vice-president_j	187
@@ -59212,6 +59409,7 @@ kormak_n	187
 discomfite_v	187
 brown-skinned_j	187
 -stroke_n	187
+p&lt;.001_c	187
 precook_v	187
 thorvald_n	187
 compostable_j	187
@@ -59568,6 +59766,7 @@ upbraid_v	185
 espnu_n	185
 mdash_n	185
 tatar_n	185
+n68_c	185
 streetwise_j	185
 northward_j	185
 transit_v	185
@@ -59577,6 +59776,7 @@ tenderize_v	185
 arab-_n	185
 guilt_v	185
 longitudinally_r	185
+n74_c	185
 hellenes_n	185
 statutorily_r	185
 ecclesiological_j	185
@@ -59877,6 +60077,7 @@ hegelian_j	183
 long-suffer_v	183
 amigo_u	183
 the-line_n	183
+1988a_c	183
 underworld_j	183
 computer-aided_j	183
 sprightly_j	183
@@ -59984,6 +60185,7 @@ schachter_n	183
 colloquy_n	183
 schnauzer_n	183
 b'nai_n	183
+p<0.05_c	183
 ricket_n	183
 linoleic_n	183
 timekeeper_n	183
@@ -60161,6 +60363,7 @@ mota_n	182
 balanced_n	182
 madd_n	182
 logician_n	182
+xviii_c	182
 nihilist_n	182
 magnetar_n	182
 carnitine_n	182
@@ -60245,6 +60448,7 @@ moralizing_n	181
 french-speaking_j	181
 rainbow_j	181
 gah_u	181
+avg_c	181
 graj_v	181
 picnic_v	181
 angiogram_n	181
@@ -60439,6 +60643,7 @@ ey_u	180
 olmedo_n	180
 vote-getter_n	180
 probiotic_j	180
+n75_c	180
 reposition_n	180
 isidore_n	180
 balky_j	180
@@ -60448,6 +60653,7 @@ hydrostatic_j	180
 worthlessness_n	180
 oneidas_n	180
 telegenic_j	180
+1/2-inch_c	180
 rear-wheel_j	180
 vape_v	180
 slime_v	180
@@ -60459,6 +60665,7 @@ jags_n	180
 screeching_v	180
 executable_j	180
 blondel_n	180
+1/8-inch_c	180
 wanamaker_n	180
 maywood_n	180
 initialization_n	180
@@ -60639,6 +60846,7 @@ unguided_j	179
 whosoever_p	179
 underbar_n	179
 anti-terror_j	179
+n62_c	179
 phoenician_j	179
 analogously_r	179
 largest_j	179
@@ -60797,6 +61005,7 @@ karrde_n	178
 severson_n	178
 gnawing_n	178
 undulate_v	178
+9a_c	178
 crookedly_r	178
 dccc_n	178
 portal_j	178
@@ -60987,7 +61196,9 @@ pre-date_v	177
 suborbital_j	177
 misrata_n	177
 blood-_j	177
+n71_c	177
 limn_v	177
+100x_c	177
 nonrefundable_j	177
 inhere_v	177
 lindsome_n	177
@@ -61172,6 +61383,7 @@ polycarbonate_j	176
 away_i	176
 twin-engine_j	176
 crab_v	176
+n22_c	176
 minbari_j	176
 deflationary_j	176
 shat_v	176
@@ -62167,6 +62379,7 @@ biomolecule_n	171
 heathen_j	171
 vehicular_j	171
 laxalt_n	171
+with_t	171
 oklahoman_n	171
 co-occurrence_n	171
 nflpa_n	171
@@ -62734,6 +62947,7 @@ end-all_j	168
 bide_j	168
 latitudinal_j	168
 someway_r	168
+g_c	168
 cassian_n	168
 recross_v	168
 most-wanted_j	168
@@ -62956,6 +63170,7 @@ sagely_r	167
 snowball_v	167
 heck_v	167
 tamiflu_n	167
+over_t	167
 unwinnable_j	167
 yall_p	167
 exportation_n	167
@@ -63114,6 +63329,7 @@ sah_n	167
 pleasingly_r	166
 sethe_n	166
 glial_j	166
+n76_c	166
 four-factor_j	166
 public-_j	166
 assertively_r	166
@@ -63338,6 +63554,7 @@ associates_n	166
 macduff_n	166
 mip_n	166
 valance_n	166
+n78_c	165
 litde_j	165
 jauntily_r	165
 bundeswehr_n	165
@@ -63572,6 +63789,7 @@ low-cal_j	164
 stridently_r	164
 happenin_j	164
 planned_v	164
+1994a_c	164
 unrepresented_j	164
 four-stroke_j	164
 interest-_j	164
@@ -63599,6 +63817,7 @@ half-moon_n	164
 cross-check_v	164
 clearcut_j	164
 computerized_j	164
+-million_c	164
 datsun_n	164
 kayes_n	164
 vetae_v	164
@@ -64182,6 +64401,7 @@ five-week_j	161
 whistling_j	161
 shallowly_r	161
 incomparably_r	161
+n69_c	161
 ooee_n	161
 puffiness_n	161
 sharps_n	161
@@ -64833,6 +65053,7 @@ jeunesse_n	159
 mond_n	159
 upturned_j	158
 bredemeier_n	158
+tu_t	158
 @!wo_n	158
 etiological_j	158
 bittere_j	158
@@ -64870,8 +65091,10 @@ hillbilly_r	158
 preselect_v	158
 wheezing_n	158
 teachers_n	158
+2013a_c	158
 stand-alone_j	158
 n/_i	158
+100k_c	158
 existentialist_j	158
 swaggering_j	158
 honorarium_n	158
@@ -65093,10 +65316,12 @@ outsell_v	157
 gender_v	157
 clinching_n	157
 uncharitable_j	157
+2005a_c	157
 woodhull_n	157
 glibly_r	157
 re-route_v	157
 independent-minded_j	157
+r2_c	157
 six-year-old_n	157
 slake_v	157
 loblolly_j	157
@@ -66223,6 +66448,7 @@ besson_n	152
 mosaic_j	152
 overused_j	152
 myrdal_n	152
+ter_t	152
 reenergize_v	152
 gift-giving_j	152
 low-life_j	152
@@ -66348,6 +66574,7 @@ reanalysis_n	152
 -over_n	152
 rutskoi_n	152
 usg_n	152
+xxii_c	152
 gibney_n	152
 crabbe_n	152
 gorski_n	152
@@ -66355,6 +66582,7 @@ mache_n	152
 ble_n	152
 jeni_n	152
 piazzas_n	152
+e_t	152
 dramatics_n	152
 greenlee_n	152
 henkel_n	152
@@ -66454,6 +66682,7 @@ litke_n	152
 ma._n	152
 vou_p	151
 latticework_n	151
+450f_c	151
 nervy_j	151
 stateside_r	151
 low-growing_j	151
@@ -67480,6 +67709,7 @@ self-assured_j	147
 quick-_j	147
 autosomal_j	147
 seeming_j	147
+6b_c	147
 reperfusion_n	147
 horrendously_r	147
 breezily_r	147
@@ -67529,6 +67759,7 @@ conformational_j	147
 bessemer_n	147
 accouterment_n	147
 acadian_j	147
+2014a_c	147
 scudd_v	147
 ju_v	147
 snorri_n	147
@@ -67797,6 +68028,7 @@ kory_n	146
 sayin_v	146
 berezovsky_n	146
 loial_n	146
+//www._c	146
 cancer-free_j	146
 l.g._n	146
 obliging_j	146
@@ -68079,10 +68311,12 @@ laumann_n	145
 psychophysical_j	145
 fluidize_v	145
 gachet_n	145
+w1_c	145
 right-handed_j	145
 @1norah-o'donnell@2_n	145
 fricative_j	145
 mispronunciation_n	145
+888-npr_c	145
 top-ranking_j	145
 waterless_j	145
 ash_v	145
@@ -68283,6 +68517,7 @@ savin_n	145
 centrum_n	145
 arousability_n	145
 chroma_n	145
+3x_c	145
 cge_n	145
 -ch_n	145
 morag_n	145
@@ -68869,6 +69104,7 @@ job_v	142
 overbook_v	142
 @1sanders@2_n	142
 monied_j	142
+n79_c	142
 crosscut_v	142
 lvmh_n	142
 selfsame_j	142
@@ -69142,6 +69378,7 @@ corrective_n	141
 sulawesi_n	141
 111th_n	141
 kuper_n	141
+k2_c	141
 guanajuato_n	141
 pammy_n	141
 demoralization_n	141
@@ -69303,6 +69540,7 @@ grebe_n	141
 velodrome_n	141
 anbari_n	141
 frack_n	141
+y_c	141
 bll_n	141
 eckmann_n	141
 urbanist_n	141
@@ -69341,6 +69579,7 @@ artist-_j	140
 innervate_v	140
 pree_v	140
 pushing_v	140
+8a_c	140
 josh_v	140
 unwrapped_j	140
 belay_v	140
@@ -69658,6 +69897,7 @@ mairi_n	139
 unceasingly_r	139
 sunburnt_j	139
 wetly_r	139
+10x_c	139
 disinclination_n	139
 mennonite_j	139
 supercilious_j	139
@@ -69781,6 +70021,7 @@ kempe_n	139
 hitmen_n	139
 -golodryga@2_n	139
 brest_n	139
+p<0.001_c	139
 homestretch_n	139
 -powell_n	139
 @1david-brooks@2_n	139
@@ -69913,6 +70154,7 @@ spermicide_n	138
 rebook_v	138
 knoweth_v	138
 soviet-era_j	138
+c1_c	138
 seronegative_j	138
 kuzma_n	138
 jinnah_n	138
@@ -70441,6 +70683,7 @@ fiba_n	136
 nceas_n	136
 contradistinction_n	136
 montford_n	136
+ib_c	136
 baby_u	136
 execrable_j	136
 uncommunicative_j	136
@@ -71248,6 +71491,7 @@ soopers_n	133
 adventure_v	133
 adoringly_r	133
 avowedly_r	133
+sighs_c	133
 wjla_n	133
 daguerreoty_n	133
 blasphem_v	133
@@ -71264,6 +71508,7 @@ self-replicate_v	133
 certifiably_r	133
 short-tempered_j	133
 mr-baker_n	133
+by-_c	133
 agape_j	133
 fist-sized_j	133
 1beta_n	133
@@ -71852,6 +72097,7 @@ thereof_i	131
 six-page_j	131
 four-hundred_j	131
 melanesia_n	131
+gazillion_c	131
 non-working_j	131
 wynnsong_n	131
 savanna_j	131
@@ -71875,6 +72121,7 @@ noell_n	131
 hidebound_j	131
 rroid_n	131
 //goo.gl/_n	131
+-two_c	131
 anti-racist_j	131
 rattlesnake_j	131
 norberg_n	131
@@ -72168,6 +72415,7 @@ pasolini_n	130
 untimely_r	130
 billiard_j	130
 salable_j	130
+be_c	130
 nooooo_u	130
 eight-month_j	130
 jingoism_n	130
@@ -72448,6 +72696,7 @@ time-tested_j	129
 ooh-ooh_j	129
 electrophysiological_j	129
 elphaba_n	129
+p&lt;0.001_c	129
 skinsuit_n	129
 ggbs_n	129
 versus_v	129
@@ -73063,6 +73312,7 @@ self-rate_v	127
 qualified_v	127
 engrain_v	127
 culphert_n	127
+under-_c	127
 cottonsee_v	127
 been_n	127
 du_v	127
@@ -73097,6 +73347,7 @@ re-do_v	127
 hockey_j	127
 masturbatory_j	127
 @!mr-rubenstein_n	127
+1-800-fandango_c	127
 pending_n	127
 @!chip_n	127
 interfacing_n	127
@@ -73368,6 +73619,7 @@ witch_v	126
 ever-greater_j	126
 barts_n	126
 deja_u	126
+on_t	126
 vespasian_n	126
 laissez-_n	126
 lenina_n	126
@@ -74058,6 +74310,7 @@ drewe_n	124
 mutiny_v	124
 farm-raised_j	124
 n.s.a._n	124
+umpteen_c	124
 predication_n	124
 meself_p	124
 objectivist_j	124
@@ -74065,6 +74318,7 @@ ironheart_n	124
 kenrick_n	124
 musta_v	124
 utilisation_n	124
+8g_c	124
 carpe_v	124
 96th_n	124
 weigl_n	124
@@ -74084,6 +74338,7 @@ d-ma_n	124
 down-_r	124
 senselessly_r	124
 overbroad_j	124
+70a_c	124
 long-neglected_j	124
 torpid_j	124
 soundboard_n	124
@@ -74313,6 +74568,7 @@ fleabag_n	124
 alphas_n	124
 creb_n	124
 lafarge_n	124
+2e_c	124
 orac_n	124
 festa_n	124
 paa_n	124
@@ -74336,6 +74592,7 @@ dilatory_j	123
 recappe_v	123
 majnu_n	123
 terr._n	123
+'s_t	123
 jos&eacute_n	123
 clumpy_j	123
 repetitively_r	123
@@ -75335,6 +75592,7 @@ yous_p	120
 to-military_j	120
 endod_n	120
 interminably_r	120
+and_t	120
 motile_j	120
 113th_n	120
 date-_j	120
@@ -76011,6 +76269,7 @@ antigay_j	118
 depositional_j	118
 onions_n	118
 runneth_v	118
+p&lt;0.05_c	118
 elf_j	118
 <h>_p	118
 bidart_n	118
@@ -76064,6 +76323,7 @@ insouciant_j	118
 craniofacial_j	118
 tahiri_n	118
 of-mouth_n	118
+200l_c	118
 nuer_j	118
 saddening_j	118
 nylund_n	118
@@ -76762,6 +77022,7 @@ waffen_j	116
 -heel_v	116
 seven-figure_j	116
 unhesitatingly_r	116
+minus_c	116
 socioeconomically_r	116
 ultra-low_j	116
 reproachfully_r	116
@@ -77106,6 +77367,7 @@ hardwork_v	115
 airily_r	115
 boehringer_n	115
 -white_j	115
+p<.05_c	115
 duct-taped_j	115
 antic_j	115
 p>_d	115
@@ -77948,6 +78210,7 @@ flag-draped_j	113
 imping_v	113
 labial_j	113
 intermodal_j	113
+n100_c	113
 indissoluble_j	113
 officers_n	113
 etruscan_n	113
@@ -78254,6 +78517,7 @@ rumour_v	112
 meridional_j	112
 redest_j	112
 revalue_v	112
+-eight_c	112
 fouling_n	112
 cryin_v	112
 rigmarole_n	112
@@ -78644,6 +78908,7 @@ tautological_j	111
 gridline_n	111
 pardons_n	111
 second-_r	111
+n87_c	111
 spassky_n	111
 mid-teen_n	111
 arusha_n	111
@@ -79066,6 +79331,7 @@ multi-scale_j	110
 rockelle_n	110
 adenauer_n	110
 righthand_v	110
+3fg_c	110
 weisselberg_n	110
 zainal_n	110
 -faced_j	110
@@ -79084,6 +79350,7 @@ chinese-american_n	110
 waitlist_n	110
 six-game_n	110
 repertory_j	110
+plusmn_c	110
 dually_r	110
 deetz_n	110
 gojraan_n	110
@@ -79279,6 +79546,7 @@ codis_n	110
 offroad_n	110
 nando_n	110
 eog_n	110
+ff_c	110
 boxster_n	110
 taproom_n	110
 @!mr-hale_n	110
@@ -79391,6 +79659,7 @@ overtop_v	109
 nauru_n	109
 sectionsection_n	109
 low-temperature_j	109
+minute_c	109
 abashed_j	109
 panicle_n	109
 liquor_v	109
@@ -79793,6 +80062,7 @@ unstinting_j	108
 libidinal_j	108
 literatures_n	108
 corrina_n	108
+n98_c	108
 brokenhearted_j	108
 freed_v	108
 wall-mounted_j	108
@@ -79800,6 +80070,7 @@ gorkon_n	108
 qinghai_n	108
 indispensible_j	108
 grippy_j	108
+a_t	108
 macondo_n	108
 walfort_n	108
 singaporeans_n	108
@@ -79811,6 +80082,7 @@ sic_j	108
 holqwq_n	108
 red-white_j	108
 sorrow_v	108
+n91_c	108
 glam_j	108
 indoor-outdoor_j	108
 essay_v	108
@@ -79824,6 +80096,7 @@ pretreate_v	108
 ever_j	108
 quartile_j	108
 mufasa_n	108
+carbo._c	108
 public-work_n	108
 aerosolize_v	108
 diego-_n	108
@@ -80295,6 +80568,7 @@ ethnological_j	107
 tricolor_j	107
 welmann_n	107
 objectified_j	107
+10a_c	107
 spd._n	107
 pyd_n	107
 gorin_n	107
@@ -81029,6 +81303,7 @@ loth_n	106
 exo_n	106
 rapido_n	106
 -little_n	106
+q_c	105
 gynecologic_j	105
 non-destructive_j	105
 semi-darkness_n	105
@@ -81059,6 +81334,7 @@ post-college_j	105
 mumbling_n	105
 aucept_v	105
 applauding_v	105
+d6_c	105
 a&m_n	105
 notepaper_n	105
 nontaxable_j	105
@@ -81070,6 +81346,7 @@ breast-fed_j	105
 rosoff_n	105
 five-part_j	105
 fillet_v	105
+n85_c	105
 paralympic_n	105
 nominee_j	105
 equilibrate_v	105
@@ -81107,6 +81384,7 @@ oversensitive_j	105
 fuldmogtig_n	105
 multifunction_j	105
 71st_j	105
+2017a_c	105
 bulwer_n	105
 trinidadian_j	105
 overtraining_n	105
@@ -81436,6 +81714,7 @@ altiplano_n	105
 corke_n	105
 h20_n	105
 j_p	105
+y_t	105
 goggles_n	105
 kundalini_n	105
 @!elise-strachan_n	105
@@ -81547,6 +81826,7 @@ mosquito-_j	104
 mid-section_n	104
 sentimentalize_v	104
 emeka_n	104
+802.11n_c	104
 scrimmage_v	104
 fluid-filled_j	104
 sepulchral_j	104
@@ -81913,6 +82193,7 @@ wyvern_n	104
 ankh_n	104
 ngan_n	104
 s.s_n	104
+5x_c	104
 capes_n	104
 pletka_n	104
 atsa_n	104
@@ -82012,6 +82293,7 @@ aubry_n	103
 friggin_r	103
 soooo_r	103
 test-take_v	103
+2o_c	103
 lilla_n	103
 danceable_j	103
 naglieri_n	103
@@ -82405,6 +82687,7 @@ emcee_v	102
 vidot_n	102
 retune_v	102
 attacked_v	102
+n16_c	102
 ish_v	102
 witness_j	102
 second-_v	102
@@ -82472,6 +82755,7 @@ prove_j	102
 nasally_r	102
 appall_v	102
 renan_n	102
+1/10th_c	102
 suppose_n	102
 crisp-tender_j	102
 in_d	102
@@ -82874,6 +83158,7 @@ yossie_n	101
 tajles_n	101
 scobie_n	101
 merek_n	101
+xxiv_c	101
 suomi_n	101
 jadey_n	101
 seemly_r	101
@@ -83375,7 +83660,9 @@ prokaryon_n	100
 medlen_n	100
 connaughton_n	100
 oetting_n	100
+lo_t	100
 fairhaven_n	100
+425f_c	100
 counter-argument_n	100
 cobbett_n	100
 outscore_v	100
@@ -84231,6 +84518,7 @@ trento_n	98
 non-russian_j	98
 @telep_v	98
 mediational_j	98
+p<.001_c	98
 englisch_n	98
 vrain_n	98
 winterize_v	98
@@ -84324,6 +84612,7 @@ ice-blue_j	98
 chizuru_n	98
 do-it-_j	98
 kariya_n	98
+95c_c	98
 self-exploration_n	98
 fast-rising_j	98
 prototype_v	98
@@ -84425,6 +84714,7 @@ lautrec_n	98
 ation_n	98
 wti_n	98
 encke_n	98
+p&lt_c	98
 second-oldest_j	98
 ozick_n	98
 kenerly_n	98
@@ -84777,6 +85067,7 @@ belinsky_n	97
 ellman_n	97
 test-_j	97
 phrenk_n	97
+2006a_c	97
 -mean_v	97
 lib_v	97
 streambed_n	97
@@ -84802,8 +85093,10 @@ potboiler_n	97
 amarylli_n	97
 norilsk_n	97
 six-year-old_j	97
+n105_c	97
 deselect_v	97
 carneiro_n	97
+hm._c	97
 hardest-_j	97
 105th_n	97
 cha_u	97
@@ -85064,6 +85357,7 @@ onthe_i	97
 sirah_n	97
 durum_n	97
 -well_n	97
+l0_c	97
 modern-_n	97
 jay@2_n	97
 noob_n	97
@@ -85204,6 +85498,7 @@ advisability_n	96
 scat_v	96
 shoud_m	96
 robillard_n	96
+n93_c	96
 coz_i	96
 yo_d	96
 forness_n	96
@@ -85253,6 +85548,7 @@ teams_n	96
 fourth-seeded_j	96
 osteoblast_n	96
 camillo_n	96
+bazillion_c	96
 nps.gov_n	96
 unhand_v	96
 unmold_v	96
@@ -85277,6 +85573,7 @@ porcine_j	96
 albatrosse_n	96
 upraise_j	96
 triplicate_j	96
+10p_c	96
 photoperiod_n	96
 manmohan_n	96
 anneal_v	96
@@ -85312,6 +85609,7 @@ falseness_n	96
 re-learn_v	96
 bartolomeo_n	96
 stap_v	96
+11a_c	96
 jolinar_n	96
 macrobiotic_j	96
 lyonnais_n	96
@@ -85349,6 +85647,7 @@ stady_v	96
 meat-eater_n	96
 semidarkness_n	96
 flattery_j	96
+h5_c	96
 slow-witted_j	96
 prolapse_n	96
 aybar_n	96
@@ -85436,6 +85735,7 @@ groce_n	96
 nail-_j	96
 cedaw_n	96
 cybercriminal_n	96
+xxvi_c	96
 unmapped_j	96
 @!sydell_n	96
 alkyl_n	96
@@ -85724,6 +86024,7 @@ wagnerian_j	95
 carnita_n	95
 underperformance_n	95
 gonadal_j	95
+n101_c	95
 non-combat_j	95
 petruzzello_n	95
 -cylinder_n	95
@@ -85801,6 +86102,7 @@ stoiber_n	95
 norming_n	95
 window-_j	95
 readin_v	95
+n107_c	95
 managed_v	95
 music-related_j	95
 jarringly_r	95
@@ -86718,6 +87020,7 @@ manolos_n	93
 ranjip_n	93
 haussmann_n	93
 adaptively_r	93
+yore_c	93
 philomene_n	93
 pre-plann_v	93
 pre-emptively_r	93
@@ -86875,6 +87178,7 @@ antiaue_n	93
 teasley_n	93
 brann_n	93
 pseudo-scientific_j	93
+'s_c	93
 blood-spattered_j	93
 midget_j	93
 img_v	93
@@ -87286,6 +87590,7 @@ deeter_n	92
 without_n	92
 trained_v	92
 raptly_r	92
+eight-_c	92
 drunk-_j	92
 cause-effect_j	92
 despairingly_r	92
@@ -87331,6 +87636,7 @@ completed_v	92
 tak_v	92
 aminoglycoside_n	92
 below_n	92
+n103_c	92
 amphorae_n	92
 pupate_v	92
 prefatory_j	92
@@ -87366,8 +87672,10 @@ mainline_v	92
 ized_v	92
 citizens_n	92
 to-_d	92
+n102_c	92
 -resolution_n	92
 rheumatoid_j	92
+n81_c	92
 subtend_v	92
 andujar_n	92
 once-great_j	92
@@ -87383,6 +87691,7 @@ petrified_n	92
 slaver_v	92
 bodiless_j	92
 be-_v	92
+nine-_c	92
 bromios_n	92
 starstruck_j	92
 geomorphic_j	92
@@ -87399,6 +87708,7 @@ camarena_n	92
 rollerblade_v	92
 grumpily_r	92
 hard-headed_j	92
+for_t	92
 illusionary_j	92
 -width_n	92
 mannerly_r	92
@@ -87832,6 +88142,7 @@ krenawi_n	91
 thalamic_j	91
 jet-setting_j	91
 universalizing_j	91
+h.264_c	91
 unflavored_j	91
 paint-_j	91
 meatus_n	91
@@ -87908,6 +88219,7 @@ dilator_n	91
 latimore_n	91
 reimbursable_j	91
 autopsy_v	91
+n104_c	91
 orchid_j	91
 phenotypically_r	91
 cm.sup_n	91
@@ -87940,6 +88252,7 @@ subfreeze_v	91
 transliterate_v	91
 gwich_n	91
 career-_j	91
+n86_c	91
 sebasten_n	91
 inerrant_j	91
 there_n	91
@@ -89453,6 +89766,7 @@ vlkl_n	89
 forensically_r	88
 sabonis_n	88
 cost-effectively_r	88
+10k_c	88
 solqwq_n	88
 tjx_n	88
 polymerize_v	88
@@ -90070,6 +90384,7 @@ aboveboard_j	87
 involution_n	87
 furtwangler_n	87
 joycelyn_j	87
+gasp_c	87
 -motivated_j	87
 asmund_n	87
 relationally_r	87
@@ -90134,6 +90449,7 @@ hassock_n	87
 sudeiki_n	87
 tanking_n	87
 kawakami_n	87
+60c_c	87
 materialise_v	87
 @!weiss_n	87
 -fly_j	87
@@ -90157,6 +90473,7 @@ dyspeptic_j	87
 langewiesche_n	87
 hrh_n	87
 much_n	87
+ci_c	87
 nuru_n	87
 bolles_n	87
 chart-_j	87
@@ -90165,6 +90482,7 @@ leveson_n	87
 jj._n	87
 redskins_n	87
 dewater_v	87
+b._c	87
 cohens_n	87
 priestly_r	87
 six-legged_j	87
@@ -90184,6 +90502,7 @@ eight-member_j	87
 skjaldwulf_n	87
 deenie_n	87
 raucously_r	87
+h4_c	87
 unfaithfulness_n	87
 itchiness_n	87
 fulk_n	87
@@ -90211,6 +90530,7 @@ all-_r	87
 mouthed_j	87
 pirate_j	87
 gmelch_n	87
+7b_c	87
 backbiting_n	87
 stiff-legged_j	87
 ofyour_j	87
@@ -90598,6 +90918,7 @@ fou_n	87
 frell_n	87
 gediman_n	87
 mitchelson_n	87
+d_c	87
 @1ed_n	87
 punchbowl_n	87
 aerodrome_n	87
@@ -90735,6 +91056,7 @@ goncalves_n	86
 astern_r	86
 -structure_v	86
 pre-christmas_j	86
+n88_c	86
 bettinger_n	86
 punk-_j	86
 hadji_n	86
@@ -90790,6 +91112,7 @@ fba_j	86
 errico_n	86
 fludarabine_n	86
 silwan_n	86
+7a_c	86
 mack_v	86
 -gibbon_n	86
 lobe_v	86
@@ -91241,6 +91564,7 @@ dun-colored_j	85
 umlauf_n	85
 mice_v	85
 unsee_v	85
+n108_c	85
 keon_n	85
 balram_n	85
 belowground_j	85
@@ -91298,7 +91622,9 @@ auraria_n	85
 tartit_n	85
 chiastic_j	85
 stimulatory_j	85
+wt_c	85
 ctv_n	85
+p&lt;0.01_c	85
 petronius_n	85
 philemon_n	85
 letter-writing_j	85
@@ -91323,6 +91649,7 @@ fifth-seeded_j	85
 percieve_v	85
 kissable_j	85
 pre-natal_j	85
+1s_c	85
 boivin_n	85
 -stamp_v	85
 txu_n	85
@@ -91349,6 +91676,7 @@ boozing_n	85
 bondage_j	85
 conflictive_j	85
 realizable_j	85
+1996a_c	85
 shariff_n	85
 dyin_u	85
 non-exclusive_j	85
@@ -91358,6 +91686,7 @@ miglin_n	85
 cochabamba_n	85
 azarenka_n	85
 brockmann_n	85
+1984a_c	85
 meininger_n	85
 asmfc_n	85
 short-seller_n	85
@@ -91401,6 +91730,7 @@ overestimate_n	85
 extra-special_j	85
 fatiguing_j	85
 nsx_n	85
+laughs_c	85
 large-sized_j	85
 corded_j	85
 varid_n	85
@@ -91818,6 +92148,7 @@ doo-wop_j	84
 penetrative_j	84
 crosshatch_v	84
 davin_n	84
+1o_c	84
 @!larry-king_j	84
 intervied_v	84
 motor-vehicle_j	84
@@ -91909,6 +92240,7 @@ anti-gang_j	84
 grade-schooler_n	84
 o-_u	84
 evvie_n	84
+78dd_c	84
 vivify_v	84
 hartshorne_n	84
 livvie_n	84
@@ -91928,6 +92260,7 @@ disappeared_v	84
 nottage_n	84
 bacon-wrapped_j	84
 random-effect_n	84
+375f_c	84
 dwts_n	84
 debriefe_v	84
 grimsby_n	84
@@ -92332,6 +92665,7 @@ givin_n	84
 relics_n	84
 succinylcholine_n	84
 vap_n	84
+17a_c	84
 grrrl_n	84
 ebbing_n	84
 a99_n	84
@@ -92563,6 +92897,7 @@ winnicott_n	83
 four-term_j	83
 arrupe_n	83
 libertine_j	83
+20c_c	83
 pre-internet_j	83
 vanderhorst_n	83
 hellenism_n	83
@@ -92573,6 +92908,7 @@ zangwill_n	83
 tartu_n	83
 t!jones_n	83
 nightclothe_n	83
+80c_c	83
 tchaikov_n	83
 bosomworth_n	83
 sweet_v	83
@@ -92988,6 +93324,7 @@ im_i	83
 laj_n	83
 fast-forward_j	83
 h-_n	83
+2s_c	83
 pro@3_n	83
 darn_n	83
 shambo_n	83
@@ -93094,10 +93431,12 @@ area-_j	82
 yipp_v	82
 pixelated_j	82
 single-handedly_r	82
+40b_c	82
 yorb_n	82
 armor_v	82
 soundproofing_n	82
 prodigy_j	82
+n82_c	82
 shakaar_n	82
 torgovnick_n	82
 bottom-_j	82
@@ -93132,6 +93471,7 @@ excerpt-from-previ_n	82
 mccubbin_n	82
 team-oriented_j	82
 stucco_v	82
+leftmiddle32_c	82
 diopter_n	82
 stayin_v	82
 velzquez_n	82
@@ -93728,6 +94068,7 @@ merivel_n	81
 first-world_j	81
 vacuity_n	81
 great-grandparents_n	81
+200k_c	81
 uneconomical_j	81
 re-export_n	81
 fur-trimmed_j	81
@@ -93779,6 +94120,7 @@ haxel_n	81
 raeder_n	81
 bayle_n	81
 -mindedness_n	81
+be_t	81
 breastwork_n	81
 partial_v	81
 entering_v	81
@@ -93822,6 +94164,7 @@ dragas_n	81
 nastily_r	81
 soprano_j	81
 non-response_j	81
+12a_c	81
 profiteer_v	81
 aichigan_n	81
 m'gaw_n	81
@@ -93863,6 +94206,7 @@ sanskrit_j	81
 disjoint_j	81
 ulan_n	81
 libidinous_j	81
+2015a_c	81
 meletus_n	81
 medium-security_n	81
 belfield_n	81
@@ -94252,6 +94596,7 @@ laake_n	81
 -secretary_n	81
 atac_n	81
 blackthorn_n	81
+t_e	81
 -cnn@3_n	81
 mija_n	81
 -henry_n	81
@@ -94371,8 +94716,10 @@ barbuda_n	80
 pale_r	80
 pyrrhus_n	80
 allington_n	80
+th_c	80
 better-looking_j	80
 asformula_n	80
+n96_c	80
 heemstra_n	80
 gamez_n	80
 inhabitable_j	80
@@ -94475,6 +94822,7 @@ prehospital_j	80
 chasnoff_n	80
 eruptive_j	80
 promenade_v	80
+2c_c	80
 dangme_n	80
 peremptorily_r	80
 steckel_n	80
@@ -95001,6 +95349,7 @@ dis_u	79
 fortyish_j	79
 sounded_v	79
 grunig_n	79
+n106_c	79
 jeez_n	79
 swell_i	79
 elwyn_n	79
@@ -95028,6 +95377,7 @@ chargeable_j	79
 angst-ridden_j	79
 waaay_r	79
 first-inning_j	79
+72c_c	79
 fer_v	79
 tiie_d	79
 hurry_j	79
@@ -95155,6 +95505,8 @@ tomoyoshi_n	79
 ribot_n	79
 wenzhou_n	79
 atreides_n	79
+n99_c	79
+n83_c	79
 shailendra_n	79
 maybourne_n	79
 veterans_n	79
@@ -95167,6 +95519,7 @@ gregorius_n	79
 playhous_n	79
 sirn_n	79
 income-based_j	79
+-plus_c	79
 araki_n	79
 long-simmer_v	79
 overpromise_v	79
@@ -95175,6 +95528,7 @@ waggle_n	79
 y-shape_v	79
 akihito_n	79
 guineans_n	79
+year-_c	79
 allegorize_v	79
 e-file_v	79
 civil-service_j	79
@@ -95693,6 +96047,7 @@ multiply_j	78
 unplanted_j	78
 trophoblast_n	78
 keenness_n	78
+n89_c	78
 church-related_j	78
 full-motion_j	78
 mini-_j	78
@@ -95817,6 +96172,7 @@ gemase_n	78
 now-classic_j	78
 -weather_j	78
 deciphering_n	78
+n109_c	78
 off-grid_j	78
 watersport_n	78
 madness_v	78
@@ -96291,11 +96647,13 @@ ffp_n	78
 amu_n	78
 whitely_n	78
 -bittman@2_n	78
+xxiii_c	78
 jiu_n	78
 orne_n	78
 pro-democratic_j	78
 sindone_n	78
 atman_n	78
+19g_c	78
 astragalus_n	78
 yarra_n	78
 mafiosi_n	78
@@ -96452,6 +96810,7 @@ picket_j	77
 parboil_v	77
 frendon_n	77
 khizr_n	77
+5o_c	77
 nary_i	77
 kazakstan_n	77
 karatek_n	77
@@ -96496,6 +96855,7 @@ epm_n	77
 non-racial_j	77
 gratian_n	77
 ahtna_n	77
+6o_c	77
 leadbelly_n	77
 unhooked_j	77
 winstons_n	77
@@ -97077,6 +97437,7 @@ talent-_j	76
 williamses_n	76
 devaro_n	76
 dear_v	76
+n94_c	76
 scuffling_n	76
 last.fm_n	76
 ter_i	76
@@ -97120,6 +97481,7 @@ thutmose_n	76
 hot-dog_j	76
 overdeveloped_j	76
 nubbin_n	76
+leftltr30_c	76
 repainting_n	76
 koyama_n	76
 mitrovica_n	76
@@ -97142,6 +97504,7 @@ sauteing_n	76
 extramedullary_j	76
 square-foot_n	76
 tedlock_n	76
+p<.01_c	76
 puttermesser_n	76
 clinton-_n	76
 conjunctive_j	76
@@ -97209,6 +97572,7 @@ osteoporotic_j	76
 unspooling_j	76
 simion_n	76
 second-stage_j	76
+&lt;0.001_c	76
 westerosi_n	76
 pocked_j	76
 unreturned_j	76
@@ -97275,6 +97639,7 @@ seizing_n	76
 counterclockwise_j	76
 rascally_r	76
 big-spending_j	76
+-199a_c	76
 pankhurst_n	76
 twin_r	76
 theta.sub.0_n	76
@@ -98012,8 +98377,10 @@ skewed_j	75
 firefly_j	75
 bernardez_n	75
 tbat_i	75
+1f_c	75
 lsland_n	75
 meditatively_r	75
+n110_c	75
 sensationally_r	75
 driggs_n	75
 pardoning_n	75
@@ -98318,6 +98685,7 @@ leninist_n	75
 -shultz_n	75
 iconicity_n	75
 eng._n	75
+p<0.0001_c	75
 groundnut_n	75
 kantner_n	75
 doth_n	75
@@ -98456,6 +98824,7 @@ seidl_n	75
 @!mr-d-goldman_n	75
 artic_n	75
 -short_n	75
+d2_c	75
 arak_n	75
 mattock_n	75
 -cannon_n	75
@@ -98925,6 +99294,7 @@ oakmark_n	74
 @!fenton_n	74
 gullickson_n	74
 mezuzah_n	74
+15g_c	74
 burgundian_j	74
 rsl_n	74
 stelae_n	74
@@ -99400,6 +99770,7 @@ multi-tiered_j	73
 whipplei_n	73
 fine-mesh_j	73
 fast-forward_v	73
+1/4-inch_c	73
 utsa_n	73
 pendency_n	73
 abyssinian_j	73
@@ -99425,6 +99796,7 @@ wendeen_n	73
 pre-wedding_n	73
 elvises_n	73
 -lipped_j	73
+ust_t	73
 stael_n	73
 craftiness_n	73
 stampy_n	73
@@ -99469,6 +99841,7 @@ foreboding_n	73
 -hit_v	73
 folky_j	73
 thwarting_n	73
+10g_c	73
 noncash_j	73
 salmasius_n	73
 nincompoops_n	73
@@ -99490,6 +99863,7 @@ mrs_u	73
 isak_n	73
 @1inskeep@2_n	73
 pamby_j	73
+an-_c	73
 ever-after_j	73
 maximiliano_n	73
 tamalko_n	73
@@ -99537,6 +99911,7 @@ volkswagens_n	73
 anti-washington_j	73
 frears_n	73
 enflame_v	73
+of-_c	73
 wiccan_j	73
 biesta_n	73
 dud_j	73
@@ -99649,375 +100024,3 @@ boston-area_j	73
 concessioner_n	73
 addai_n	73
 god'n_n	73
-znaniecki_n	73
-jaap_n	73
-eltahawy_n	73
-nampas_n	73
-suchinda_n	73
-ghaith_n	73
-nicorette_n	73
-gammas_n	73
-florentia_n	73
-ditton_n	73
-dalkon_n	73
-schwalbe_n	73
-mohamud_n	73
-berber_n	73
-clouse_n	73
-kyd_n	73
-j.o_n	73
--column_n	73
-wallner_n	73
-clicquot_n	73
-trotline_n	73
-monstrance_n	73
-pusey_n	73
-heins_n	73
-krank_n	73
-altadena_n	73
-indymac_n	73
-lizbeth_n	73
-flagstick_n	73
-poliovirus_n	73
-cmgi_n	73
-madhya_n	73
-religous_j	73
-paleozoic_j	73
-technophile_n	73
-landsberg_n	73
-dacey_n	73
-afrique_n	73
-mitchie_n	73
-hetzel_n	73
-valvano_n	73
-costin_n	73
-lafley_n	73
-gaf_n	73
-p29_n	73
-mixup_n	73
-jhonny_n	73
-shumba_n	73
-nonvoter_n	73
-sheinberg_n	73
-anfernee_n	73
-ohanian_n	73
-@!celeste-headlee_n	73
-lonelyhearts_n	73
-syntex_n	73
-allana_n	73
-colliding_n	73
-trichome_n	73
-fossum_n	73
-screeches_n	73
-walkability_n	73
--writer_n	73
-franklyn_n	73
-na'vi_n	73
-@1bob-woodruff_n	73
-balladry_n	73
-red-pepper_j	73
-thirtyish_n	73
-novaya_n	73
-resigning_n	73
-gu&eth_n	73
-hinata_n	73
-po-po_n	73
--@1repu_n	73
-winokur_n	73
-krull_n	73
-drugging_n	73
-ecclesiastical_n	73
-amberly_n	73
-eowpvt_n	73
-@!caryn_n	73
-chernick_n	73
-lavarnway_n	73
-savonarola_n	73
-hinch_n	73
-o'hagan_n	73
-janklow_n	73
-asim_n	73
-@!campos_n	73
-metronomic_j	73
-@!mr-don_n	73
-@!salam_n	73
-wagstaff_n	73
-caprino_n	73
-leave-_n	73
-atoms_n	73
-bisphosphonate_n	73
-ventimiglia_n	73
-diabolic_j	73
-hudlin_n	73
-middleclass_n	73
-verbosity_n	73
--lift_n	73
-bowsprit_n	73
-mamiya_n	73
-knowingness_n	73
-fje_n	73
-honoring_n	73
-@!lewinsky_n	73
-picoult_n	73
-avellino_n	73
-mechanicsville_n	73
-icbms_n	73
-p.d._n	73
-nancie_n	73
-swfs_n	73
-scrunchie_n	73
-brookville_n	73
-aizen_n	73
-fencepost_n	73
-pilotless_j	73
-albertus_n	73
-footage-of-hospita_n	73
-st.louis_n	73
-amabile_n	73
-conciliator_n	73
-marilynn_n	73
-left-over_j	73
-maidstone_n	73
-sleeveless_n	73
-disseminator_n	73
-hickerson_n	73
-hollar_n	73
-landuse_n	73
-ascendency_n	73
-sandstrom_n	73
-hairstyling_n	73
-huk_n	73
-anthracnose_j	73
-@!harvey_n	73
-vehicle-_j	73
-roizen_n	73
-alawi_n	73
-underboss_n	73
-@!sherri_n	73
-janay_n	73
-@!mr-clinton_n	73
-mean-standardized_j	73
-tenerife_n	73
-henwood_n	73
-gring_n	73
-multi-tasking_j	73
-ricoh_n	73
-xxv_n	73
-fingerboard_n	73
-chartier_n	73
-poppie_n	73
-prometric_n	73
-anti-labor_j	73
--@1male_n	73
-charlson_n	73
-phase-out_n	73
-vag_n	73
-kostis_n	73
-glovebox_n	73
-@!lifson_n	73
-preregistration_n	73
-laith_n	73
-hansa_n	73
-advani_n	73
-policemen_n	73
-zonealarm_n	73
-eshoo_n	73
-tidying_n	73
--save_v	73
-busfield_n	73
-smmc_n	73
-sebum_n	73
-trombley_n	73
-baqubah_n	73
-arch-enemy_n	73
-summerland_n	73
-p43_n	73
-b-list_n	73
-speedwagon_n	73
-wetherell_n	73
-@!sharon-epperson_n	73
-gy14_n	73
-haddonfield_n	73
-telling_n	73
-market-_n	73
-winzip_n	73
-spaeth_n	73
-dfar_n	73
-fev_n	73
-carsick_n	73
-i'll_n	73
-bennigan_n	73
-balan_n	73
-@!mr-prince_n	73
-@!feldman_n	73
-ione_n	73
-v(_n	73
-klonopin_n	73
-berkson_n	73
-royston_n	73
-internationalized_j	73
--chinese_n	73
-scheiber_n	73
-cii_n	73
-@1ch_n	73
-munk_n	73
-truthiness_n	73
-dgo_n	73
-rabbo_n	73
-loper_n	73
--holbrooke_n	73
-tippi_n	73
-farm-_n	73
-prole_n	73
-sulley_n	73
-propinquity_n	73
-arguments_n	73
-sallee_n	73
-intraocular_j	73
-warped_n	73
-chama_n	73
-zumbo_n	73
-gers_n	73
-slingback_n	73
-pifer_n	73
-antivenin_n	73
-seigel_n	73
-mahorn_n	73
-preciosa_n	73
-psychophysiological_j	73
-gendering_n	73
-gett_n	73
-paneer_n	73
-precip_n	73
-@!carpenter_n	73
-trave_n	73
-shithouse_n	73
-spew_n	73
-joya_n	73
-encourager_n	73
-@!quijano_n	73
-tiles_n	73
-bluecoat_n	73
-d800_n	73
-post-surgery_n	73
-isomerase_n	73
-ihss_n	73
--beck_n	73
-@!ventura_n	73
--blair_n	73
-killings_n	73
-mccarroll_n	73
-f.d.a_n	73
-spandrel_n	73
-far-right_n	73
-everythin_n	73
-dhawan_n	73
-taas_n	73
-salukis_n	73
-surreal_n	73
-charreada_n	73
-pennyworth_n	73
--bailey_n	73
-masculine_n	73
-p22_n	73
-noranda_n	73
-bucktail_n	73
-sucralose_n	73
--larry_n	73
-sabr_n	73
-2n_n	73
-metamucil_n	73
-vns_n	73
--armstrong_n	73
-kaptur_n	73
-capek_n	73
-lilandra_n	73
-pimpernel_n	73
-drumm_n	73
-savoir_n	73
--goodman_n	73
-@!richie_n	73
-branzino_n	73
-meuse_n	73
-mantilla_n	73
-@!brzezinski_n	73
-copybook_n	73
-knopp_n	73
-rabban_n	73
-tans_n	73
-salade_n	73
-mang_n	73
-iban_n	73
-dyin_n	73
-annis_n	73
-udon_n	73
-alim_n	73
-adh_n	73
-helioseismology_n	73
-cabildo_n	73
-poupon_n	73
-jacinda_n	73
-@1aaron_n	73
-ww1_n	73
--lord_n	73
-@!mr-osborne_n	73
-trekky_n	73
-jaret_n	73
-brookins_n	73
-@!sen-clinton_n	73
-computer-animation_n	73
-bikeway_n	73
-rhodopsin_n	73
-utne_n	73
-@!mr-gonzalez_n	73
-@!mr-trotter_n	73
-zpm_n	73
-paster_n	73
-starpower_n	73
-liming_n	73
-fto_n	73
-cannell_n	73
--l#_n	73
-yui_n	73
-stabber_n	73
-cervical_n	73
--damon_n	73
-britto_n	73
-plott_n	73
-writin_n	73
-handbell_n	73
--english_n	73
-fuehrer_n	73
-ahh_n	73
-agricole_n	73
-daryll_n	73
-baehr_n	73
-oncorhynchus_n	73
-stealin_n	73
-teachout_n	73
-hi-_n	73
-brunelli_n	73
-macbooks_n	73
-wretched_n	73
-sotu_n	73
-delco_n	73
-jetstream_n	73
--yang@2_n	73
-ajc.com_n	73
-sauerbrey_n	73
--fm_n	73
-pbx_n	73
-boomhauer_n	73
-@!ms-caamano_n	73
-brockbank_n	73
-@!brownstein_n	73
-dro_n	73
-house-_n	73
-pizzas_n	73
-grotesque_n	73
-voz_n	73
-cerrado_n	73
-xk_n	73
-chel_n	73
-svr_n	73
-barkey_n	73
