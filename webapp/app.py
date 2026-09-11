@@ -155,6 +155,27 @@ def read_uploaded_texts(files) -> list[tuple[str, str]]:
     return out
 
 
+def pick_local_directory() -> str | None:
+    """Opens a native OS folder-picker dialog on the machine running this
+    Streamlit process, via tkinter. Only meaningful when Streamlit is
+    running locally (`streamlit run webapp/app.py` on your own computer) --
+    a hosted, headless deployment (like Streamlit Community Cloud) has no
+    display to open a dialog on and no access to your computer's
+    filesystem anyway, so this raises there; callers should catch that and
+    treat the picker as unavailable."""
+    import tkinter as tk
+    from tkinter import filedialog
+
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    try:
+        path = filedialog.askdirectory(title="Select a folder of .txt files")
+    finally:
+        root.destroy()
+    return path or None
+
+
 for key in ("reference", "profiler", "results", "target_texts"):
     st.session_state.setdefault(key, None)
 
@@ -228,18 +249,49 @@ with st.sidebar:
             fine_grained_until = int(st.number_input("...through rank", min_value=1, value=2000))
 
     if source_kind == "Corpus of texts":
-        corpus_files = st.file_uploader(
-            "Upload .txt corpus files", type=["txt", "zip"], accept_multiple_files=True,
-            help="Select multiple files, drag a whole folder onto this box, or zip a "
-                 "directory of .txt files and upload the .zip.",
-        )
-        if st.button("Build reference from corpus", disabled=not corpus_files):
-            texts = [text for _, text in read_uploaded_texts(corpus_files)]
+        corpus_tab_files, corpus_tab_folder = st.tabs(["Upload files", "Local folder"])
+        with corpus_tab_files:
+            corpus_files = st.file_uploader(
+                "Upload .txt corpus files", type=["txt", "zip"], accept_multiple_files=True,
+                help="Select multiple files, drag a whole folder onto this box, or zip a "
+                     "directory of .txt files and upload the .zip.",
+            )
+        with corpus_tab_folder:
+            st.caption(
+                "Only works when running `streamlit run webapp/app.py` on your own "
+                "machine -- a hosted deployment (like Streamlit Community Cloud) has no "
+                "access to your computer's filesystem."
+            )
+            if st.button("Browse for a folder…"):
+                try:
+                    chosen_dir = pick_local_directory()
+                except Exception:
+                    chosen_dir = None
+                    st.error(
+                        "Couldn't open a folder picker here -- this only works when "
+                        "running the app locally, not on a hosted deployment."
+                    )
+                if chosen_dir:
+                    st.session_state.corpus_dir = chosen_dir
+            corpus_dir = st.session_state.get("corpus_dir")
+            if corpus_dir:
+                st.success(f"Selected folder: {corpus_dir}")
+
+        has_source = bool(corpus_files) or bool(corpus_dir)
+        if st.button("Build reference from corpus", disabled=not has_source):
             try:
-                st.session_state.reference = Reference.from_corpus(
-                    texts, band_size=band_size, language=language, lemmatize=lemmatize,
-                    fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
-                )
+                if corpus_dir:
+                    st.session_state.reference = Reference.from_corpus(
+                        corpus_dir, band_size=band_size, language=language,
+                        lemmatize=lemmatize, fine_band_size=fine_band_size,
+                        fine_grained_until=fine_grained_until,
+                    )
+                else:
+                    texts = [text for _, text in read_uploaded_texts(corpus_files)]
+                    st.session_state.reference = Reference.from_corpus(
+                        texts, band_size=band_size, language=language, lemmatize=lemmatize,
+                        fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+                    )
                 st.session_state.results = None
             except ValueError as e:
                 st.error(str(e))
@@ -411,7 +463,10 @@ if st.session_state.results:
 
     def band_for_coverage(target_pct: float):
         return next(
-            (b for b in sorted(result.cumulative_token_pct) if result.cumulative_token_pct[b] >= target_pct),
+            (
+                b for b in sorted(result.cumulative_token_pct)
+                if result.cumulative_token_pct[b] >= target_pct
+            ),
             None,
         )
 
