@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import os
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
 from .tokenizer import tokenize
@@ -92,19 +92,38 @@ def open_text_file(path: str, encoding: str = "utf-8"):
         ) from None
 
 
-def _iter_input_texts(source: str | Iterable[str], encoding: str = "utf-8") -> Iterable[str]:
-    """Yield raw text strings from a flexible `source`:
+def _expand_sources(source: str | Iterable[str] | dict[str, str]) -> list[tuple[str, str, str | None, bool]]:
+    """Expand a flexible `source` into a flat list of items to read, without
+    reading any file content yet -- just enough work (checking file/
+    directory existence, walking directories) to know the total document
+    count up front, so callers can drive a progress indicator before the
+    expensive part (tokenizing) starts.
 
+    Accepts:
       - a path to a single .txt file
       - a path to a directory (all .txt files inside, recursive)
       - a list of file paths
       - a list of raw text strings (if they don't look like existing paths)
+      - a dict of {display name: raw text}
 
     A bare string `source` is always treated as a path (never raw text);
     if it doesn't exist, that's an error. The "not a path -> treat as raw
     text" fallback only applies to items inside a list, since that's the
     documented way to pass literal text content directly.
+
+    Returns a list of (kind, value, name, catch_open_errors) tuples, where
+    `kind` is "path" or "text", `value` is the file path or the raw text
+    itself, `name` is a display name if one is known (a filename, or a
+    dict key) or None, and `catch_open_errors` says whether a read failure
+    for this item should be silently skipped (True for files discovered by
+    walking a directory, since one bad file -- permissions, a broken
+    symlink -- shouldn't abort the whole corpus build) or should propagate
+    (False for files named explicitly, where a failure is more likely a
+    mistake worth surfacing).
     """
+    if isinstance(source, dict):
+        return [("text", text, name, False) for name, text in source.items()]
+
     # Remember whether the caller passed one bare string (as opposed to a
     # list), so we know below whether a non-existent path should raise
     # (bare string, almost certainly a typo'd path) or fall back to raw
@@ -113,6 +132,7 @@ def _iter_input_texts(source: str | Iterable[str], encoding: str = "utf-8") -> I
     if single_path:
         source = [source]
 
+    items: list[tuple[str, str, str | None, bool]] = []
     for item in source:
         if isinstance(item, str) and os.path.isdir(item):
             # Directory: recurse into it and read every .txt file we find.
@@ -122,18 +142,10 @@ def _iter_input_texts(source: str | Iterable[str], encoding: str = "utf-8") -> I
                 for fname in sorted(files):
                     fpath = os.path.join(root, fname)
                     require_txt_extension(fpath)
-                    try:
-                        with open_text_file(fpath, encoding) as f:
-                            yield f.read()
-                    except ValueError:
-                        # Skip unreadable files (permissions, broken
-                        # symlinks, etc.) rather than aborting the whole
-                        # corpus build over one bad file.
-                        continue
+                    items.append(("path", fpath, fname, True))
         elif isinstance(item, str) and os.path.isfile(item):
             require_txt_extension(item)
-            with open_text_file(item, encoding) as f:
-                yield f.read()
+            items.append(("path", item, os.path.basename(item), False))
         elif isinstance(item, str) and single_path:
             # A bare string source that isn't an existing file or folder is
             # almost certainly a typo'd path, not intentional raw text --
@@ -148,13 +160,72 @@ def _iter_input_texts(source: str | Iterable[str], encoding: str = "utf-8") -> I
         elif isinstance(item, str):
             # Not a path on disk -> treat as raw text content (only
             # reachable for items inside a list, per the docstring above).
-            yield item
+            items.append(("text", item, None, False))
         else:
             raise TypeError(
                 f"Don't know how to read a corpus item of type "
                 f"{type(item).__name__} ({item!r}). Each item should be a "
                 f"file path, a directory path, or a raw text string."
             )
+    return items
+
+
+def _read_source_item(kind: str, value: str, catch_open_errors: bool,
+                       encoding: str) -> str | None:
+    """Read one item produced by `_expand_sources` into raw text, or None
+    if it was an unreadable file that should be silently skipped."""
+    if kind == "text":
+        return value
+    if catch_open_errors:
+        try:
+            with open_text_file(value, encoding) as f:
+                return f.read()
+        except ValueError:
+            return None
+    with open_text_file(value, encoding) as f:
+        return f.read()
+
+
+def _tokenize_corpus(
+    source: str | Iterable[str] | dict[str, str], *, language: str, lowercase: bool,
+    lemmatize: bool, min_length: int, encoding: str,
+    progress_callback: Callable[[int, int, str], None] | None,
+    counter: Counter,
+) -> int:
+    """Expand `source`, tokenize every document into `counter` (updated in
+    place), and return the number of documents successfully read.
+
+    Drives `progress_callback(current, total, message)`, if given, through
+    each real stage of the work: an initial "loading" call, one call per
+    document as it's tokenized (and lemmatized, if requested), and a final
+    call once every document is done and frequency bands are about to be
+    computed -- so a caller like the web UI can show real, specific status
+    text (not just a generic spinner) for however long this takes.
+    """
+    items = _expand_sources(source)
+    total = len(items)
+    n_docs = 0
+
+    if progress_callback and total:
+        progress_callback(0, total, "Loading documents...")
+
+    stage_label = "Lemmatizing" if lemmatize else "Tokenizing"
+    for idx, (kind, value, name, catch_open_errors) in enumerate(items, start=1):
+        text = _read_source_item(kind, value, catch_open_errors, encoding)
+        if text is None:
+            continue
+        n_docs += 1
+        tokens = tokenize(text, language=language, lowercase=lowercase,
+                           lemmatize=lemmatize, min_length=min_length)
+        counter.update(tokens)
+        if progress_callback:
+            suffix = f" {name}" if name else ""
+            progress_callback(idx, total, f"{stage_label}{suffix} ({idx} of {total})")
+
+    if progress_callback and total:
+        progress_callback(total, total, "Computing frequency bands...")
+
+    return n_docs
 
 
 def compute_band_assignment(
@@ -252,19 +323,21 @@ class Reference:
     # ---------- constructors ----------
 
     @classmethod
-    def from_corpus(cls, source: str | Iterable[str], band_size: int = 1000,
+    def from_corpus(cls, source: str | Iterable[str] | dict[str, str], band_size: int = 1000,
                      lowercase: bool = True, lemmatize: bool = False,
                      min_length: int = 1, language: str = "en",
                      fine_band_size: int | None = None,
                      fine_grained_until: int | None = None,
-                     encoding: str = "utf-8") -> Reference:
+                     encoding: str = "utf-8",
+                     progress_callback: Callable[[int, int, str], None] | None = None,
+                     ) -> Reference:
         """Build a reference frequency model from a corpus of texts.
 
         Args:
             source: a .txt file path, directory path (all .txt files inside,
-                searched recursively), list of file paths, or list of raw
-                text strings. Any file path that isn't a .txt file raises
-                ValueError.
+                searched recursively), list of file paths, list of raw text
+                strings, or a dict of {display name: raw text}. Any file
+                path that isn't a .txt file raises ValueError.
             band_size: number of words per frequency band (default 1000,
                 giving classic "1-999, 1000-1999, ..." bands as used in
                 lexical frequency profiling research).
@@ -288,16 +361,20 @@ class Reference:
             encoding: text encoding used to read corpus files (default
                 'utf-8'). Bytes that don't decode are dropped rather than
                 raising (errors='ignore').
+            progress_callback: optional `callback(current, total, message)`
+                invoked as the corpus is processed -- once before reading
+                starts, once per document as it's tokenized/lemmatized, and
+                once more before frequency bands are computed. Useful for
+                driving a progress bar for a large corpus.
         """
         # Tokenize every document in the corpus and tally raw word counts.
         # Frequency (not the source text's order) is what determines rank.
         counter: Counter = Counter()
-        n_docs = 0
-        for text in _iter_input_texts(source, encoding=encoding):
-            n_docs += 1
-            tokens = tokenize(text, language=language, lowercase=lowercase,
-                               lemmatize=lemmatize, min_length=min_length)
-            counter.update(tokens)
+        n_docs = _tokenize_corpus(
+            source, language=language, lowercase=lowercase, lemmatize=lemmatize,
+            min_length=min_length, encoding=encoding,
+            progress_callback=progress_callback, counter=counter,
+        )
 
         if not counter:
             if n_docs == 0:
@@ -482,6 +559,69 @@ class Reference:
                                 f"({len(ordered_words)} words, "
                                 f"{'with' if use_freq else 'without'} frequencies, "
                                 f"language={language})",
+        )
+
+    def add_texts(self, source: str | Iterable[str] | dict[str, str], encoding: str = "utf-8",
+                  progress_callback: Callable[[int, int, str], None] | None = None,
+                  ) -> Reference:
+        """Add more documents to this reference, recomputing ranks and bands
+        from the combined word counts.
+
+        Reuses this reference's existing lowercase/lemmatize/language/
+        band settings, and accepts the same `source` shapes as
+        `from_corpus` (a path, directory, list of paths, list of raw text
+        strings, or a dict of {display name: raw text}). Returns a new
+        Reference; this one is left as-is.
+
+        `progress_callback` behaves as in `from_corpus`.
+
+        Raises ValueError if this reference has no raw word counts to
+        merge with (e.g. a rank-only word list), since there'd be nothing
+        meaningful to combine the new counts with.
+        """
+        if not self.counts:
+            raise ValueError(
+                "Can't add texts to this reference: it doesn't have raw "
+                "word counts to merge with (rank-only word lists and "
+                "built-in lists don't carry frequency data). Build a new "
+                "reference with Reference.from_corpus(...) instead."
+            )
+
+        counter: Counter = Counter(self.counts)
+        n_docs = _tokenize_corpus(
+            source, language=self.language, lowercase=self.lowercase,
+            lemmatize=self.lemmatize, min_length=1, encoding=encoding,
+            progress_callback=progress_callback, counter=counter,
+        )
+
+        if n_docs == 0:
+            raise ValueError(
+                "No documents were found to add. If you passed a folder, "
+                "check that it actually contains .txt files; if you "
+                "passed a list, make sure it isn't empty."
+            )
+
+        ranked = [w for w, _ in counter.most_common()]
+        band_of_position, band_ranges = compute_band_assignment(
+            len(ranked), self.band_size, self.fine_band_size, self.fine_grained_until,
+        )
+        word_to_rank = {w: i + 1 for i, w in enumerate(ranked)}
+        word_to_band = {w: band_of_position[i] for i, w in enumerate(ranked)}
+
+        return type(self)(
+            word_to_rank=word_to_rank,
+            word_to_band=word_to_band,
+            band_ranges=band_ranges,
+            band_size=self.band_size,
+            num_bands=len(band_ranges),
+            fine_band_size=self.fine_band_size,
+            fine_grained_until=self.fine_grained_until,
+            counts=dict(counter),
+            lowercase=self.lowercase,
+            lemmatize=self.lemmatize,
+            language=self.language,
+            source_description=f"{self.source_description} + {n_docs} more document(s) "
+                                f"added ({len(ranked)} unique words total)",
         )
 
     @classmethod

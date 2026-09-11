@@ -132,6 +132,23 @@ def export_to_bytes(export_fn, results, suffix) -> bytes:
         Path(tmp_path).unlink(missing_ok=True)
 
 
+def build_with_progress(build_fn):
+    """Run `build_fn(progress_callback)` -- a call to Reference.from_corpus
+    or Reference.add_texts -- behind a progress bar with live status text
+    ("Loading documents...", "Tokenizing...", "Lemmatizing...", etc.),
+    since building a reference from a real corpus can take a while."""
+    placeholder = st.empty()
+    bar = placeholder.progress(0, text="Preparing...")
+
+    def callback(current: int, total: int, message: str) -> None:
+        bar.progress(current / total if total else 1.0, text=message)
+
+    try:
+        return build_fn(callback)
+    finally:
+        placeholder.empty()
+
+
 def read_word_list(raw: str) -> list[str]:
     return [w.strip() for w in raw.splitlines() if w.strip() and not w.strip().startswith("#")]
 
@@ -245,7 +262,9 @@ with st.sidebar:
         builtin_names = sorted(BUILTIN_WORD_LISTS)
         builtin_choice = st.selectbox(
             "List", builtin_names,
-            format_func=lambda name: BUILTIN_WORD_LISTS[name]["label"],
+            format_func=lambda name: BUILTIN_WORD_LISTS[name].get(
+                "label", BUILTIN_WORD_LISTS[name]["description"],
+            ),
         )
         if st.button("Use this word list"):
             try:
@@ -259,20 +278,59 @@ with st.sidebar:
 
     elif source_kind == "Corpus of texts":
         st.caption("Upload individual .txt files, or use \"Choose folder...\" to pick a "
-                   "whole directory from your computer.")
+                   "whole directory from your computer. The reference builds automatically.")
         corpus_picked = file_dir_uploader(label="Choose files...", key="corpus_picker")
-        corpus_texts = [item["text"] for item in corpus_picked] if corpus_picked else []
+        corpus_texts = (
+            {item["name"]: item["text"] for item in corpus_picked} if corpus_picked else {}
+        )
         if corpus_picked:
             st.caption(f"{len(corpus_picked)} file(s) ready.")
-        if st.button("Build reference from corpus", disabled=not corpus_texts):
+
+        # Auto-build (no button): rebuild whenever the selected files or any
+        # of the build parameters change, tracked via a signature so we
+        # don't redo the work on every unrelated widget interaction/rerun.
+        build_sig = (
+            tuple(sorted(corpus_texts)),
+            band_size, language, lemmatize, fine_band_size, fine_grained_until,
+        )
+        if corpus_texts and st.session_state.get("_corpus_build_sig") != build_sig:
             try:
-                st.session_state.reference = Reference.from_corpus(
-                    corpus_texts, band_size=band_size, language=language, lemmatize=lemmatize,
-                    fine_band_size=fine_band_size, fine_grained_until=fine_grained_until,
+                st.session_state.reference = build_with_progress(
+                    lambda cb: Reference.from_corpus(
+                        corpus_texts, band_size=band_size, language=language,
+                        lemmatize=lemmatize, fine_band_size=fine_band_size,
+                        fine_grained_until=fine_grained_until, progress_callback=cb,
+                    )
                 )
                 st.session_state.results = None
+                st.session_state._corpus_build_sig = build_sig
             except ValueError as e:
                 st.error(str(e))
+
+        ref = st.session_state.reference
+        if ref is not None and ref.counts:
+            with st.expander("Add more texts to this reference"):
+                st.caption(
+                    "Adds documents to the corpus this reference was built from, and "
+                    "recomputes ranks/bands from the combined word counts."
+                )
+                add_picked = file_dir_uploader(
+                    label="Choose files to add...", key="corpus_add_picker",
+                )
+                add_texts_dict = (
+                    {item["name"]: item["text"] for item in add_picked} if add_picked else {}
+                )
+                if add_picked:
+                    st.caption(f"{len(add_picked)} file(s) ready to add.")
+                if st.button("Add to reference", disabled=not add_texts_dict):
+                    try:
+                        st.session_state.reference = build_with_progress(
+                            lambda cb: ref.add_texts(add_texts_dict, progress_callback=cb)
+                        )
+                        st.session_state.results = None
+                        st.success(f"Added {len(add_texts_dict)} file(s) to the reference.")
+                    except ValueError as e:
+                        st.error(str(e))
 
     elif source_kind == "Word list":
         wordlist_file = st.file_uploader("Upload a word list .txt file", type=["txt"])
@@ -422,8 +480,8 @@ if st.session_state.results:
             "text": name,
             "tokens": r.total_tokens,
             "types": r.total_types,
-            "off-list %": round(r.off_list_pct_tokens, 2),
-            "ignored %": round(r.ignored_pct_tokens, 2),
+            "off-list %": f"{r.off_list_pct_tokens:.2f}%",
+            "ignored %": f"{r.ignored_pct_tokens:.2f}%",
         }
         for name, r in results.items()
     ]
@@ -449,8 +507,10 @@ if st.session_state.results:
 
     band_95 = band_for_coverage(95)
     band_98 = band_for_coverage(98)
-    col4.metric("Bands for 95% coverage", band_95 if band_95 else "not reached")
-    col5.metric("Bands for 98% coverage", band_98 if band_98 else "not reached")
+    col4.metric("Bands for 95% coverage", band_95 if band_95 else "N/A",
+                help=None if band_95 else "95% coverage is not reached by any band")
+    col5.metric("Bands for 98% coverage", band_98 if band_98 else "N/A",
+                help=None if band_98 else "98% coverage is not reached by any band")
 
     st.subheader("Band coverage")
     bands = sorted(result.band_token_counts.keys())
@@ -460,14 +520,16 @@ if st.session_state.results:
         "pct_tokens": [result.band_token_pct[b] for b in bands],
         "cumulative_pct": [result.cumulative_token_pct[b] for b in bands],
     })
+    chart_df["pct_tokens_label"] = chart_df["pct_tokens"].map(lambda v: f"{v:.2f}%")
+    chart_df["cumulative_pct_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.2f}%")
     bar = alt.Chart(chart_df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
         x=alt.X("band:N", sort=None, title="Frequency band", axis=alt.Axis(labelAngle=-45)),
         y=alt.Y("pct_tokens:Q", title="% of tokens", scale=alt.Scale(domain=[0, 100])),
         color=alt.Color("band_num:Q", scale=alt.Scale(range=BAND_RAMP), legend=None),
         tooltip=[
             alt.Tooltip("band:N", title="Band"),
-            alt.Tooltip("pct_tokens:Q", format=".2f", title="% tokens"),
-            alt.Tooltip("cumulative_pct:Q", format=".2f", title="Cumulative %"),
+            alt.Tooltip("pct_tokens_label:N", title="% tokens"),
+            alt.Tooltip("cumulative_pct_label:N", title="Cumulative %"),
         ],
     )
     line = alt.Chart(chart_df).mark_line(color="#eb6834", point=True).encode(
@@ -479,7 +541,7 @@ if st.session_state.results:
     ).encode(
         x=alt.X("band:N", sort=None),
         y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
-        text=alt.Text("cumulative_pct:Q", format=".1f"),
+        text=alt.Text("cumulative_pct_label:N"),
     )
     threshold_df = pd.DataFrame({"y": [95, 98]})
     thresholds = alt.Chart(threshold_df).mark_rule(strokeDash=[4, 4], color="#898781").encode(
@@ -493,15 +555,15 @@ if st.session_state.results:
     )
 
     with st.expander("Band coverage table"):
-        table_df = chart_df[["band", "pct_tokens", "cumulative_pct"]].copy()
+        table_df = chart_df[["band", "pct_tokens_label", "cumulative_pct_label"]].copy()
         table_df.columns = ["Band", "% tokens", "Cumulative %"]
         extra_rows = [{
-            "Band": "Off-list", "% tokens": round(result.off_list_pct_tokens, 2),
+            "Band": "Off-list", "% tokens": f"{result.off_list_pct_tokens:.2f}%",
             "Cumulative %": None,
         }]
         if result.ignored_tokens or result.ignored_words:
             extra_rows.append({
-                "Band": "Ignored", "% tokens": round(result.ignored_pct_tokens, 2),
+                "Band": "Ignored", "% tokens": f"{result.ignored_pct_tokens:.2f}%",
                 "Cumulative %": None,
             })
         table_df = pd.concat([table_df, pd.DataFrame(extra_rows)], ignore_index=True)
