@@ -162,9 +162,10 @@ def main(argv=None):
                               "word. They still count toward total tokens/types. "
                               "Requires a trained pipeline for --language; silently "
                               "has no effect without one.")
-    parser.add_argument("--exclude-numerals", action="store_true",
-                         help="Report numerals (e.g. '42', 'twelve') separately "
-                              "instead of profiling them like any other word. They "
+    parser.add_argument("--exclude-digits", action="store_true",
+                         help="Report digit tokens (e.g. '42', '3.14') separately "
+                              "instead of profiling them like any other word. Spelled-"
+                              "out number words (e.g. 'twelve') are unaffected. They "
                               "still count toward total tokens/types.")
 
     parser.add_argument("--out-json", metavar="PATH", help="Write full results as JSON.")
@@ -176,9 +177,9 @@ def main(argv=None):
     parser.add_argument("--out-proper-nouns-csv", metavar="PATH",
                          help="Write a CSV of proper nouns per text (populated only "
                               "when --exclude-proper-nouns is set).")
-    parser.add_argument("--out-numerals-csv", metavar="PATH",
-                         help="Write a CSV of numerals per text (populated only "
-                              "when --exclude-numerals is set).")
+    parser.add_argument("--out-digits-csv", metavar="PATH",
+                         help="Write a CSV of digit tokens per text (populated only "
+                              "when --exclude-digits is set).")
     parser.add_argument("--max-off-list-shown", type=int, default=20,
                          help="How many off-list words to show in the console summary.")
 
@@ -274,7 +275,7 @@ def main(argv=None):
     profiler = LexicalProfiler(
         reference, min_length=args.min_length, ignore_words=ignore_words,
         exclude_proper_nouns=args.exclude_proper_nouns,
-        exclude_numerals=args.exclude_numerals,
+        exclude_digits=args.exclude_digits,
     )
     results = profiler.profile_texts(targets)
 
@@ -300,9 +301,9 @@ def main(argv=None):
         if args.out_proper_nouns_csv:
             report_mod.export_proper_nouns_csv(results, args.out_proper_nouns_csv)
             print(f"Wrote proper-nouns CSV to {args.out_proper_nouns_csv}", file=sys.stderr)
-        if args.out_numerals_csv:
-            report_mod.export_numerals_csv(results, args.out_numerals_csv)
-            print(f"Wrote numerals CSV to {args.out_numerals_csv}", file=sys.stderr)
+        if args.out_digits_csv:
+            report_mod.export_digits_csv(results, args.out_digits_csv)
+            print(f"Wrote digits CSV to {args.out_digits_csv}", file=sys.stderr)
     except ValueError as e:
         parser.error(str(e))
 

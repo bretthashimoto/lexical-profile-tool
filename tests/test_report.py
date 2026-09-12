@@ -12,7 +12,7 @@ from lexical_profiler.reference import Reference
 def results():
     reference = Reference.from_corpus(["the the the cat cat dog"], band_size=1)
     profiler = LexicalProfiler(
-        reference, ignore_words=["ignoreme"], exclude_numerals=True,
+        reference, ignore_words=["ignoreme"], exclude_digits=True,
     )
     return profiler.profile_texts({
         "essay.txt": "the cat mouse ignoreme 42",
@@ -27,7 +27,7 @@ def test_export_json(tmp_path, results):
     assert "essay.txt" in payload
     assert payload["essay.txt"]["total_tokens"] == 5
     assert payload["essay.txt"]["off_list_words"] == ["mouse"]
-    assert payload["essay.txt"]["numeral_words"] == ["42"]
+    assert payload["essay.txt"]["digit_words"] == ["42"]
 
 
 def test_export_csv(tmp_path, results):
@@ -46,7 +46,7 @@ def test_export_csv(tmp_path, results):
     assert body_texts == {"essay.txt"}
     assert "off_list" in body_categories
     assert "ignored" in body_categories  # ignore_words matched something
-    assert "numeral" in body_categories  # exclude_numerals matched something
+    assert "digit" in body_categories  # exclude_digits matched something
 
 
 def test_export_off_list_csv(tmp_path, results):
@@ -71,9 +71,9 @@ def test_export_ignored_csv(tmp_path, results):
     assert rows[1] == ["essay.txt", "ignoreme", "1"]
 
 
-def test_export_numerals_csv(tmp_path, results):
-    path = tmp_path / "numerals.csv"
-    report_mod.export_numerals_csv(results, str(path))
+def test_export_digits_csv(tmp_path, results):
+    path = tmp_path / "digits.csv"
+    report_mod.export_digits_csv(results, str(path))
 
     with open(path, newline="", encoding="utf-8") as f:
         rows = list(csv.reader(f))

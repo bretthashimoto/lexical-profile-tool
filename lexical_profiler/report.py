@@ -79,7 +79,7 @@ def export_csv(results: dict[str, ProfileResult], path: str) -> None:
                 name, "off_list", r.off_list_tokens,
                 f"{r.off_list_pct_tokens:.4f}", "", r.off_list_types, "",
             ])
-            # Only add the "ignored"/"proper_noun"/"numeral" rows if that
+            # Only add the "ignored"/"proper_noun"/"digit" rows if that
             # category was actually used and matched something; keeps the
             # CSV unchanged for callers who never touch those options.
             if r.ignored_tokens or r.ignored_words:
@@ -92,10 +92,10 @@ def export_csv(results: dict[str, ProfileResult], path: str) -> None:
                     name, "proper_noun", r.proper_noun_tokens,
                     f"{r.proper_noun_pct_tokens:.4f}", "", r.proper_noun_types, "",
                 ])
-            if r.numeral_tokens or r.numeral_words:
+            if r.digit_tokens or r.digit_words:
                 writer.writerow([
-                    name, "numeral", r.numeral_tokens,
-                    f"{r.numeral_pct_tokens:.4f}", "", r.numeral_types, "",
+                    name, "digit", r.digit_tokens,
+                    f"{r.digit_pct_tokens:.4f}", "", r.digit_types, "",
                 ])
 
 
@@ -130,12 +130,12 @@ def export_proper_nouns_csv(results: dict[str, ProfileResult], path: str) -> Non
                 writer.writerow([name, word, r.word_counts[word]])
 
 
-def export_numerals_csv(results: dict[str, ProfileResult], path: str) -> None:
-    """Write a CSV of numerals per text, with counts (only populated when
-    the profiler was run with exclude_numerals=True)."""
+def export_digits_csv(results: dict[str, ProfileResult], path: str) -> None:
+    """Write a CSV of digit tokens per text, with counts (only populated
+    when the profiler was run with exclude_digits=True)."""
     with _open_output_file(path, newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["text", "word", "count"])
         for name, r in results.items():
-            for word in r.numeral_words:
+            for word in r.digit_words:
                 writer.writerow([name, word, r.word_counts[word]])

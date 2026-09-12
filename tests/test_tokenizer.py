@@ -78,24 +78,26 @@ def test_classify_tokens_tags_plain_words():
     assert classify_tokens("Hello world") == [("hello", "word"), ("world", "word")]
 
 
-def test_classify_tokens_tags_numerals_and_keeps_pure_digits():
+def test_classify_tokens_tags_digits_and_keeps_pure_digits():
     # Unlike tokenize(), a pure-digit token isn't dropped -- it's kept and
-    # categorized "numeral" instead.
+    # categorized "digit" instead.
     tokens = classify_tokens("I have 42 apples and 3.14 pies")
-    assert ("42", "numeral") in tokens
-    assert ("3.14", "numeral") in tokens
+    assert ("42", "digit") in tokens
+    assert ("3.14", "digit") in tokens
     assert ("apples", "word") in tokens
 
 
-def test_tokenize_still_drops_numerals_via_classify_tokens():
-    # tokenize() is built on classify_tokens() but filters "numeral" out,
-    # so its documented behavior (pure numbers are dropped) is unchanged.
+def test_tokenize_still_drops_digits_via_classify_tokens():
+    # tokenize() is built on classify_tokens() but filters "digit" out, so
+    # its documented behavior (pure digit tokens are dropped) is unchanged.
     assert tokenize("I have 42 apples") == ["i", "have", "apples"]
 
 
-def test_classify_tokens_number_word_is_a_numeral():
+def test_classify_tokens_number_word_is_not_a_digit():
+    # Spelled-out number words aren't digit tokens (unlike spaCy's
+    # like_num) -- they stay ordinary vocabulary.
     tokens = classify_tokens("twelve apples")
-    assert ("twelve", "numeral") in tokens
+    assert ("twelve", "word") in tokens
     assert ("apples", "word") in tokens
 
 

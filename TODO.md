@@ -1,9 +1,12 @@
-3. add other frequency lists that are lemma based, including the NGSL, NAWL, COCA, BNC freq, CELEX? 
-4. Word families? not just lemmas? 
+4. Investigate weird words that aren't being tagged correctly
+5. Investigate words on the word lists that don't seem to be working correctly
+6. 
+5. 
+6. Word families? not just lemmas? 
 4. get help testing out features
 6. Add good baseline frequency data to use as a default for English
-8. Have lemmatization be on by default
 9. Have a better default example
 10. Add a tutorial to the interface
-15. Add info about me in a tab
+11. clean up and get rid of dead code and other unnecessary stuff
+12. 
 17. Have Claude help brainstorm other things to improve about the app

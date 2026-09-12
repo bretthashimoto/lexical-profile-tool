@@ -173,46 +173,46 @@ def test_highlight_off_list_word(small_reference):
     assert by_text["zebra"].band is None
 
 
-def test_highlight_numeral_included_by_default(small_reference):
+def test_highlight_digit_included_by_default(small_reference):
     profiler = LexicalProfiler(small_reference)
     tokens = profiler.highlight("the 42")
     by_text = {t.text: t for t in tokens}
     # Not excluded, so it's just profiled normally -- lands off-list since
-    # small_reference has no numeral vocabulary.
+    # small_reference has no digit vocabulary.
     assert by_text["42"].status == "off_list"
 
 
-def test_highlight_numeral_excluded(small_reference):
-    profiler = LexicalProfiler(small_reference, exclude_numerals=True)
+def test_highlight_digit_excluded(small_reference):
+    profiler = LexicalProfiler(small_reference, exclude_digits=True)
     tokens = profiler.highlight("the 42")
     by_text = {t.text: t for t in tokens}
-    assert by_text["42"].status == "numeral"
+    assert by_text["42"].status == "digit"
 
 
-# ---------- proper nouns / numerals ----------
+# ---------- proper nouns / digits ----------
 
-def test_numerals_included_by_default_and_counted_off_list(small_reference):
-    # exclude_numerals defaults to False: numerals are profiled like any
+def test_digits_included_by_default_and_counted_off_list(small_reference):
+    # exclude_digits defaults to False: digit tokens are profiled like any
     # other word -- and since no reference lists them, they land off-list
     # rather than vanishing the way they used to (pre-classify_tokens).
     profiler = LexicalProfiler(small_reference)
     result = profiler.profile_text("the cat 42")
 
     assert result.total_tokens == 3
-    assert result.numeral_tokens == 0
-    assert result.numeral_words == []
+    assert result.digit_tokens == 0
+    assert result.digit_words == []
     assert "42" in result.off_list_words
 
 
-def test_exclude_numerals_reports_them_separately(small_reference):
-    profiler = LexicalProfiler(small_reference, exclude_numerals=True)
+def test_exclude_digits_reports_them_separately(small_reference):
+    profiler = LexicalProfiler(small_reference, exclude_digits=True)
     result = profiler.profile_text("the cat 42 42 100")
 
-    assert result.numeral_tokens == 3
-    assert result.numeral_types == 2
-    assert set(result.numeral_words) == {"42", "100"}
+    assert result.digit_tokens == 3
+    assert result.digit_types == 2
+    assert set(result.digit_words) == {"42", "100"}
     assert "42" not in result.off_list_words
-    # Numerals still count toward totals, same convention as ignored_words.
+    # Digits still count toward totals, same convention as ignored_words.
     assert result.total_tokens == 5
     assert result.off_list_tokens == 0
 
@@ -234,7 +234,7 @@ def test_exclude_proper_nouns_bypassed_without_trained_pipeline(small_reference)
 
 def test_ignore_words_takes_priority_over_exclude_categories(small_reference):
     # A word matching both ignore_words and an auto-detected category
-    # should be reported as ignored, not proper_noun/numeral.
+    # should be reported as ignored, not proper_noun/digit.
     profiler = LexicalProfiler(
         small_reference, ignore_words=["brett"], exclude_proper_nouns=True,
     )

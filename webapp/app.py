@@ -61,7 +61,7 @@ BAND_RAMP = ["#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6",
 OFF_LIST_COLOR = "#d03b3b"
 IGNORED_COLOR = "#898781"
 PROPER_NOUN_COLOR = "#8a5cc7"
-NUMERAL_COLOR = "#c78a3a"
+DIGIT_COLOR = "#c78a3a"
 
 # The LEAH mark: an open book whose pages are bars decaying like a Zipf
 # curve (tall/light on the left, falling into a long low/dark tail on the
@@ -199,6 +199,30 @@ def read_uploaded_texts(files) -> list[tuple[str, str]]:
     return out
 
 
+def read_uploaded_texts_cached(files, cache_key: str) -> list[tuple[str, str]]:
+    """Like read_uploaded_texts, but shows a progress bar while extracting
+    (.docx/.pdf parsing can take a noticeable moment for several files) and
+    skips re-extracting when the same set of files (by Streamlit's own
+    per-file id) was already decoded on a previous rerun -- otherwise every
+    unrelated widget interaction/rerun would re-parse every file again."""
+    files_sig = tuple(f.file_id for f in files) if files else ()
+    sig_key, out_key = f"{cache_key}_sig", f"{cache_key}_out"
+    if st.session_state.get(sig_key) != files_sig:
+        placeholder = st.empty()
+        bar = placeholder.progress(0, text="Preparing...")
+        out = []
+        for i, f in enumerate(files, start=1):
+            bar.progress(i / len(files), text=f"Extracting {f.name} ({i} of {len(files)})...")
+            try:
+                out.append((f.name, extract_text(f.name, f.getvalue())))
+            except ValueError as e:
+                st.warning(str(e))
+        placeholder.empty()
+        st.session_state[out_key] = out
+        st.session_state[sig_key] = files_sig
+    return st.session_state.get(out_key, [])
+
+
 def decode_picked_files(picked) -> dict[str, str]:
     """Turn file_dir_uploader's {"name", "content_b64"} entries into a
     {name: extracted_text} dict, skipping (with a warning) any file whose
@@ -311,6 +335,25 @@ div.st-key-top_menu [role="tablist"] {{
     z-index: 999;
     background: var(--background-color, #ffffff);
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}}
+/* Streamlit's "running"/"file change" status widget (top-right, next to
+   Deploy) shows a Material icon glyph via ligature text ("directions_run"
+   while a script is executing) -- collapse that glyph and substitute a
+   book emoji instead, on-theme with the rest of the app, with a Y-axis
+   flip animation while running so it reads as a page turning rather than
+   a static icon. */
+[data-testid="stStatusWidget"] [data-testid="stIconMaterial"] {{
+    font-size: 0 !important;
+}}
+[data-testid="stStatusWidget"] [data-testid="stIconMaterial"]::before {{
+    content: "📖";
+    font-size: 1rem;
+    display: inline-block;
+    animation: leahBookFlip 1.1s ease-in-out infinite;
+}}
+@keyframes leahBookFlip {{
+    0%, 100% {{ transform: rotateY(0deg); }}
+    50% {{ transform: rotateY(180deg); }}
 }}
 </style>
 <div style="display:flex; align-items:center; gap:0.7rem;">
@@ -482,7 +525,17 @@ with tab_build:
                 "verb is scored separately from \"record\" as a noun), so lemmatization "
                 "is always applied for it, regardless of the checkbox above."
             )
-        if st.button("Use this word list"):
+        # Auto-build (no button): rebuild whenever the selected list or any
+        # of the build parameters change, tracked via a signature so we
+        # don't redo the work on every unrelated widget interaction/rerun --
+        # same pattern as "Corpus of texts"/"Word list" below. Without this,
+        # toggling e.g. "Lemmatize" after already loading a list wouldn't
+        # take effect until some other change happened to trigger a rebuild.
+        builtin_sig = (
+            builtin_choice, band_size, language, lemmatize, fine_band_size,
+            fine_grained_until, coarse_band_size, coarse_grained_from,
+        )
+        if st.session_state.get("_builtin_sig") != builtin_sig:
             try:
                 st.session_state.reference = Reference.from_builtin(
                     builtin_choice, band_size=band_size, language=language,
@@ -491,6 +544,7 @@ with tab_build:
                     lemmatize=lemmatize,
                 )
                 st.session_state.results = None
+                st.session_state._builtin_sig = builtin_sig
             except ValueError as e:
                 st.error(str(e))
 
@@ -630,7 +684,7 @@ with tab_build:
     st.divider()
     st.header("2. Ignore list (optional)")
     st.caption("Specific words (names, made-up words, etc.) to exclude from "
-               "band/off-list scoring -- see below for proper nouns and numerals "
+               "band/off-list scoring -- see below for proper nouns and digits "
                "as whole categories.")
     ignore_file = st.file_uploader(
         "Upload ignore list (.txt)", type=["txt"], key="ignore_file",
@@ -643,9 +697,9 @@ with tab_build:
     )
 
     st.divider()
-    st.header("3. Proper nouns & numerals (optional)")
+    st.header("3. Proper nouns & digits (optional)")
     st.caption(
-        "By default, proper nouns and numerals are profiled like any other word "
+        "By default, proper nouns and digits are profiled like any other word "
         "(usually landing off-list). Exclude either to report it as its own "
         "category in the results instead."
     )
@@ -656,10 +710,12 @@ with tab_build:
              "none installed, this has no effect (proper nouns are just profiled "
              "like any other word).",
     )
-    exclude_numerals = st.checkbox(
-        "Exclude numerals", value=False,
-        help="Catches both digit numerals (e.g. \"42\") and number words (e.g. "
-             "\"twelve\") -- works regardless of language pipeline availability.",
+    exclude_digits = st.checkbox(
+        "Exclude digits", value=False,
+        help="Catches tokens containing a digit character (e.g. \"42\", \"3.14\") "
+             "-- works regardless of language pipeline availability. Spelled-out "
+             "number words (e.g. \"twelve\") are unaffected and stay profiled as "
+             "ordinary vocabulary.",
     )
 
 with tab_profile:
@@ -682,7 +738,7 @@ with tab_profile:
                 help="Select multiple files, or drag a whole folder onto this box.",
             )
             if target_files:
-                for name, text in read_uploaded_texts(target_files):
+                for name, text in read_uploaded_texts_cached(target_files, "_targets"):
                     target_texts[name] = text
         with tab_paste:
             pasted_name = st.text_input(
@@ -705,7 +761,7 @@ with tab_profile:
             profiler = LexicalProfiler(
                 reference, ignore_words=ignore_words,
                 exclude_proper_nouns=exclude_proper_nouns,
-                exclude_numerals=exclude_numerals,
+                exclude_digits=exclude_digits,
             )
             st.session_state.profiler = profiler
             st.session_state.results = build_with_progress(
@@ -731,7 +787,7 @@ with tab_profile:
                     "off-list %": f"{r.off_list_pct_tokens:.2f}%",
                     "ignored %": f"{r.ignored_pct_tokens:.2f}%",
                     "proper nouns %": f"{r.proper_noun_pct_tokens:.2f}%",
-                    "numerals %": f"{r.numeral_pct_tokens:.2f}%",
+                    "digits %": f"{r.digit_pct_tokens:.2f}%",
                 }
                 for name, r in results.items()
             ]
@@ -824,9 +880,9 @@ with tab_profile:
                         "Band": "Proper nouns", "% tokens": f"{result.proper_noun_pct_tokens:.2f}%",
                         "Cumulative %": None,
                     })
-                if result.numeral_tokens or result.numeral_words:
+                if result.digit_tokens or result.digit_words:
                     extra_rows.append({
-                        "Band": "Numerals", "% tokens": f"{result.numeral_pct_tokens:.2f}%",
+                        "Band": "Digits", "% tokens": f"{result.digit_pct_tokens:.2f}%",
                         "Cumulative %": None,
                     })
                 table_df = pd.concat([table_df, pd.DataFrame(extra_rows)], ignore_index=True)
@@ -846,8 +902,8 @@ with tab_profile:
             legend_swatches += span_html("ignored", IGNORED_COLOR, margin_right="6px")
             if profiler.exclude_proper_nouns:
                 legend_swatches += span_html("proper noun", PROPER_NOUN_COLOR, margin_right="6px")
-            if profiler.exclude_numerals:
-                legend_swatches += span_html("numeral", NUMERAL_COLOR)
+            if profiler.exclude_digits:
+                legend_swatches += span_html("digit", DIGIT_COLOR)
             st.markdown(legend_swatches, unsafe_allow_html=True)
 
             spans = []
@@ -867,8 +923,8 @@ with tab_profile:
                     spans.append(
                         span_html(surface, PROPER_NOUN_COLOR, title="Proper noun", pad="0 1px") + ws
                     )
-                elif tok.status == "numeral":
-                    spans.append(span_html(surface, NUMERAL_COLOR, title="Numeral", pad="0 1px") + ws)
+                elif tok.status == "digit":
+                    spans.append(span_html(surface, DIGIT_COLOR, title="Digit", pad="0 1px") + ws)
                 else:
                     spans.append(f"{surface}{ws}")
 
@@ -893,7 +949,7 @@ with tab_profile:
                         ign_df = word_table(result.ignored_words, result.word_counts, reference.pos_tagged)
                         st.dataframe(ign_df, width="stretch", hide_index=True)
 
-            if result.proper_noun_words or result.numeral_words:
+            if result.proper_noun_words or result.digit_words:
                 col_propn, col_num = st.columns(2)
                 if result.proper_noun_words:
                     with col_propn:
@@ -903,11 +959,11 @@ with tab_profile:
                                 result.proper_noun_words, result.word_counts, reference.pos_tagged,
                             )
                             st.dataframe(propn_df, width="stretch", hide_index=True)
-                if result.numeral_words:
+                if result.digit_words:
                     with col_num:
-                        with st.expander(f"Numerals ({result.numeral_types} unique)"):
+                        with st.expander(f"Digits ({result.digit_types} unique)"):
                             num_df = word_table(
-                                result.numeral_words, result.word_counts, reference.pos_tagged,
+                                result.digit_words, result.word_counts, reference.pos_tagged,
                             )
                             st.dataframe(num_df, width="stretch", hide_index=True)
 
@@ -929,7 +985,7 @@ with tab_profile:
                 "Ignored words (CSV)", export_to_bytes(report_mod.export_ignored_csv, results, ".csv"),
                 "ignored_words.csv", "text/csv",
             )
-            if any(r.proper_noun_words or r.numeral_words for r in results.values()):
+            if any(r.proper_noun_words or r.digit_words for r in results.values()):
                 dl5, dl6, _, _ = st.columns(4)
                 if any(r.proper_noun_words for r in results.values()):
                     dl5.download_button(
@@ -937,11 +993,11 @@ with tab_profile:
                         export_to_bytes(report_mod.export_proper_nouns_csv, results, ".csv"),
                         "proper_nouns.csv", "text/csv",
                     )
-                if any(r.numeral_words for r in results.values()):
+                if any(r.digit_words for r in results.values()):
                     dl6.download_button(
-                        "Numerals (CSV)",
-                        export_to_bytes(report_mod.export_numerals_csv, results, ".csv"),
-                        "numerals.csv", "text/csv",
+                        "Digits (CSV)",
+                        export_to_bytes(report_mod.export_digits_csv, results, ".csv"),
+                        "digits.csv", "text/csv",
                     )
 
 with tab_cite:
@@ -987,13 +1043,14 @@ much of a text a reader who knows the reference vocabulary would *not*
 recognize). "Ignored" words are specific words you've deliberately
 excluded (via the ignore list), so they don't get counted as off-list.
 
-**Proper nouns and numerals.** Names, places, and numbers are usually not
-meaningful vocabulary knowledge -- most published Lexical Frequency
-Profile tools exclude them by convention rather than counting them
-off-list. This tool profiles them like any other word by default, but you
-can exclude either category (the "Build a reference corpus or select a word list" tab, step 3)
-to report it separately
-instead, the same way an ignore list works.
+**Proper nouns and digits.** Names, places, and digit tokens (e.g. "42")
+are usually not meaningful vocabulary knowledge -- most published Lexical
+Frequency Profile tools exclude them by convention rather than counting
+them off-list. This tool profiles them like any other word by default,
+but you can exclude either category (the "Build a reference corpus or
+select a word list" tab, step 3) to report it separately instead, the
+same way an ignore list works. Spelled-out number words (e.g. "twelve")
+are unaffected either way and stay profiled as ordinary vocabulary.
 
 **Coverage thresholds.** A common way to use band coverage: how many bands
 does it take to reach 95% or 98% of a text's tokens? These particular
@@ -1069,7 +1126,7 @@ with tab_guide:
    specific words (names, made-up words, etc.) you don't want counted as
    off-list.
 
-3. **Proper nouns & numerals (optional)** (the "Build a reference corpus or select a word list"
+3. **Proper nouns & digits (optional)** (the "Build a reference corpus or select a word list"
    tab, step 3). By default
    these are profiled like any other word. Check either box to report it
    as its own category in the results instead of folding it into
@@ -1080,14 +1137,14 @@ with tab_guide:
 
 5. **Read the results** (step 5):
    - The summary table and metrics show tokens, types, and off-list %
-     (plus ignored/proper noun/numeral %, if applicable) per text.
+     (plus ignored/proper noun/digit %, if applicable) per text.
    - The **band coverage** chart shows what % of tokens fall in each band,
      plus cumulative coverage against the 95%/98% thresholds.
    - **Highlighted text** color-codes every word by band (or off-list/
-     ignored/proper noun/numeral), so you can see at a glance which words
+     ignored/proper noun/digit), so you can see at a glance which words
      are driving the score.
    - **Export** lets you download the band coverage, full report, and
-     off-list/ignored/proper-noun/numeral word lists as CSV/JSON.
+     off-list/ignored/proper-noun/digit word lists as CSV/JSON.
 
 Not sure what any of this means? See the **About lexical frequency
 profiling** tab for background on bands, coverage thresholds, and how
