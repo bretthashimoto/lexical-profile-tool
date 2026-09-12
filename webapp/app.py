@@ -67,7 +67,7 @@ NUMERAL_COLOR = "#c78a3a"
 # curve (tall/light on the left, falling into a long low/dark tail on the
 # right) -- a nod to word-frequency distributions, and to the "L" in LEAH.
 _LOGO_SVG_SRC = """
-<svg width="72" height="72" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="144" height="144" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="leahClipLeft">
       <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"/>
@@ -269,6 +269,13 @@ _banner_html = f"""
 header[data-testid="stHeader"] {{
     background: transparent;
 }}
+/* Those icons/buttons (Share, star, edit, GitHub, the "..." menu) are dark
+   by default (meant for a light header) and near-invisible against our
+   blue banner now that they overlay it -- their SVGs use fill="currentColor",
+   so setting the text color here recolors the icons too. */
+header[data-testid="stHeader"] button {{
+    color: #ffffff !important;
+}}
 /* Streamlit reserves ~96px of top padding on the main content area for its
    own (now-transparent) header bar. Our banner supplies its own spacer
    below instead, so left alone this padding just adds a blank gap between
@@ -294,7 +301,7 @@ div.st-key-header_banner {{
    content on screen too instead of letting it scroll normally. */
 div.st-key-top_menu [role="tablist"] {{
     position: sticky;
-    top: 106px;
+    top: 178px;
     z-index: 999;
     background: var(--background-color, #ffffff);
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -311,7 +318,7 @@ div.st-key-top_menu [role="tablist"] {{
             letter-spacing:0.02em;
             color:#ffffff;
         ">LEAH</span>
-        <span style="color:#e8f0fc; font-size:0.76rem;">
+        <span style="color:#e8f0fc; font-size:1.05rem;">
             <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
         </span>
     </div>
@@ -334,7 +341,7 @@ with st.container(key="header_banner"):
 # pinned full-bleed regardless of scroll), so a spacer of roughly its own
 # rendered height is needed here or the fixed banner would just overlap
 # the top of whatever comes next.
-st.markdown('<div style="height:106px"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:178px"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Top-level tabs
