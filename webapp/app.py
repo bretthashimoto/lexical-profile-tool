@@ -67,7 +67,7 @@ NUMERAL_COLOR = "#c78a3a"
 # curve (tall/light on the left, falling into a long low/dark tail on the
 # right) -- a nod to word-frequency distributions, and to the "L" in LEAH.
 _LOGO_SVG_SRC = """
-<svg width="130" height="130" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="110" height="110" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="leahClipLeft">
       <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"/>
@@ -269,6 +269,13 @@ _banner_html = f"""
 header[data-testid="stHeader"] {{
     background: transparent;
 }}
+/* Streamlit reserves ~96px of top padding on the main content area for its
+   own (now-transparent) header bar. Our banner supplies its own spacer
+   below instead, so left alone this padding just adds a blank gap between
+   the banner and the tab menu. */
+[data-testid="stMainBlockContainer"] {{
+    padding-top: 0 !important;
+}}
 div.st-key-header_banner {{
     position: fixed !important;
     top: 0;
@@ -277,7 +284,7 @@ div.st-key-header_banner {{
     width: 100vw !important;
     box-sizing: border-box;
     background: linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
-    padding: 1.2rem 3vw;
+    padding: 1rem 3vw;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }}
 /* The top-level tab menu sticks right below the banner. Streamlit renders
@@ -287,7 +294,7 @@ div.st-key-header_banner {{
    content on screen too instead of letting it scroll normally. */
 div.st-key-top_menu [role="tablist"] {{
     position: sticky;
-    top: 237px;
+    top: 182px;
     z-index: 999;
     background: var(--background-color, #ffffff);
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -299,15 +306,15 @@ div.st-key-top_menu [role="tablist"] {{
         font-family:'Space Grotesk', sans-serif;
         font-weight:700;
         font-style:italic;
-        font-size:4rem;
+        font-size:3.4rem;
         letter-spacing:0.02em;
         color:#ffffff;
     ">LEAH</span>
 </div>
-<div style="color:#e8f0fc; font-size:1.05rem; margin-top:0.25rem;">
+<div style="color:#e8f0fc; font-size:0.95rem; margin-top:0.2rem;">
     <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
 </div>
-<div style="color:#d3e2f7; font-size:0.9rem; margin-top:0.5rem; width:100%;">
+<div style="color:#d3e2f7; font-size:0.85rem; margin-top:0.4rem; width:100%;">
     Profile the frequency of words in users' texts by determining the
     commonness/rarity of words, relative to a reference you build from your
     own corpus or common word lists in English, Spanish, French, and German.
@@ -325,7 +332,7 @@ with st.container(key="header_banner"):
 # pinned full-bleed regardless of scroll), so a spacer of roughly its own
 # rendered height is needed here or the fixed banner would just overlap
 # the top of whatever comes next.
-st.markdown('<div style="height:151px"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:182px"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Top-level tabs
