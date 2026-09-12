@@ -67,7 +67,7 @@ NUMERAL_COLOR = "#c78a3a"
 # curve (tall/light on the left, falling into a long low/dark tail on the
 # right) -- a nod to word-frequency distributions, and to the "L" in LEAH.
 _LOGO_SVG_SRC = """
-<svg width="88" height="88" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="72" height="72" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="leahClipLeft">
       <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"/>
@@ -284,7 +284,7 @@ div.st-key-header_banner {{
     width: 100vw !important;
     box-sizing: border-box;
     background: linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
-    padding: 0.8rem 3vw;
+    padding: 0.75rem 3vw;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }}
 /* The top-level tab menu sticks right below the banner. Streamlit renders
@@ -294,7 +294,7 @@ div.st-key-header_banner {{
    content on screen too instead of letting it scroll normally. */
 div.st-key-top_menu [role="tablist"] {{
     position: sticky;
-    top: 142px;
+    top: 106px;
     z-index: 999;
     background: var(--background-color, #ffffff);
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -302,19 +302,21 @@ div.st-key-top_menu [role="tablist"] {{
 </style>
 <div style="display:flex; align-items:center; gap:0.7rem;">
     {LOGO_SVG}
-    <span style="
-        font-family:'Space Grotesk', sans-serif;
-        font-weight:700;
-        font-style:italic;
-        font-size:2.72rem;
-        letter-spacing:0.02em;
-        color:#ffffff;
-    ">LEAH</span>
+    <div style="display:flex; align-items:baseline; gap:0.7rem; flex-wrap:wrap;">
+        <span style="
+            font-family:'Space Grotesk', sans-serif;
+            font-weight:700;
+            font-style:italic;
+            font-size:2.72rem;
+            letter-spacing:0.02em;
+            color:#ffffff;
+        ">LEAH</span>
+        <span style="color:#e8f0fc; font-size:0.76rem;">
+            <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
+        </span>
+    </div>
 </div>
-<div style="color:#e8f0fc; font-size:0.76rem; margin-top:0.16rem;">
-    <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
-</div>
-<div style="color:#d3e2f7; font-size:0.68rem; margin-top:0.32rem; width:100%;">
+<div style="color:#d3e2f7; font-size:0.8rem; margin-top:0.32rem; width:100%;">
     Profile the frequency of words in users' texts by determining the
     commonness/rarity of words, relative to a reference you build from your
     own corpus or common word lists in English, Spanish, French, and German.
@@ -332,7 +334,7 @@ with st.container(key="header_banner"):
 # pinned full-bleed regardless of scroll), so a spacer of roughly its own
 # rendered height is needed here or the fixed banner would just overlap
 # the top of whatever comes next.
-st.markdown('<div style="height:142px"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:106px"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Top-level tabs
