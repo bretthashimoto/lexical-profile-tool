@@ -187,24 +187,14 @@ def read_word_list(raw: str) -> list[str]:
     return [w.strip() for w in raw.splitlines() if w.strip() and not w.strip().startswith("#")]
 
 
-def read_uploaded_texts(files) -> list[tuple[str, str]]:
-    """Expand uploaded .txt/.docx/.pdf files into (name, text) pairs,
-    skipping (with a warning) any file whose text couldn't be extracted."""
-    out = []
-    for f in files:
-        try:
-            out.append((f.name, extract_text(f.name, f.getvalue())))
-        except ValueError as e:
-            st.warning(str(e))
-    return out
-
-
 def read_uploaded_texts_cached(files, cache_key: str) -> list[tuple[str, str]]:
-    """Like read_uploaded_texts, but shows a progress bar while extracting
-    (.docx/.pdf parsing can take a noticeable moment for several files) and
-    skips re-extracting when the same set of files (by Streamlit's own
-    per-file id) was already decoded on a previous rerun -- otherwise every
-    unrelated widget interaction/rerun would re-parse every file again."""
+    """Expand uploaded .txt/.docx/.pdf files into (name, text) pairs,
+    skipping (with a warning) any file whose text couldn't be extracted.
+    Shows a progress bar while extracting (.docx/.pdf parsing can take a
+    noticeable moment for several files) and skips re-extracting when the
+    same set of files (by Streamlit's own per-file id) was already decoded
+    on a previous rerun -- otherwise every unrelated widget interaction/
+    rerun would re-parse every file again."""
     files_sig = tuple(f.file_id for f in files) if files else ()
     sig_key, out_key = f"{cache_key}_sig", f"{cache_key}_out"
     if st.session_state.get(sig_key) != files_sig:
@@ -531,11 +521,23 @@ with tab_build:
         # same pattern as "Corpus of texts"/"Word list" below. Without this,
         # toggling e.g. "Lemmatize" after already loading a list wouldn't
         # take effect until some other change happened to trigger a rebuild.
+        # Also rebuilds if a *different* source tab last set the shared
+        # st.session_state.reference -- otherwise switching to another tab
+        # and back (with this tab's widgets unchanged, so this signature
+        # matches its last-recorded value) would silently leave the
+        # reference pointing at whatever the other tab built, even though
+        # the UI still shows this tab's selection as active.
         builtin_sig = (
             builtin_choice, band_size, language, lemmatize, fine_band_size,
             fine_grained_until, coarse_band_size, coarse_grained_from,
         )
-        if st.session_state.get("_builtin_sig") != builtin_sig:
+        if (st.session_state.get("_builtin_sig") != builtin_sig
+                or st.session_state.get("_reference_source_kind") != source_kind):
+            # Recorded before attempting the build (not just on success) so
+            # a failed build doesn't retry -- and re-flash the same error --
+            # on every unrelated rerun until something actually changes.
+            st.session_state._builtin_sig = builtin_sig
+            st.session_state._reference_source_kind = source_kind
             try:
                 st.session_state.reference = Reference.from_builtin(
                     builtin_choice, band_size=band_size, language=language,
@@ -544,7 +546,6 @@ with tab_build:
                     lemmatize=lemmatize,
                 )
                 st.session_state.results = None
-                st.session_state._builtin_sig = builtin_sig
             except ValueError as e:
                 st.error(str(e))
 
@@ -571,7 +572,10 @@ with tab_build:
             band_size, language, lemmatize, fine_band_size, fine_grained_until,
             coarse_band_size, coarse_grained_from, pos_tag_corpus,
         )
-        if corpus_texts and st.session_state.get("_corpus_build_sig") != build_sig:
+        if corpus_texts and (st.session_state.get("_corpus_build_sig") != build_sig
+                              or st.session_state.get("_reference_source_kind") != source_kind):
+            st.session_state._corpus_build_sig = build_sig
+            st.session_state._reference_source_kind = source_kind
             try:
                 st.session_state.reference = build_with_progress(
                     lambda cb: Reference.from_corpus(
@@ -583,7 +587,6 @@ with tab_build:
                     )
                 )
                 st.session_state.results = None
-                st.session_state._corpus_build_sig = build_sig
             except ValueError as e:
                 st.error(str(e))
 
@@ -632,7 +635,10 @@ with tab_build:
             band_size, language, has_frequencies, fine_band_size, fine_grained_until,
             coarse_band_size, coarse_grained_from, lemmatize,
         )
-        if wordlist_file and st.session_state.get("_wordlist_sig") != wordlist_sig:
+        if wordlist_file and (st.session_state.get("_wordlist_sig") != wordlist_sig
+                               or st.session_state.get("_reference_source_kind") != source_kind):
+            st.session_state._wordlist_sig = wordlist_sig
+            st.session_state._reference_source_kind = source_kind
             with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp:
                 tmp.write(wordlist_file.getvalue())
                 tmp_path = tmp.name
@@ -645,7 +651,6 @@ with tab_build:
                     lemmatize=lemmatize,
                 )
                 st.session_state.results = None
-                st.session_state._wordlist_sig = wordlist_sig
             except ValueError as e:
                 st.error(str(e))
             finally:
@@ -658,14 +663,16 @@ with tab_build:
                  "reference (.json)\" button below, so you don't have to rebuild "
                  "it from a corpus/word list again.",
         )
-        if ref_file and st.session_state.get("_saved_ref_sig") != ref_file.file_id:
+        if ref_file and (st.session_state.get("_saved_ref_sig") != ref_file.file_id
+                          or st.session_state.get("_reference_source_kind") != source_kind):
+            st.session_state._saved_ref_sig = ref_file.file_id
+            st.session_state._reference_source_kind = source_kind
             with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
                 tmp.write(ref_file.getvalue())
                 tmp_path = tmp.name
             try:
                 st.session_state.reference = Reference.load(tmp_path)
                 st.session_state.results = None
-                st.session_state._saved_ref_sig = ref_file.file_id
             except ValueError as e:
                 st.error(str(e))
             finally:

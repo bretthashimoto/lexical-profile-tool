@@ -1,7 +1,8 @@
 4. Investigate weird words that aren't being tagged correctly
 5. Investigate words on the word lists that don't seem to be working correctly
 6. Combine the exclude numerals and proper nouns settings ection to one place
-7. 
+7. Change color of Share star pencil menu to white.
+8. Fix header to be smaller by maybe moving the description text to just below the LEAH title?
 5. 
 6. Word families? not just lemmas? 
 4. get help testing out features
