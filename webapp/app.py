@@ -67,7 +67,7 @@ NUMERAL_COLOR = "#c78a3a"
 # curve (tall/light on the left, falling into a long low/dark tail on the
 # right) -- a nod to word-frequency distributions, and to the "L" in LEAH.
 _LOGO_SVG_SRC = """
-<svg width="144" height="144" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="104" height="104" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="leahClipLeft">
       <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"/>
@@ -269,12 +269,18 @@ _banner_html = f"""
 header[data-testid="stHeader"] {{
     background: transparent;
 }}
-/* Those icons/buttons (Share, star, edit, GitHub, the "..." menu) are dark
+/* Those icons/links (Share, star, edit, GitHub, the "..." menu) are dark
    by default (meant for a light header) and near-invisible against our
-   blue banner now that they overlay it -- their SVGs use fill="currentColor",
-   so setting the text color here recolors the icons too. */
-header[data-testid="stHeader"] button {{
+   blue banner now that they overlay it. Not all of them are <button>s (the
+   GitHub/star/fork indicators render as <a> links), so every descendant is
+   covered here rather than just buttons; SVGs without an explicit fill use
+   fill="currentColor" and pick up the color from this too, but a couple
+   hard-code their own fill, hence the separate svg rule. */
+header[data-testid="stHeader"] * {{
     color: #ffffff !important;
+}}
+header[data-testid="stHeader"] svg {{
+    fill: #ffffff !important;
 }}
 /* Streamlit reserves ~96px of top padding on the main content area for its
    own (now-transparent) header bar. Our banner supplies its own spacer
@@ -291,7 +297,7 @@ div.st-key-header_banner {{
     width: 100vw !important;
     box-sizing: border-box;
     background: linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
-    padding: 0.75rem 3vw;
+    padding: 0.65rem 3vw;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }}
 /* The top-level tab menu sticks right below the banner. Streamlit renders
@@ -301,7 +307,7 @@ div.st-key-header_banner {{
    content on screen too instead of letting it scroll normally. */
 div.st-key-top_menu [role="tablist"] {{
     position: sticky;
-    top: 178px;
+    top: 134px;
     z-index: 999;
     background: var(--background-color, #ffffff);
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -341,7 +347,7 @@ with st.container(key="header_banner"):
 # pinned full-bleed regardless of scroll), so a spacer of roughly its own
 # rendered height is needed here or the fixed banner would just overlap
 # the top of whatever comes next.
-st.markdown('<div style="height:178px"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:134px"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Top-level tabs
