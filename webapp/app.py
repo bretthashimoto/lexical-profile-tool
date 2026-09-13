@@ -424,24 +424,23 @@ with tab_build:
              "surface forms otherwise. Uncheck to profile against surface word forms instead.",
     )
     language_name = LANGUAGE_DISPLAY_NAMES[language]
-    if lemmatize:
-        if not lemmatizer_available(language):
-            st.caption(
-                f"⚠️ No lemmatizer model installed for {language_name} yet — words will use "
-                f"their surface form instead of a lemma until one is installed."
-            )
-            if st.button(f"Download spaCy model for {language_name}"):
-                with st.spinner(f"Downloading a spaCy model for {language_name}..."):
-                    installed = download_model(language)
-                if installed:
-                    st.success(f"Installed a model for {language_name}.")
-                    st.rerun()
-                else:
-                    st.error(
-                        f"Couldn't download a model for {language_name}. Either this language "
-                        f"doesn't have a trained spaCy pipeline (see spacy.io/models), "
-                        f"or this host doesn't allow installing packages at runtime."
-                    )
+    if lemmatize and not lemmatizer_available(language):
+        st.caption(
+            f"⚠️ No lemmatizer model installed for {language_name} yet — words will use "
+            f"their surface form instead of a lemma until one is installed."
+        )
+        if st.button(f"Download spaCy model for {language_name}"):
+            with st.spinner(f"Downloading a spaCy model for {language_name}..."):
+                installed = download_model(language)
+            if installed:
+                st.success(f"Installed a model for {language_name}.")
+                st.rerun()
+            else:
+                st.error(
+                    f"Couldn't download a model for {language_name}. Either this language "
+                    f"doesn't have a trained spaCy pipeline (see spacy.io/models), "
+                    f"or this host doesn't allow installing packages at runtime."
+                )
 
     with st.expander("Fine-grained bands (optional)"):
         st.caption(
@@ -745,8 +744,7 @@ with tab_profile:
                 help="Select multiple files, or drag a whole folder onto this box.",
             )
             if target_files:
-                for name, text in read_uploaded_texts_cached(target_files, "_targets"):
-                    target_texts[name] = text
+                target_texts.update(read_uploaded_texts_cached(target_files, "_targets"))
         with tab_paste:
             pasted_name = st.text_input(
                 "Name for this text", value="pasted_text",
@@ -761,7 +759,9 @@ with tab_profile:
         if st.button("Profile", type="primary", disabled=not target_texts):
             ignore_words = []
             if ignore_file:
-                ignore_words += read_word_list(ignore_file.getvalue().decode("utf-8", errors="ignore"))
+                ignore_words += read_word_list(
+                    ignore_file.getvalue().decode("utf-8", errors="ignore")
+                )
             if ignore_text:
                 ignore_words += read_word_list(ignore_text)
 
@@ -845,7 +845,9 @@ with tab_profile:
             })
             chart_df["pct_tokens_label"] = chart_df["pct_tokens"].map(lambda v: f"{v:.2f}%")
             chart_df["cumulative_pct_label"] = chart_df["cumulative_pct"].map(lambda v: f"{v:.2f}%")
-            bar = alt.Chart(chart_df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+            bar = alt.Chart(chart_df).mark_bar(
+                cornerRadiusTopLeft=4, cornerRadiusTopRight=4,
+            ).encode(
                 x=alt.X("band:N", sort=None, title="Frequency band", axis=alt.Axis(labelAngle=-45)),
                 y=alt.Y("pct_tokens:Q", title="% of tokens", scale=alt.Scale(domain=[0, 100])),
                 color=alt.Color("band_num:Q", scale=alt.Scale(range=BAND_RAMP), legend=None),
@@ -860,7 +862,9 @@ with tab_profile:
                 y=alt.Y("cumulative_pct:Q", scale=alt.Scale(domain=[0, 100])),
             )
             threshold_df = pd.DataFrame({"y": [95, 98]})
-            thresholds = alt.Chart(threshold_df).mark_rule(strokeDash=[4, 4], color="#898781").encode(
+            thresholds = alt.Chart(threshold_df).mark_rule(
+                strokeDash=[4, 4], color="#898781",
+            ).encode(
                 y="y:Q",
             )
             st.altair_chart((bar + line + thresholds).properties(height=400), width="stretch")
@@ -923,9 +927,13 @@ with tab_profile:
                     title = f"Band {result.band_label(tok.band)}"
                     spans.append(span_html(surface, color, fg, title, pad="0 1px") + ws)
                 elif tok.status == "off_list":
-                    spans.append(span_html(surface, OFF_LIST_COLOR, title="Off-list", pad="0 1px") + ws)
+                    spans.append(
+                        span_html(surface, OFF_LIST_COLOR, title="Off-list", pad="0 1px") + ws
+                    )
                 elif tok.status == "ignored":
-                    spans.append(span_html(surface, IGNORED_COLOR, title="Ignored", pad="0 1px") + ws)
+                    spans.append(
+                        span_html(surface, IGNORED_COLOR, title="Ignored", pad="0 1px") + ws
+                    )
                 elif tok.status == "proper_noun":
                     spans.append(
                         span_html(surface, PROPER_NOUN_COLOR, title="Proper noun", pad="0 1px") + ws
@@ -945,34 +953,36 @@ with tab_profile:
             col_off, col_ign = st.columns(2)
             with col_off:
                 off_label = (
-                    f"Off-list words ({result.off_list_types} unique, {result.off_list_tokens} tokens)"
+                    f"Off-list words ({result.off_list_types} unique, "
+                    f"{result.off_list_tokens} tokens)"
                 )
                 with st.expander(off_label):
-                    off_df = word_table(result.off_list_words, result.word_counts, reference.pos_tagged)
+                    off_df = word_table(
+                        result.off_list_words, result.word_counts, reference.pos_tagged,
+                    )
                     st.dataframe(off_df, width="stretch", hide_index=True)
             if result.ignored_words:
-                with col_ign:
-                    with st.expander(f"Ignored words ({result.ignored_types} unique)"):
-                        ign_df = word_table(result.ignored_words, result.word_counts, reference.pos_tagged)
-                        st.dataframe(ign_df, width="stretch", hide_index=True)
+                with col_ign, st.expander(f"Ignored words ({result.ignored_types} unique)"):
+                    ign_df = word_table(
+                        result.ignored_words, result.word_counts, reference.pos_tagged,
+                    )
+                    st.dataframe(ign_df, width="stretch", hide_index=True)
 
             if result.proper_noun_words or result.digit_words:
                 col_propn, col_num = st.columns(2)
                 if result.proper_noun_words:
-                    with col_propn:
-                        label = f"Proper nouns ({result.proper_noun_types} unique)"
-                        with st.expander(label):
-                            propn_df = word_table(
-                                result.proper_noun_words, result.word_counts, reference.pos_tagged,
-                            )
-                            st.dataframe(propn_df, width="stretch", hide_index=True)
+                    label = f"Proper nouns ({result.proper_noun_types} unique)"
+                    with col_propn, st.expander(label):
+                        propn_df = word_table(
+                            result.proper_noun_words, result.word_counts, reference.pos_tagged,
+                        )
+                        st.dataframe(propn_df, width="stretch", hide_index=True)
                 if result.digit_words:
-                    with col_num:
-                        with st.expander(f"Digits ({result.digit_types} unique)"):
-                            num_df = word_table(
-                                result.digit_words, result.word_counts, reference.pos_tagged,
-                            )
-                            st.dataframe(num_df, width="stretch", hide_index=True)
+                    with col_num, st.expander(f"Digits ({result.digit_types} unique)"):
+                        num_df = word_table(
+                            result.digit_words, result.word_counts, reference.pos_tagged,
+                        )
+                        st.dataframe(num_df, width="stretch", hide_index=True)
 
             st.subheader("Export")
             dl1, dl2, dl3, dl4 = st.columns(4)
@@ -985,11 +995,13 @@ with tab_profile:
                 "full_report.json", "application/json",
             )
             dl3.download_button(
-                "Off-list words (CSV)", export_to_bytes(report_mod.export_off_list_csv, results, ".csv"),
+                "Off-list words (CSV)",
+                export_to_bytes(report_mod.export_off_list_csv, results, ".csv"),
                 "off_list_words.csv", "text/csv",
             )
             dl4.download_button(
-                "Ignored words (CSV)", export_to_bytes(report_mod.export_ignored_csv, results, ".csv"),
+                "Ignored words (CSV)",
+                export_to_bytes(report_mod.export_ignored_csv, results, ".csv"),
                 "ignored_words.csv", "text/csv",
             )
             if any(r.proper_noun_words or r.digit_words for r in results.values()):

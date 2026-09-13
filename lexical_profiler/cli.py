@@ -38,7 +38,7 @@ from .reference import BUILTIN_WORD_LISTS, Reference, open_text_file, require_tx
 
 
 def _collect_ignore_words(args) -> list:
-    """Mecrge --ignore-words (given directly on the command line) with
+    """Merge --ignore-words (given directly on the command line) with
     --ignore-list (one word per line in a file), if both were passed."""
     words = list(args.ignore_words) if args.ignore_words else []
     if args.ignore_list:

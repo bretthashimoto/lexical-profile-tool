@@ -375,7 +375,7 @@ def tokenize(text: str, language: str = "en", lowercase: bool = True,
         min_length: drop tokens shorter than this (after lowercasing,
             before lemmatizing). Set to 1 to keep single-letter words.
         pos_tag: append a part-of-speech code to each token, e.g.
-            "record_V" vs "record_N" (see `_POS_TAG_MAP`), for matching
+            "record_v" vs "record_n" (see `_POS_TAG_MAP`), for matching
             against a POS-tagged Reference. Requires the same trained
             pipeline as `lemmatize`; silently produces plain tokens
             otherwise. A token whose tag isn't one of the codes we

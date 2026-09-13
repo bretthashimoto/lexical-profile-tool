@@ -82,14 +82,14 @@ class ProfileResult:
         bands = sorted(self.band_token_counts.keys())
         if max_bands_shown:
             bands = bands[:max_bands_shown]
-        for b in bands:
-            lines.append(
-                f"{self.band_label(b):<{label_width}}{self.band_token_counts[b]:>10}"
-                f"{self.band_token_pct[b]:>11.2f}%"
-                f"{self.cumulative_token_pct[b]:>9.2f}%"
-                f"{self.band_type_counts.get(b, 0):>10}"
-                f"{self.band_type_pct.get(b, 0):>11.2f}%"
-            )
+        lines.extend(
+            f"{self.band_label(b):<{label_width}}{self.band_token_counts[b]:>10}"
+            f"{self.band_token_pct[b]:>11.2f}%"
+            f"{self.cumulative_token_pct[b]:>9.2f}%"
+            f"{self.band_type_counts.get(b, 0):>10}"
+            f"{self.band_type_pct.get(b, 0):>11.2f}%"
+            for b in bands
+        )
         # Off-list/Ignored aren't part of the band 1..N progression, so
         # "coverage through this row" isn't a meaningful number for them --
         # leave the Cum % cell blank rather than showing a stale/misleading
@@ -314,7 +314,8 @@ class LexicalProfiler:
             if is_digit and self.exclude_digits:
                 tokens.append(HighlightedToken(surface, tok.whitespace_, "digit"))
                 continue
-            if not is_digit and has_lemmatizer and tok.pos_ == "PROPN" and self.exclude_proper_nouns:
+            is_propn = has_lemmatizer and tok.pos_ == "PROPN"
+            if not is_digit and is_propn and self.exclude_proper_nouns:
                 tokens.append(HighlightedToken(surface, tok.whitespace_, "proper_noun"))
                 continue
 

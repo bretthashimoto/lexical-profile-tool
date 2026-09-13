@@ -4,11 +4,14 @@ lexical_profiler
 
 A small toolkit for lexical frequency profiling of texts.
 
-Two ways to build a *reference* frequency model:
+A few ways to build a *reference* frequency model:
   1. From a corpus of texts (word frequencies are derived automatically).
   2. From an existing word list (e.g. a published frequency list such as
      the GSL, NGSL, or a COCA-derived list), one word per line, ordered
      from most to least frequent (optionally "word<TAB>frequency").
+  3. From a published word list bundled with this package (AVL, NGSL,
+     NAWL, or COCA) via `Reference.from_builtin(...)`, with nothing to
+     download or format yourself.
 
 That reference is then used to profile one or more *target* texts,
 reporting how much of the target text's vocabulary falls into each

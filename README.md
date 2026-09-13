@@ -22,10 +22,12 @@ words (K1), the next 1000 (K2), and so on, with everything else marked
 2. **From an existing word list**: a plain word list (one per line,
    ordered by frequency) or a `word,frequency` / `word<TAB>frequency`
    file, such as a published list (GSL, NGSL, COCA-derived lists, etc).
-3. **From a word list bundled with this package**: currently the
+3. **From a word list bundled with this package**: the
    [Academic Vocabulary List (AVL)](http://www.academicwords.info)
-   (Gardner & Davies, 2013), so you don't have to track down or format
-   the file yourself -- just pass `--reference-builtin avl`.
+   (Gardner & Davies, 2013), New General Service List (NGSL), New
+   Academic Word List (NAWL), or COCA lemma+POS list, so you don't have
+   to track down or format the file yourself -- just pass
+   `--reference-builtin avl` (or `ngsl`/`nawl`/`coca`).
 
 All three produce the same kind of `Reference` object, so the rest of the
 pipeline (profiling, reporting) doesn't care which one you used.
@@ -271,11 +273,12 @@ reference = Reference.from_word_list(
 ```
 
 Or, to profile against an *academic* vocabulary rather than a general
-frequency list, use the bundled Academic Vocabulary List (AVL) directly by
-name -- no file to download or format:
+frequency list, use one of the bundled word lists directly by name -- no
+file to download or format:
 
 ```python
 reference = Reference.from_builtin("avl", band_size=500)
+# also available: "ngsl", "nawl", "coca"
 ```
 
 ### Step 8: The same tutorial, from the command line
@@ -304,7 +307,7 @@ python -m lexical_profiler \
     --band-size 5 \
     --target examples/targets/student_essay_2.txt
 
-# Or profile against the bundled Academic Vocabulary List (AVL)
+# Or profile against a bundled word list (avl, ngsl, nawl, or coca)
 python -m lexical_profiler \
     --reference-builtin avl --band-size 500 \
     --target examples/targets/student_essay_2.txt
@@ -394,7 +397,7 @@ per-session, on-demand usage pattern.
 
 | Parameter | Default | What it does |
 |---|---|---|
-| `name` | *required* | Key of a word list bundled with this package (case-insensitive). Currently `"avl"` (Academic Vocabulary List). |
+| `name` | *required* | Key of a word list bundled with this package (case-insensitive): `"avl"` (Academic Vocabulary List), `"ngsl"` (New General Service List), `"nawl"` (New Academic Word List), or `"coca"` (COCA lemma+POS list). |
 | `band_size` | `1000` | Same as above. |
 | `lowercase` | `True` | Same as above. |
 | `language` | `"en"` | Same as above. |
@@ -472,7 +475,7 @@ isn't writable, instead of a raw OS traceback.
 |---|---|
 | `--reference-corpus PATH` | Build the reference from a `.txt` file or folder. |
 | `--reference-wordlist PATH` | Build the reference from a word list file instead. |
-| `--reference-builtin NAME` | Build the reference from a word list bundled with this package (currently `avl`). |
+| `--reference-builtin NAME` | Build the reference from a word list bundled with this package (`avl`, `ngsl`, `nawl`, or `coca`). |
 | `--reference-saved PATH` | Reload a reference previously written with `--save-reference`. |
 | `--save-reference PATH` | Save the built reference to this path for reuse. |
 | `--target FILE [FILE ...]` | One or more target files to profile. |
@@ -577,7 +580,7 @@ lexical_profiler/
   report.py             # CSV/JSON export helpers
   cli.py                  # command-line interface
   __main__.py                # `python -m lexical_profiler` entry point
-  data/                          # word lists bundled with the package (e.g. AVL)
+  data/                          # word lists bundled with the package (AVL, NGSL, NAWL, COCA)
 webapp/
   app.py                            # Streamlit web UI (`streamlit run webapp/app.py`)
   requirements.txt                       # deploy-time deps (Streamlit Community Cloud picks this up)

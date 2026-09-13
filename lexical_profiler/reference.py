@@ -5,9 +5,11 @@ A Reference maps each known word to:
   - a rank (1 = most frequent)
   - a frequency band (1 = the band containing the most frequent words)
 
-It can be built two ways:
+It can be built a few ways:
   * Reference.from_corpus(...):     derive frequencies from a corpus of texts
   * Reference.from_word_list(...):  load an existing ordered/frequency word list
+  * Reference.from_builtin(...):    load a published list bundled with this package
+                                     (see BUILTIN_WORD_LISTS below)
 
 By default, bands are a uniform width (`band_size`, 1000 words). You can
 optionally request finer-grained bands for the most frequent words via
@@ -390,11 +392,11 @@ class Reference:
         lowercase: whether reference words are lowercased
         lemmatize: whether reference words were lemmatized when built
         pos_tagged: whether known words are keyed as "lemma_CODE" (e.g.
-            "record_V" vs "record_N") rather than plain lemmas -- see
+            "record_v" vs "record_n") rather than plain lemmas -- see
             tokenizer.POS_DISPLAY_NAMES for what each code means. When
             True, target texts are tokenized the same way before lookup,
-            so e.g. "record" used as a verb only matches a "record_V"
-            entry, not "record_N". Implies lemmatize=True (POS-aware
+            so e.g. "record" used as a verb only matches a "record_v"
+            entry, not "record_n". Implies lemmatize=True (POS-aware
             matching against a lemma-keyed reference is meaningless
             against inflected surface forms).
     """
@@ -475,7 +477,7 @@ class Reference:
                 starts, once per document as it's tokenized/lemmatized, and
                 once more before frequency bands are computed. Useful for
                 driving a progress bar for a large corpus.
-            pos_tagged: key known words as "lemma_CODE" (e.g. "record_V")
+            pos_tagged: key known words as "lemma_CODE" (e.g. "record_v")
                 instead of a plain lemma, so profiling only matches a word
                 used with the same part of speech (see tokenizer.
                 POS_DISPLAY_NAMES for what each code means). Requires the
@@ -603,7 +605,7 @@ class Reference:
                 pipeline for `language`; falls back to surface forms
                 silently otherwise.
             pos_tagged: whether this word list's entries are already in
-                "lemma_CODE" form (e.g. "record_V") rather than plain
+                "lemma_CODE" form (e.g. "record_v") rather than plain
                 lemmas -- see tokenizer.POS_DISPLAY_NAMES for what each
                 code means. This doesn't change how the file is read; it
                 only tells profiling to tokenize target text the same way

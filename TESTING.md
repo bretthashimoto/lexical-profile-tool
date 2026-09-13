@@ -9,12 +9,6 @@ If anything below doesn't work the way it's described, **that's useful
 feedback in itself**: see [What to tell me](#what-to-tell-me) at the
 bottom.
 
-## 0. Get access
-
-This repo is currently private. If you can't see
-https://github.com/bretthashimoto/lexical-profile-tool, ask Brett to add
-you as a collaborator first.
-
 ## 1. Set up (5-10 minutes)
 
 You'll need **Python 3.10 or newer** and **git**.
