@@ -202,11 +202,11 @@ def read_uploaded_texts_cached(files, cache_key: str) -> list[tuple[str, str]]:
         bar = placeholder.progress(0, text="Preparing...")
         out = []
         for i, f in enumerate(files, start=1):
-            bar.progress(i / len(files), text=f"Extracting {f.name} ({i} of {len(files)})...")
             try:
                 out.append((f.name, extract_text(f.name, f.getvalue())))
             except ValueError as e:
                 st.warning(str(e))
+            bar.progress(i / len(files), text=f"Extracting {f.name} ({i} of {len(files)})...")
         placeholder.empty()
         st.session_state[out_key] = out
         st.session_state[sig_key] = files_sig
@@ -265,11 +265,37 @@ def load_example_data(*, band_size=20, language="en", lemmatize=True,
 
 
 # ---------------------------------------------------------------------------
-# Header banner: sticky and full viewport width (breaks out of Streamlit's
+# Header banner: fixed and full viewport width (breaks out of Streamlit's
 # centered/padded block-container via the `key=` CSS hook below), so it
 # stays pinned at the top of the screen edge-to-edge as the page scrolls.
-# The tab menu right below it is pinned there too, via its own `key=` hook.
 # ---------------------------------------------------------------------------
+# Shared between the real (fixed-position) banner and an invisible in-flow
+# clone of it (see div.st-key-header_banner_spacer below) that reserves
+# exactly the right amount of space for whatever the real banner's actual
+# rendered height turns out to be.
+_banner_inner_html = f"""
+<div style="display:flex; align-items:center; gap:0.7rem;">
+    {LOGO_SVG}
+    <div style="display:flex; align-items:baseline; gap:0.7rem; flex-wrap:wrap;">
+        <span style="
+            font-family:'Space Grotesk', sans-serif;
+            font-weight:700;
+            font-style:italic;
+            font-size:2.9rem;
+            letter-spacing:0.02em;
+            color:#ffffff;
+        ">LEAH</span>
+        <span style="color:#e8f0fc; font-size:1.5rem;">
+            <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
+        </span>
+    </div>
+</div>
+<div style="color:#d3e2f7; font-size:1.0rem; margin-top:0.01rem; width:100%;">
+    Profile the frequency of words in users' texts by determining the
+    commonness/rarity of words, relative to a reference you build from your
+    own corpus or common word lists in English, Spanish, French, and German.
+</div>
+"""
 _banner_html = f"""
 <link rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap">
@@ -320,17 +346,34 @@ div.st-key-header_banner {{
     padding: 0.15rem 3vw 0.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }}
-/* The top-level tab menu sticks right below the banner. Streamlit renders
-   the clickable tab row and each tab's content panel as siblings inside
-   the same st-key-scoped wrapper, so only the tab ROW ([role="tablist"])
-   is targeted here -- sticking the whole wrapper would freeze each tab's
-   content on screen too instead of letting it scroll normally. */
+/* `position: fixed` removes the banner from document flow, so a spacer is
+   needed below it to keep whatever comes next from being covered. A fixed
+   pixel-height spacer kept drifting out of sync, because the banner's
+   real height is responsive -- the description text wraps to a different
+   number of lines depending on viewport width -- leaving a gap at some
+   widths and an overlap at others no matter what single number was
+   chosen. This spacer instead renders an exact copy of the banner's own
+   content (same padding/width/font-sizes, via the shared
+   _banner_inner_html below), just invisible (`visibility: hidden`, which
+   -- unlike `display: none` -- still takes up its normal layout space)
+   and in normal flow instead of `position: fixed`, so it always reserves
+   *exactly* the real banner's rendered height, at any viewport width,
+   with no number to keep in sync. */
+div.st-key-header_banner_spacer {{
+    visibility: hidden;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    box-sizing: border-box;
+    padding: 0.15rem 3vw 0.5rem;
+}}
+/* Streamlit's own default element gap (two of them stack here: one after
+   the spacer container, one before this tab row) still shows up between
+   the (invisible) spacer above and this tab row -- unlike the old height
+   mismatch, that gap is a constant regardless of viewport width/content
+   reflow, so it's safe to cancel out with a fixed negative margin here. */
 div.st-key-top_menu [role="tablist"] {{
-    position: sticky;
-    top: 120px;
-    z-index: 999;
     background: var(--background-color, #ffffff);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    margin-top: -2rem;
 }}
 /* Streamlit's "running"/"file change" status widget (top-right, next to
    Deploy) shows a Material icon glyph via ligature text ("directions_run"
@@ -352,27 +395,7 @@ div.st-key-top_menu [role="tablist"] {{
     50% {{ transform: rotateY(180deg); }}
 }}
 </style>
-<div style="display:flex; align-items:center; gap:0.7rem;">
-    {LOGO_SVG}
-    <div style="display:flex; align-items:baseline; gap:0.7rem; flex-wrap:wrap;">
-        <span style="
-            font-family:'Space Grotesk', sans-serif;
-            font-weight:700;
-            font-style:italic;
-            font-size:2.9rem;
-            letter-spacing:0.02em;
-            color:#ffffff;
-        ">LEAH</span>
-        <span style="color:#e8f0fc; font-size:1.5rem;">
-            <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
-        </span>
-    </div>
-</div>
-<div style="color:#d3e2f7; font-size:1.0rem; margin-top:0.01rem; width:100%;">
-    Profile the frequency of words in users' texts by determining the
-    commonness/rarity of words, relative to a reference you build from your
-    own corpus or common word lists in English, Spanish, French, and German.
-</div>
+{_banner_inner_html}
 """
 # Collapsed to one line for the same reason as LOGO_SVG above: a blank line
 # inside a raw HTML block passed to st.markdown breaks it into two blocks,
@@ -382,11 +405,15 @@ with st.container(key="header_banner"):
         " ".join(line.strip() for line in _banner_html.strip().splitlines()),
         unsafe_allow_html=True,
     )
-# The banner is `position: fixed` (removed from normal flow, so it can be
-# pinned full-bleed regardless of scroll), so a spacer of roughly its own
-# rendered height is needed here or the fixed banner would just overlap
-# the top of whatever comes next.
-st.markdown('<div style="height:104px"></div>', unsafe_allow_html=True)
+# Invisible in-flow clone of the banner content, purely to reserve space
+# below the real (position:fixed, out-of-flow) banner above -- see the
+# div.st-key-header_banner_spacer CSS rule for why this replaced a fixed
+# pixel-height spacer.
+with st.container(key="header_banner_spacer"):
+    st.markdown(
+        " ".join(line.strip() for line in _banner_inner_html.strip().splitlines()),
+        unsafe_allow_html=True,
+    )
 
 # ---------------------------------------------------------------------------
 # Top-level tabs
