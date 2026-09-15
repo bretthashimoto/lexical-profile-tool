@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}About lexical frequency profiling — LEAH{% endblock %}
+{% block content %}
+<h1>About lexical frequency profiling</h1>
+
+<p>Lexical frequency profiling measures how much of a text's vocabulary falls into common vs.
+rare/unknown frequency bands, relative to a reference — either a frequency-ranked word list (like
+the AVL or NGSL) or a corpus of your own texts. It's widely used in vocabulary research,
+reading/materials research, and ESL/EFL text leveling.</p>
+
+<p><strong>Frequency bands.</strong> Every word in the reference is ranked by frequency and grouped
+into bands (band 1 = most frequent). Profiling a text tells you what percentage of its tokens fall
+in each band — a text dominated by band 1-2 words uses mostly very common vocabulary, while a text
+with a long tail in higher bands uses more specialized or rare vocabulary.</p>
+
+<p><strong>Off-list vs. ignored words.</strong> A word that doesn't appear anywhere in the reference
+is "off-list" — it's outside the vocabulary the reference describes (this is often what a profile is
+really trying to measure: how much of a text a reader who knows the reference vocabulary would
+<em>not</em> recognize). "Ignored" words are specific words you've deliberately excluded (via the
+ignore list), so they don't get counted as off-list.</p>
+
+<p><strong>Proper nouns and digits.</strong> Names, places, and digit tokens (e.g. "42") are usually
+not meaningful vocabulary knowledge — most published Lexical Frequency Profile tools exclude them by
+convention rather than counting them off-list. This tool excludes both categories by default,
+reporting each separately instead of folding it into off-list; uncheck either box (the "Build
+reference" page, step 2) to profile it like any other word instead, the same way an ignore list
+works in reverse. Spelled-out number words (e.g. "twelve") are unaffected either way and stay
+profiled as ordinary vocabulary.</p>
+
+<p><strong>Coverage thresholds.</strong> A common way to use band coverage: how many bands does it
+take to reach 95% or 98% of a text's tokens? These particular thresholds come from a line of studies
+linking lexical coverage to reading comprehension. Laufer (1989) was the original work establishing
+a threshold, finding that around 95% coverage was needed for a minimal level of comprehension (55%
+on a comprehension test). Hu &amp; Nation (2000) found that 98% coverage was needed to reach 71%
+comprehension across two reading tests. Schmitt, Jiang, &amp; Grabe (2011) found that 98% coverage
+was the optimal level for academic texts when 70% comprehension was expected. This is where the 95%
+(minimal) and 98% (optimal) thresholds used in this tool come from — as framed by Laufer &amp;
+Ravenhorst-Kalovski (2010), building on Nation (2006), who estimated the vocabulary size needed to
+reach each threshold for written and spoken English. For a broader look at this research, see Laufer
+(2013).</p>
+
+<p><strong>Lemmas, word forms, and part of speech.</strong> Some references (like AVL, NGSL, NAWL)
+match by lemma, so "runs", "running", and "ran" all count as the word family "run". COCA-based
+profiling in this tool also tags part of speech, so "record" as a verb is scored separately from
+"record" as a noun.</p>
+
+<h2>References</h2>
+<ul>
+    <li>Laufer, B. (1989). What percentage of text-lexis is essential for comprehension? In C. Lauren
+        &amp; M. Nordman (Eds.), <em>Special language: From humans thinking to thinking machines</em>
+        (pp. 316-323). Multilingual Matters.</li>
+    <li>Hu, M., &amp; Nation, P. (2000). Unknown vocabulary density and reading comprehension.
+        <em>Reading in a Foreign Language, 13</em>(1), 403-430.</li>
+    <li>Nation, P. (2006). How large a vocabulary is needed for reading and listening?
+        <em>Canadian Modern Language Review, 63</em>(1), 59-82.</li>
+    <li>Laufer, B., &amp; Ravenhorst-Kalovski, G. C. (2010). Lexical threshold revisited: Lexical text
+        coverage, learners' vocabulary size and reading comprehension. <em>Reading in a Foreign
+        Language, 22</em>(1), 15-30.</li>
+    <li>Schmitt, N., Jiang, X., &amp; Grabe, W. (2011). The percentage of words known in a text and
+        reading comprehension. <em>The Modern Language Journal, 95</em>(1), 26-43.</li>
+    <li>Laufer, B. (2013). Lexical thresholds for reading comprehension: What they are and how they
+        can be used for teaching purposes. <em>TESOL Quarterly, 47</em>(4), 867-872.</li>
+</ul>
+{% endblock %}

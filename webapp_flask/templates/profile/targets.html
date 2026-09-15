@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "partials/_progress.html" import progress_bar %}
+{% block title %}Profile a text — LEAH{% endblock %}
+{% block content %}
+<h1>3. Profile target text(s)</h1>
+
+{% if target_texts %}
+    <p>Texts staged for profiling: {{ target_texts.keys() | join(", ") }}</p>
+{% endif %}
+
+<form method="post" action="{{ url_for('profile.upload') }}" enctype="multipart/form-data">
+    <label>Upload files (.txt/.docx/.pdf) <input type="file" name="target_files" multiple></label>
+    <br><br>
+    <label>Name for pasted text <input type="text" name="pasted_name" value="pasted_text"></label>
+    <br>
+    <label>Paste text to profile
+        <br>
+        <textarea name="pasted_text" rows="8" cols="60"></textarea>
+    </label>
+    <br>
+    <button type="submit">Add text(s)</button>
+</form>
+
+{% if target_texts %}
+    <form id="profile-run-form" method="post" action="{{ url_for('profile.run') }}">
+        <button type="submit">Profile</button>
+    </form>
+    {{ progress_bar("progress-profile") }}
+    <script>
+        submitJobForm(document.getElementById("profile-run-form"), "progress-profile");
+    </script>
+{% endif %}
+{% endblock %}

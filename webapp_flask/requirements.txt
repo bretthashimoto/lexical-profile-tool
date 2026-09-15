@@ -1,0 +1,24 @@
+# Dependencies for the Flask web app (webapp_flask/app.py). Kept separate
+# from the repo-root pyproject.toml (plain library/CLI) and from
+# webapp/requirements.txt (the Streamlit app), same pattern as that file.
+#
+# spaCy is pinned to the 3.8.x line so it matches the pre-installed model
+# wheels below (spaCy trained pipelines require a matching major.minor
+# version). If you bump this, bump the model versions to match.
+spacy>=3.8,<3.9
+click>=8.0
+Flask>=3.0
+altair>=5.0
+
+# For extracting plain text from uploaded .docx / .pdf files (corpus and
+# target-text uploads both accept these in addition to .txt).
+python-docx>=1.0
+pypdf>=4.0
+
+# Pre-installed spaCy pipelines, so lemmatization works instantly for these
+# languages without needing the in-app "download model" step. See
+# webapp/requirements.txt for the full rationale (identical here).
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.8.0/es_core_news_sm-3.8.0-py3-none-any.whl
+https://github.com/explosion/spacy-models/releases/download/fr_core_news_sm-3.8.0/fr_core_news_sm-3.8.0-py3-none-any.whl
+https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.8.0/de_core_news_sm-3.8.0-py3-none-any.whl

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}How to cite — LEAH{% endblock %}
+{% block content %}
+<h1>How to cite</h1>
+
+<h2>This tool</h2>
+<pre>Hashimoto, B. (2026). lexical_profiler (Version 0.2.0) [Computer software]. https://github.com/bretthashimoto/lexical-profile-tool</pre>
+
+<h2>Built-in word lists</h2>
+<p class="caption">Cite whichever list you actually used as your reference — not this tool — since
+the tool just reads a published list, it didn't create one.</p>
+{% for name in builtin_choices | sort %}
+    {% set entry = builtin_choices[name] %}
+    <p><strong>{{ entry.label }}</strong></p>
+    <pre>{{ entry.citation }}</pre>
+{% endfor %}
+{% endblock %}

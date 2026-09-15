@@ -1,0 +1,24 @@
+{# Shared reference-build parameter fields, included inside a <form>. #}
+<br>
+<label>Band size <input type="number" name="band_size" value="1000" min="1"></label>
+<br>
+<label>Language
+    <select name="language">
+        {% for lang in languages %}
+            <option value="{{ lang }}">{{ language_names.get(lang, lang) }}</option>
+        {% endfor %}
+    </select>
+</label>
+<br>
+<label><input type="checkbox" name="lemmatize"> Lemmatize</label>
+<details>
+    <summary>Fine/coarse band overrides (optional)</summary>
+    <label>Fine band size <input type="number" name="fine_band_size" min="1"></label>
+    <br>
+    <label>Fine-grained until rank <input type="number" name="fine_grained_until" min="1"></label>
+    <br>
+    <label>Coarse band size <input type="number" name="coarse_band_size" min="1"></label>
+    <br>
+    <label>Coarse-grained from rank <input type="number" name="coarse_grained_from" min="1"></label>
+</details>
+<br>

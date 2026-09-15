@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Step-by-step guide — LEAH{% endblock %}
+{% block content %}
+<h1>Step-by-step guide</h1>
+
+<h2>Quick start</h2>
+<p class="caption">Try the tool with the bundled sample corpus + essays before uploading your own.</p>
+<form method="post" action="{{ url_for('pages.load_example') }}">
+    <button type="submit">Load bundled example data</button>
+</form>
+
+<ol>
+    <li>
+        <strong>Build a reference</strong> (the "Build reference" page, step 1). Pick one:
+        <ul>
+            <li><strong>Built-in word list</strong> — profile against a published list (AVL, NGSL, NAWL, or COCA) with no file to find or format.</li>
+            <li><strong>Corpus of texts</strong> — upload your own .txt/.docx/.pdf files (or pick a whole folder) and the reference builds automatically from their word frequencies.</li>
+            <li><strong>Word list</strong> — upload your own plain-text or word,frequency list.</li>
+            <li><strong>Saved reference (.json)</strong> — reload a reference you exported earlier.</li>
+        </ul>
+        While you're at it, set the <strong>band size</strong>, <strong>language</strong>, and whether to
+        <strong>lemmatize</strong> — these affect how words are grouped and matched, so set them before building rather than after.
+    </li>
+    <li>
+        <strong>Ignore (optional)</strong> (the "Build reference" page, step 2). Proper nouns and digits are
+        excluded by default — uncheck either box to profile it like any other word instead. Upload or paste
+        specific words (names, made-up words, etc.) you don't want counted as off-list.
+    </li>
+    <li>
+        <strong>Profile target text(s)</strong> (the "Profile a text" page, step 3). Upload files or paste
+        text directly, then click <strong>Profile</strong>.
+    </li>
+    <li>
+        <strong>Read the results</strong> (step 4):
+        <ul>
+            <li>The summary table and metrics show tokens, types, and off-list % (plus ignored/proper noun/digit %, if applicable) per text.</li>
+            <li>The <strong>band coverage</strong> chart shows what % of tokens fall in each band, plus cumulative coverage against the 95%/98% thresholds.</li>
+            <li><strong>Highlighted text</strong> color-codes every word by band (or off-list/ignored/proper noun/digit), so you can see at a glance which words are driving the score.</li>
+            <li><strong>Export</strong> lets you download the band coverage, full report, and off-list/ignored/proper-noun/digit word lists as CSV/JSON.</li>
+        </ul>
+    </li>
+</ol>
+
+<p>Not sure what any of this means? See the <a href="{{ url_for('pages.about') }}">About lexical frequency profiling</a>
+page for background on bands, coverage thresholds, and how lemmas/POS matching work.</p>
+{% endblock %}

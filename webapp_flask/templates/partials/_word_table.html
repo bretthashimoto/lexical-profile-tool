@@ -1,0 +1,12 @@
+{% macro word_table(rows, pos_tagged) %}
+<table>
+    <tr><th>Word</th>{% if pos_tagged %}<th>Part of speech</th>{% endif %}<th>Count</th></tr>
+    {% for row in rows %}
+        <tr>
+            <td>{{ row.word }}</td>
+            {% if pos_tagged %}<td>{{ row.pos }}</td>{% endif %}
+            <td>{{ row.count }}</td>
+        </tr>
+    {% endfor %}
+</table>
+{% endmacro %}

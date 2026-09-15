@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}LEAH — Lexical Analysis{% endblock %}</title>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    <script src="{{ url_for('static', filename='js/poll.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+</head>
+<body>
+    <header class="banner">
+        <div class="banner-row">
+            <img class="banner-logo" src="{{ url_for('static', filename='img/logo.svg') }}" alt="LEAH logo" width="52" height="52">
+            <div class="banner-text">
+                <span class="banner-title">LEAH</span>
+                <span class="banner-tagline"><b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto</span>
+            </div>
+        </div>
+        <div class="banner-description">
+            Profile the frequency of words in users' texts by determining the commonness/rarity of
+            words, relative to a reference you build from your own corpus or common word lists in
+            English, Spanish, French, and German.
+        </div>
+    </header>
+    <nav class="top-nav">
+        <a href="{{ url_for('reference.build') }}">Build reference</a>
+        <a href="{{ url_for('profile.targets') }}">Profile a text</a>
+        <a href="{{ url_for('pages.guide') }}">Step-by-step guide</a>
+        <a href="{{ url_for('pages.about') }}">About profiling</a>
+        <a href="{{ url_for('pages.cite') }}">How to cite</a>
+        <a href="{{ url_for('pages.about_me') }}">About me</a>
+    </nav>
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="flash flash-{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

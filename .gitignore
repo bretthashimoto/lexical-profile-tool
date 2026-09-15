@@ -16,3 +16,6 @@ AVL data.xlsx
 COCA data.csv
 NAWL data.csv
 NGSL data.csv
+
+# per-session state for the Flask webapp (uploaded files, built references)
+webapp_flask/instance/

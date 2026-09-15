@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% from "partials/_word_table.html" import word_table %}
+{% block title %}Results — LEAH{% endblock %}
+{% block content %}
+<h1>4. Results</h1>
+
+<table>
+    <tr><th>Text</th><th>Tokens</th><th>Types</th><th>Off-list %</th><th>Ignored %</th></tr>
+    {% for name, r in results.items() %}
+        <tr {% if name == selected %}style="font-weight:bold"{% endif %}>
+            <td>{{ name }}</td>
+            <td>{{ r.total_tokens }}</td>
+            <td>{{ r.total_types }}</td>
+            <td>{{ "%.1f"|format(r.off_list_pct_tokens) }}</td>
+            <td>{{ "%.1f"|format(r.ignored_pct_tokens) }}</td>
+        </tr>
+    {% endfor %}
+</table>
+
+<form method="get">
+    <label>View text
+        <select name="text" onchange="this.form.submit()">
+            {% for name in results %}
+                <option value="{{ name }}" {% if name == selected %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+        </select>
+    </label>
+</form>
+
+<h2>{{ selected }}</h2>
+<div class="metrics-row">
+    <div class="metric"><span class="metric-value">{{ result.total_tokens }}</span><span class="metric-label">Tokens</span></div>
+    <div class="metric"><span class="metric-value">{{ result.total_types }}</span><span class="metric-label">Types</span></div>
+    <div class="metric"><span class="metric-value">{{ "%.1f"|format(result.off_list_pct_tokens) }}%</span><span class="metric-label">Off-list</span></div>
+    <div class="metric"><span class="metric-value">{{ band_95 if band_95 else "N/A" }}</span><span class="metric-label">Bands for 95% coverage</span></div>
+    <div class="metric"><span class="metric-value">{{ band_98 if band_98 else "N/A" }}</span><span class="metric-label">Bands for 98% coverage</span></div>
+</div>
+
+<h3>Band coverage</h3>
+<div id="band-chart"></div>
+<script>
+    renderBandChart({{ selected | tojson }});
+</script>
+<p class="caption">
+    Bars: % of tokens in each band. Orange line: cumulative coverage. Dashed lines: 95%/98%
+    reading-comprehension coverage thresholds (Laufer &amp; Ravenhorst-Kalovski, 2010).
+</p>
+
+<details>
+    <summary>Band coverage table</summary>
+    <table>
+        <tr><th>Band</th><th>Tokens</th><th>% tokens</th><th>Cumulative %</th></tr>
+        {% for band in result.band_ranges.keys() | sort %}
+            <tr>
+                <td>{{ result.band_label(band) }}</td>
+                <td>{{ result.band_token_counts.get(band, 0) }}</td>
+                <td>{{ "%.1f"|format(result.band_token_pct.get(band, 0)) }}</td>
+                <td>{{ "%.1f"|format(result.cumulative_token_pct.get(band, 0)) }}</td>
+            </tr>
+        {% endfor %}
+        <tr><td>Off-list</td><td>{{ result.off_list_tokens }}</td><td>{{ "%.1f"|format(result.off_list_pct_tokens) }}</td><td>&mdash;</td></tr>
+        {% if result.ignored_tokens %}
+            <tr><td>Ignored</td><td>{{ result.ignored_tokens }}</td><td>{{ "%.1f"|format(result.ignored_pct_tokens) }}</td><td>&mdash;</td></tr>
+        {% endif %}
+        {% if result.proper_noun_tokens %}
+            <tr><td>Proper nouns</td><td>{{ result.proper_noun_tokens }}</td><td>{{ "%.1f"|format(result.proper_noun_pct_tokens) }}</td><td>&mdash;</td></tr>
+        {% endif %}
+        {% if result.digit_tokens %}
+            <tr><td>Digits</td><td>{{ result.digit_tokens }}</td><td>{{ "%.1f"|format(result.digit_pct_tokens) }}</td><td>&mdash;</td></tr>
+        {% endif %}
+    </table>
+</details>
+
+<h3>Highlighted text</h3>
+<p class="legend">
+    {% for entry in legend %}
+        <span class="pill" style="background:{{ entry.bg }};color:{{ entry.fg }}">{{ entry.label }}</span>
+    {% endfor %}
+</p>
+<div class="highlighted-text">
+    {% for tok in highlighted %}
+        {%- if tok.status == "skipped" -%}
+            {{ tok.text }}{{ tok.whitespace }}
+        {%- else -%}
+            <span class="pill" style="background:{{ tok.bg }};color:{{ tok.fg }}" title="{{ tok.title }}">{{ tok.text }}</span>{{ tok.whitespace }}
+        {%- endif -%}
+    {% endfor %}
+</div>
+
+<div class="word-tables">
+    <details>
+        <summary>Off-list words ({{ result.off_list_types }} unique, {{ result.off_list_tokens }} tokens)</summary>
+        {{ word_table(off_list_words, pos_tagged) }}
+    </details>
+    {% if result.ignored_words %}
+        <details>
+            <summary>Ignored words ({{ result.ignored_types }} unique)</summary>
+            {{ word_table(ignored_words, pos_tagged) }}
+        </details>
+    {% endif %}
+    {% if result.proper_noun_words %}
+        <details>
+            <summary>Proper nouns ({{ result.proper_noun_types }} unique)</summary>
+            {{ word_table(proper_noun_words, pos_tagged) }}
+        </details>
+    {% endif %}
+    {% if result.digit_words %}
+        <details>
+            <summary>Digits ({{ result.digit_types }} unique)</summary>
+            {{ word_table(digit_words, pos_tagged) }}
+        </details>
+    {% endif %}
+</div>
+
+<h3>Export</h3>
+<ul class="export-list">
+    <li><a href="{{ url_for('export.csv') }}">Band coverage (CSV)</a></li>
+    <li><a href="{{ url_for('export.json_export') }}">Full report (JSON)</a></li>
+    <li><a href="{{ url_for('export.off_list_csv') }}">Off-list words (CSV)</a></li>
+    <li><a href="{{ url_for('export.ignored_csv') }}">Ignored words (CSV)</a></li>
+    {% if has_proper_nouns %}
+        <li><a href="{{ url_for('export.proper_nouns_csv') }}">Proper nouns (CSV)</a></li>
+    {% endif %}
+    {% if has_digits %}
+        <li><a href="{{ url_for('export.digits_csv') }}">Digits (CSV)</a></li>
+    {% endif %}
+</ul>
+{% endblock %}

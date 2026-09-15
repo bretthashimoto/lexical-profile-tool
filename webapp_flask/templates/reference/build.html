@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% from "partials/_progress.html" import progress_bar %}
+{% block title %}Build a reference — LEAH{% endblock %}
+{% block content %}
+<h1>1. Build a reference</h1>
+
+{% if has_reference %}
+    <p>
+        A reference is already built{% if reference_build %} ({{ reference_build.source_kind }}){% endif %}.
+        <a href="{{ url_for('reference.download') }}">Download it (.json)</a> &middot;
+        <a href="{{ url_for('profile.targets') }}">Continue to profiling &rarr;</a>
+    </p>
+{% endif %}
+
+<fieldset>
+    <legend>Built-in word list</legend>
+    <form method="post" action="{{ url_for('reference.build_builtin') }}">
+        <label>List
+            <select name="builtin_name">
+                {% for key, info in builtin_choices.items() %}
+                    <option value="{{ key }}">{{ info.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% include "partials/_band_params.html" %}
+        <button type="submit">Build reference from this word list</button>
+    </form>
+</fieldset>
+
+<fieldset>
+    <legend>Corpus of texts (.txt/.docx/.pdf)</legend>
+    <form id="corpus-build-form" method="post" action="{{ url_for('reference.build_corpus') }}"
+          enctype="multipart/form-data">
+        <label>Choose files <input type="file" name="corpus_files" multiple></label>
+        <br>
+        <label>Or choose a folder
+            <input type="file" name="corpus_folder" webkitdirectory directory multiple>
+        </label>
+        <br>
+        <label><input type="checkbox" name="pos_tagged"> Tag part of speech</label>
+        {% include "partials/_band_params.html" %}
+        <button type="submit">Build reference from this corpus</button>
+    </form>
+    {{ progress_bar("progress-corpus") }}
+    <script>
+        submitJobForm(document.getElementById("corpus-build-form"), "progress-corpus");
+    </script>
+
+    {% if has_reference and reference_build and reference_build.source_kind == "corpus" %}
+        <details>
+            <summary>Add more texts to this reference</summary>
+            <form id="add-texts-form" method="post" action="{{ url_for('reference.add_texts') }}"
+                  enctype="multipart/form-data">
+                <label>Choose files <input type="file" name="corpus_files" multiple></label>
+                <br>
+                <label>Or choose a folder
+                    <input type="file" name="corpus_folder" webkitdirectory directory multiple>
+                </label>
+                <br>
+                <button type="submit">Add to reference</button>
+            </form>
+            {{ progress_bar("progress-add-texts") }}
+            <script>
+                submitJobForm(document.getElementById("add-texts-form"), "progress-add-texts");
+            </script>
+        </details>
+    {% endif %}
+</fieldset>
+
+<fieldset>
+    <legend>Uploaded word list file</legend>
+    <form method="post" action="{{ url_for('reference.build_wordlist') }}" enctype="multipart/form-data">
+        <label>Word list .txt file <input type="file" name="wordlist_file" accept=".txt"></label>
+        <br>
+        <label>Format
+            <select name="wordlist_format">
+                <option value="auto">Auto-detect</option>
+                <option value="freq">word,frequency pairs</option>
+                <option value="plain">Plain word list</option>
+            </select>
+        </label>
+        {% include "partials/_band_params.html" %}
+        <button type="submit">Build reference from this word list</button>
+    </form>
+</fieldset>
+
+<fieldset>
+    <legend>Previously-saved reference (.json)</legend>
+    <form method="post" action="{{ url_for('reference.build_saved') }}" enctype="multipart/form-data">
+        <label>Saved reference .json file <input type="file" name="reference_file" accept=".json"></label>
+        <br>
+        <button type="submit">Load this reference</button>
+    </form>
+</fieldset>
+
+<fieldset>
+    <legend>Download a spaCy model (for lemmatization)</legend>
+    <form id="model-download-form" method="post" action="{{ url_for('reference.download_model_route') }}">
+        <label>Language
+            <select name="language">
+                {% for lang in languages %}
+                    <option value="{{ lang }}">{{ language_names.get(lang, lang) }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit">Download model</button>
+    </form>
+    {{ progress_bar("progress-model") }}
+    <script>
+        submitJobForm(document.getElementById("model-download-form"), "progress-model");
+    </script>
+</fieldset>
+
+<fieldset>
+    <legend>2. Ignore (optional)</legend>
+    <form method="post" action="{{ url_for('reference.ignore_config') }}" enctype="multipart/form-data">
+        <label>
+            <input type="checkbox" name="exclude_proper_nouns" {% if ignore_config.exclude_proper_nouns %}checked{% endif %}>
+            Exclude proper nouns
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" name="exclude_digits" {% if ignore_config.exclude_digits %}checked{% endif %}>
+            Exclude digits
+        </label>
+        <br>
+        <label>Ignore list (.txt) <input type="file" name="ignore_file" accept=".txt"></label>
+        <br>
+        <label>...or paste words, one per line
+            <br>
+            <textarea name="ignore_text" rows="4" cols="40">{{ ignore_config.ignore_words | join("\n") }}</textarea>
+        </label>
+        <br>
+        <button type="submit">Save ignore settings</button>
+    </form>
+</fieldset>
+{% endblock %}

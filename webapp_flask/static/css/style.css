@@ -1,0 +1,200 @@
+body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    background: #f7f8fa;
+    color: #1a1a1a;
+}
+
+/* Band-color ramp (light = most frequent/easiest, dark = least
+   frequent), used for the gradient banner background -- same colors as
+   services/render_helpers.py's BAND_RAMP (index 7 -> 4, matching the
+   original Streamlit banner's gradient stops). */
+.banner {
+    background: linear-gradient(135deg, #184f95 0%, #2a78d6 100%);
+    color: #fff;
+    padding: 0.7rem 3vw 0.9rem;
+}
+
+.banner-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.banner-logo {
+    flex-shrink: 0;
+}
+
+.banner-text {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+}
+
+.banner-title {
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: 2.2rem;
+    letter-spacing: 0.02em;
+    color: #fff;
+}
+
+.banner-tagline {
+    color: #e8f0fc;
+    font-size: 1rem;
+}
+
+.banner-description {
+    color: #d3e2f7;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+    max-width: 70ch;
+}
+
+.top-nav {
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    padding: 0.5rem 1.5rem;
+}
+
+.top-nav a {
+    margin-right: 1.2rem;
+    text-decoration: none;
+    color: #184f95;
+    font-weight: 600;
+}
+
+main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.flashes {
+    list-style: none;
+    padding: 0;
+}
+
+.flash {
+    padding: 0.6rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 0.8rem;
+}
+
+.flash-error {
+    background: #fde2e2;
+    color: #a11212;
+}
+
+.flash-success {
+    background: #e1f2e5;
+    color: #1a6a2e;
+}
+
+fieldset {
+    margin-bottom: 1.5rem;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table th, table td {
+    border: 1px solid #ddd;
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+}
+
+.progress-container {
+    margin: 0.8rem 0;
+}
+
+.progress-bar {
+    background: #e2e5ea;
+    border-radius: 4px;
+    height: 10px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    background: #2a78d6;
+    height: 100%;
+    width: 0;
+    transition: width 0.2s ease;
+}
+
+.progress-label {
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+    color: #444;
+}
+
+.progress-error .progress-label {
+    color: #a11212;
+}
+
+.progress-error .progress-bar-fill {
+    background: #a11212;
+}
+
+.metrics-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 1rem 0;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.metric-label {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.caption {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.pill {
+    display: inline-block;
+    border-radius: 3px;
+    padding: 1px 6px;
+    margin-right: 2px;
+}
+
+.legend .pill {
+    margin-right: 6px;
+    margin-bottom: 4px;
+}
+
+.highlighted-text {
+    line-height: 2.2;
+    font-size: 1.05rem;
+    padding: 1rem;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    border-radius: 8px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.highlighted-text .pill {
+    padding: 0 1px;
+    margin-right: 0;
+    border-radius: 2px;
+}
+
+.word-tables details {
+    margin-bottom: 1rem;
+}
