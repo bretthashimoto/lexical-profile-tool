@@ -311,7 +311,7 @@ div.st-key-header_banner {{
     width: 100vw !important;
     box-sizing: border-box;
     background: linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
-    padding: 0.05rem 3vw;
+    padding: 0.01rem 3vw;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }}
 /* The top-level tab menu sticks right below the banner. Streamlit renders
@@ -362,7 +362,7 @@ div.st-key-top_menu [role="tablist"] {{
         </span>
     </div>
 </div>
-<div style="color:#d3e2f7; font-size:1.0rem; margin-top:0.12rem; width:100%;">
+<div style="color:#d3e2f7; font-size:1.0rem; margin-top:0.01rem; width:100%;">
     Profile the frequency of words in users' texts by determining the
     commonness/rarity of words, relative to a reference you build from your
     own corpus or common word lists in English, Spanish, French, and German.
