@@ -357,12 +357,12 @@ div.st-key-top_menu [role="tablist"] {{
             letter-spacing:0.02em;
             color:#ffffff;
         ">LEAH</span>
-        <span style="color:#e8f0fc; font-size:1.05rem;">
+        <span style="color:#e8f0fc; font-size:1.5rem;">
             <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
         </span>
     </div>
 </div>
-<div style="color:#d3e2f7; font-size:0.8rem; margin-top:0.32rem; width:100%;">
+<div style="color:#d3e2f7; font-size:1.0rem; margin-top:0.12rem; width:100%;">
     Profile the frequency of words in users' texts by determining the
     commonness/rarity of words, relative to a reference you build from your
     own corpus or common word lists in English, Spanish, French, and German.
