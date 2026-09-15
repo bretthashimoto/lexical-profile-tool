@@ -42,7 +42,7 @@ def test_full_flow_builtin_reference_to_results(client):
     _build_builtin_reference(client)
 
     r = client.get("/reference/build")
-    assert b"already built" in r.data
+    assert b"known words" in r.data
 
     r = client.post("/profile/upload", data={
         "pasted_name": "sample", "pasted_text": "the cat sat on the mat",

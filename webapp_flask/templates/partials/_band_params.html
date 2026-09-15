@@ -3,14 +3,19 @@
 <label>Band size <input type="number" name="band_size" value="1000" min="1"></label>
 <br>
 <label>Language
-    <select name="language">
+    <select name="language" class="band-language-select">
         {% for lang in languages %}
             <option value="{{ lang }}">{{ language_names.get(lang, lang) }}</option>
         {% endfor %}
     </select>
 </label>
 <br>
-<label><input type="checkbox" name="lemmatize"> Lemmatize</label>
+<label><input type="checkbox" name="lemmatize" class="band-lemmatize-checkbox"> Lemmatize</label>
+<p class="caption model-warning" hidden>
+    ⚠️ No lemmatizer model installed for this language yet.
+    <a href="#model-download">Download it below</a>, or lemmatization will silently fall back to
+    surface forms only.
+</p>
 <details>
     <summary>Fine/coarse band overrides (optional)</summary>
     <label>Fine band size <input type="number" name="fine_band_size" min="1"></label>
@@ -22,3 +27,26 @@
     <label>Coarse-grained from rank <input type="number" name="coarse_grained_from" min="1"></label>
 </details>
 <br>
+<script>
+    (function () {
+        var form = document.currentScript.closest("form");
+        var langSelect = form.querySelector(".band-language-select");
+        var lemmatizeCheckbox = form.querySelector(".band-lemmatize-checkbox");
+        var warning = form.querySelector(".model-warning");
+
+        function checkModel() {
+            if (!lemmatizeCheckbox.checked) {
+                warning.hidden = true;
+                return;
+            }
+            fetch(`/reference/model-status?language=${encodeURIComponent(langSelect.value)}`)
+                .then((r) => r.json())
+                .then((data) => { warning.hidden = data.available; })
+                .catch(() => { warning.hidden = true; });
+        }
+
+        langSelect.addEventListener("change", checkModel);
+        lemmatizeCheckbox.addEventListener("change", checkModel);
+        checkModel();
+    })();
+</script>

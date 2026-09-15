@@ -6,7 +6,15 @@
 
 {% if has_reference %}
     <p>
-        A reference is already built{% if reference_build %} ({{ reference_build.source_kind }}){% endif %}.
+        {% if reference_summary %}
+            <strong>{{ reference_summary.source_description }}</strong>
+            <br>
+            <span class="caption">{{ reference_summary.num_bands }} bands, {{ reference_summary.num_words }} known words</span>
+            <br>
+        {% else %}
+            A reference is already built{% if reference_build %} ({{ reference_build.source_kind }}){% endif %}.
+            <br>
+        {% endif %}
         <a href="{{ url_for('reference.download') }}">Download it (.json)</a> &middot;
         <a href="{{ url_for('profile.targets') }}">Continue to profiling &rarr;</a>
     </p>
@@ -16,12 +24,28 @@
     <legend>Built-in word list</legend>
     <form method="post" action="{{ url_for('reference.build_builtin') }}">
         <label>List
-            <select name="builtin_name">
+            <select name="builtin_name" class="builtin-select">
                 {% for key, info in builtin_choices.items() %}
-                    <option value="{{ key }}">{{ info.label }}</option>
+                    <option value="{{ key }}" {% if info.get("pos_tagged") %}data-pos-tagged="1"{% endif %}>{{ info.label }}</option>
                 {% endfor %}
             </select>
         </label>
+        <p class="caption builtin-pos-note" hidden>
+            This list is part-of-speech tagged — e.g. "record" as a verb is scored separately from "record" as a noun.
+        </p>
+        <script>
+            (function () {
+                var form = document.currentScript.closest("form");
+                var select = form.querySelector(".builtin-select");
+                var note = form.querySelector(".builtin-pos-note");
+                function update() {
+                    var opt = select.options[select.selectedIndex];
+                    note.hidden = !(opt && opt.dataset.posTagged);
+                }
+                select.addEventListener("change", update);
+                update();
+            })();
+        </script>
         {% include "partials/_band_params.html" %}
         <button type="submit">Build reference from this word list</button>
     </form>
@@ -93,7 +117,7 @@
     </form>
 </fieldset>
 
-<fieldset>
+<fieldset id="model-download">
     <legend>Download a spaCy model (for lemmatization)</legend>
     <form id="model-download-form" method="post" action="{{ url_for('reference.download_model_route') }}">
         <label>Language

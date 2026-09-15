@@ -29,13 +29,28 @@ def build():
     sessions_root = current_app.config["SESSION_DIR"]
     session_id = session["session_id"]
     meta = session_store.read_meta(sessions_root, session_id)
+
+    has_reference = session_store.has_reference(sessions_root, session_id)
+    reference_summary = None
+    if has_reference:
+        try:
+            ref = Reference.load(str(session_store.reference_path(sessions_root, session_id)))
+            reference_summary = {
+                "source_description": ref.source_description,
+                "num_bands": ref.num_bands,
+                "num_words": len(ref),
+            }
+        except ValueError:
+            has_reference = False
+
     return render_template(
         "reference/build.html",
         languages=WEBAPP_LANGUAGES,
         language_names=LANGUAGE_DISPLAY_NAMES,
         builtin_choices=reference_service.builtin_choices(),
-        has_reference=session_store.has_reference(sessions_root, session_id),
+        has_reference=has_reference,
         reference_build=meta["reference_build"],
+        reference_summary=reference_summary,
         ignore_config=meta["ignore_config"],
     )
 

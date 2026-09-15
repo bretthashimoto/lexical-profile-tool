@@ -5,7 +5,10 @@
 <h1>4. Results</h1>
 
 <table>
-    <tr><th>Text</th><th>Tokens</th><th>Types</th><th>Off-list %</th><th>Ignored %</th></tr>
+    <tr>
+        <th>Text</th><th>Tokens</th><th>Types</th><th>Off-list %</th><th>Ignored %</th>
+        <th>Proper noun %</th><th>Digit %</th>
+    </tr>
     {% for name, r in results.items() %}
         <tr {% if name == selected %}style="font-weight:bold"{% endif %}>
             <td>{{ name }}</td>
@@ -13,6 +16,8 @@
             <td>{{ r.total_types }}</td>
             <td>{{ "%.1f"|format(r.off_list_pct_tokens) }}</td>
             <td>{{ "%.1f"|format(r.ignored_pct_tokens) }}</td>
+            <td>{{ "%.1f"|format(r.proper_noun_pct_tokens) }}</td>
+            <td>{{ "%.1f"|format(r.digit_pct_tokens) }}</td>
         </tr>
     {% endfor %}
 </table>
