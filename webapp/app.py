@@ -67,7 +67,7 @@ DIGIT_COLOR = "#c78a3a"
 # curve (tall/light on the left, falling into a long low/dark tail on the
 # right) -- a nod to word-frequency distributions, and to the "L" in LEAH.
 _LOGO_SVG_SRC = """
-<svg width="104" height="104" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="60" height="60" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="leahClipLeft">
       <path d="M256,150 C210,140 150,155 118,190 L118,370 C118,398 165,415 256,406 Z"/>
@@ -296,6 +296,12 @@ header[data-testid="stHeader"] * {{
 header[data-testid="stHeader"] svg {{
     fill: #ffffff !important;
 }}
+/* Drop the "..." main menu button (Rerun/Settings/Record/Report a
+   bug/About) but leave the Share button and Cloud-injected toolbar
+   (star/fork/GitHub/edit) alone. */
+[data-testid="stMainMenu"] {{
+    display: none;
+}}
 /* Streamlit reserves ~96px of top padding on the main content area for its
    own (now-transparent) header bar. Our banner supplies its own spacer
    below instead, so left alone this padding just adds a blank gap between
@@ -353,7 +359,7 @@ div.st-key-top_menu [role="tablist"] {{
             font-family:'Space Grotesk', sans-serif;
             font-weight:700;
             font-style:italic;
-            font-size:3.5rem;
+            font-size:2.9rem;
             letter-spacing:0.02em;
             color:#ffffff;
         ">LEAH</span>
