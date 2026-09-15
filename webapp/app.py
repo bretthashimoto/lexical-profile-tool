@@ -386,7 +386,7 @@ with st.container(key="header_banner"):
 # pinned full-bleed regardless of scroll), so a spacer of roughly its own
 # rendered height is needed here or the fixed banner would just overlap
 # the top of whatever comes next.
-st.markdown('<div style="height:120px"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:104px"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Top-level tabs
