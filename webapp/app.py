@@ -353,7 +353,7 @@ div.st-key-top_menu [role="tablist"] {{
             font-family:'Space Grotesk', sans-serif;
             font-weight:700;
             font-style:italic;
-            font-size:2.72rem;
+            font-size:3.5rem;
             letter-spacing:0.02em;
             color:#ffffff;
         ">LEAH</span>
