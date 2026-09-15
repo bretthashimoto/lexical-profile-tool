@@ -694,10 +694,22 @@ with tab_build:
         )
 
     st.divider()
-    st.header("2. Ignore list (optional)")
-    st.caption("Specific words (names, made-up words, etc.) to exclude from "
-               "band/off-list scoring -- see below for proper nouns and digits "
-               "as whole categories.")
+    st.header("2. Ignore (optional)")
+    st.caption("Words and categories to exclude from band/off-list scoring.")
+    exclude_proper_nouns = st.checkbox(
+        "Exclude proper nouns", value=True,
+        help="Detected via the language's part-of-speech tagger, so this requires "
+             "a trained pipeline to be installed for the selected language; with "
+             "none installed, this has no effect (proper nouns are just profiled "
+             "like any other word).",
+    )
+    exclude_digits = st.checkbox(
+        "Exclude digits", value=True,
+        help="Catches tokens containing a digit character (e.g. \"42\", \"3.14\") "
+             "-- works regardless of language pipeline availability. Spelled-out "
+             "number words (e.g. \"twelve\") are unaffected and stay profiled as "
+             "ordinary vocabulary.",
+    )
     ignore_file = st.file_uploader(
         "Upload ignore list (.txt)", type=["txt"], key="ignore_file",
         help="One word per line. Matched case-insensitively if the reference "
@@ -706,28 +718,6 @@ with tab_build:
     ignore_text = st.text_area(
         "...or paste words, one per line", key="ignore_text",
         help="Merged with the uploaded file above, if both are given.",
-    )
-
-    st.divider()
-    st.header("3. Proper nouns & digits (optional)")
-    st.caption(
-        "By default, proper nouns and digits are profiled like any other word "
-        "(usually landing off-list). Exclude either to report it as its own "
-        "category in the results instead."
-    )
-    exclude_proper_nouns = st.checkbox(
-        "Exclude proper nouns", value=False,
-        help="Detected via the language's part-of-speech tagger, so this requires "
-             "a trained pipeline to be installed for the selected language; with "
-             "none installed, this has no effect (proper nouns are just profiled "
-             "like any other word).",
-    )
-    exclude_digits = st.checkbox(
-        "Exclude digits", value=False,
-        help="Catches tokens containing a digit character (e.g. \"42\", \"3.14\") "
-             "-- works regardless of language pipeline availability. Spelled-out "
-             "number words (e.g. \"twelve\") are unaffected and stay profiled as "
-             "ordinary vocabulary.",
     )
 
 with tab_profile:
@@ -740,7 +730,7 @@ with tab_profile:
     else:
         reference = st.session_state.reference
 
-        st.header("4. Profile target text(s)")
+        st.header("3. Profile target text(s)")
         tab_upload, tab_paste = st.tabs(["Upload files", "Paste text"])
         target_texts: dict[str, str] = {}
         with tab_upload:
@@ -790,7 +780,7 @@ with tab_profile:
             all_target_texts = st.session_state.target_texts
             profiler = st.session_state.profiler
 
-            st.header("5. Results")
+            st.header("4. Results")
 
             summary_rows = [
                 {
@@ -1071,10 +1061,11 @@ excluded (via the ignore list), so they don't get counted as off-list.
 **Proper nouns and digits.** Names, places, and digit tokens (e.g. "42")
 are usually not meaningful vocabulary knowledge -- most published Lexical
 Frequency Profile tools exclude them by convention rather than counting
-them off-list. This tool profiles them like any other word by default,
-but you can exclude either category (the "Build a reference corpus or
-select a word list" tab, step 3) to report it separately instead, the
-same way an ignore list works. Spelled-out number words (e.g. "twelve")
+them off-list. This tool excludes both categories by default, reporting
+each separately instead of folding it into off-list; uncheck either box
+(the "Build a reference corpus or select a word list" tab, step 2) to
+profile it like any other word instead, the same way an ignore list
+works in reverse. Spelled-out number words (e.g. "twelve")
 are unaffected either way and stay profiled as ordinary vocabulary.
 
 **Coverage thresholds.** A common way to use band coverage: how many bands
@@ -1146,21 +1137,15 @@ with tab_guide:
    **lemmatize** -- these affect how words are grouped and matched, so set
    them before building rather than after.
 
-2. **Add an ignore list (optional)** (the "Build a reference corpus or select a word list" tab,
-   step 2). Upload or paste
-   specific words (names, made-up words, etc.) you don't want counted as
-   off-list.
+2. **Ignore (optional)** (the "Build a reference corpus or select a word list" tab,
+   step 2). Proper nouns and digits are excluded by default -- uncheck either box to
+   profile it like any other word instead. Upload or paste specific words (names,
+   made-up words, etc.) you don't want counted as off-list.
 
-3. **Proper nouns & digits (optional)** (the "Build a reference corpus or select a word list"
-   tab, step 3). By default
-   these are profiled like any other word. Check either box to report it
-   as its own category in the results instead of folding it into
-   off-list.
-
-4. **Profile target text(s)** (the "Profile a text" tab, step 4). Upload
+3. **Profile target text(s)** (the "Profile a text" tab, step 3). Upload
    files or paste text directly, then click **Profile**.
 
-5. **Read the results** (step 5):
+4. **Read the results** (step 4):
    - The summary table and metrics show tokens, types, and off-list %
      (plus ignored/proper noun/digit %, if applicable) per text.
    - The **band coverage** chart shows what % of tokens fall in each band,
