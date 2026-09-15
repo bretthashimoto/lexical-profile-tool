@@ -311,7 +311,7 @@ div.st-key-header_banner {{
     width: 100vw !important;
     box-sizing: border-box;
     background: linear-gradient(135deg, {BAND_RAMP[7]} 0%, {BAND_RAMP[4]} 100%);
-    padding: 0.5rem 3vw;
+    padding: 0.2rem 3vw;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }}
 /* The top-level tab menu sticks right below the banner. Streamlit renders
