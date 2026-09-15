@@ -327,7 +327,7 @@ div.st-key-header_banner {{
    content on screen too instead of letting it scroll normally. */
 div.st-key-top_menu [role="tablist"] {{
     position: sticky;
-    top: 150px;
+    top: 120px;
     z-index: 999;
     background: var(--background-color, #ffffff);
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -386,7 +386,7 @@ with st.container(key="header_banner"):
 # pinned full-bleed regardless of scroll), so a spacer of roughly its own
 # rendered height is needed here or the fixed banner would just overlap
 # the top of whatever comes next.
-st.markdown('<div style="height:150px"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:120px"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Top-level tabs
