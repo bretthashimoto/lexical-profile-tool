@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% from "partials/_progress.html" import progress_bar %}
+{% from "partials/_reset_button.html" import reset_button %}
 {% block title %}Build a reference — LEAH{% endblock %}
 {% block content %}
+{{ reset_button() }}
 <h1>1. Build a reference or select a word list</h1>
 
 {% if has_reference %}

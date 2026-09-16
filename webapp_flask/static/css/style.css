@@ -66,23 +66,23 @@ body {
     font-weight: 600;
 }
 
-.top-nav .reset-form {
-    display: inline;
+.reset-form {
+    margin-bottom: 1rem;
 }
 
-.top-nav .link-button {
-    margin-right: 1.2rem;
-    padding: 0;
-    border: none;
-    background: none;
+.reset-form .link-button {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid #a11212;
+    border-radius: 4px;
+    background: #fff;
+    color: #a11212;
     font: inherit;
-    color: #184f95;
     font-weight: 600;
     cursor: pointer;
 }
 
-.top-nav .link-button:hover {
-    text-decoration: underline;
+.reset-form .link-button:hover {
+    background: #fde2e2;
 }
 
 /* Wide layout (matches the Streamlit app's layout="wide"), rather than a
