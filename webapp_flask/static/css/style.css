@@ -169,6 +169,14 @@ table th, table td {
     background: #a11212;
 }
 
+.progress-success .progress-label {
+    color: #1a6a2e;
+}
+
+.progress-success .progress-bar-fill {
+    background: #1a6a2e;
+}
+
 .metrics-row {
     display: flex;
     flex-wrap: wrap;

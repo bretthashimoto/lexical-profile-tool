@@ -96,7 +96,7 @@ uses lemmatization, regardless of the checkbox below.">
             </form>
             {{ progress_bar("progress-add-texts") }}
             <script>
-                submitJobForm(document.getElementById("add-texts-form"), "progress-add-texts");
+                submitJobForm(document.getElementById("add-texts-form"), "progress-add-texts", { showResult: true });
             </script>
         </details>
     {% endif %}
@@ -154,7 +154,7 @@ link above, so you don't have to rebuild it from a corpus/word list again.">
     </form>
     {{ progress_bar("progress-model") }}
     <script>
-        submitJobForm(document.getElementById("model-download-form"), "progress-model");
+        submitJobForm(document.getElementById("model-download-form"), "progress-model", { showResult: true });
     </script>
 </fieldset>
 

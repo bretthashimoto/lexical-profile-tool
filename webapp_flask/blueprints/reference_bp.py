@@ -181,7 +181,7 @@ def add_texts():
         updated = existing.add_texts(texts, progress_callback=progress_callback)
         updated.save(ref_path)
         session_store.update_meta(sessions_root, session_id, target_texts={})
-        return updated.source_description
+        return f"Added {len(texts)} file(s) to the reference."
 
     job_id = job_manager.start(session_id, target_fn, redirect_url=url_for("reference.build"))
     return jsonify({"job_id": job_id, "warnings": warnings})
@@ -232,7 +232,7 @@ def download_model_route():
                 f"Couldn't download the spaCy model for {language_name}. "
                 f"Check network access and try again."
             )
-        return None
+        return f"Installed a model for {language_name}."
 
     job_id = job_manager.start(session_id, target_fn, redirect_url=url_for("reference.build"))
     return jsonify({"job_id": job_id})

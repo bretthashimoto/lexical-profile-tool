@@ -21,5 +21,6 @@ def progress(job_id):
             "message": job.message,
         })
     if job.status == "done":
-        return jsonify({"status": "done", "redirect_url": job.redirect_url})
+        result = job.result if isinstance(job.result, str) else None
+        return jsonify({"status": "done", "redirect_url": job.redirect_url, "result": result})
     return jsonify({"status": "error", "error": job.error})
