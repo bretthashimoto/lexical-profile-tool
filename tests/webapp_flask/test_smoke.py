@@ -47,9 +47,6 @@ def test_full_flow_builtin_reference_to_results(client):
     r = client.post("/profile/upload", data={
         "pasted_name": "sample", "pasted_text": "the cat sat on the mat",
     })
-    assert r.status_code == 302
-
-    r = client.post("/profile/run")
     assert r.status_code == 200
     assert "job_id" in r.get_json()
 
@@ -66,7 +63,6 @@ def test_ignore_config_is_applied_at_profile_time(client):
     client.post("/profile/upload", data={
         "pasted_name": "sample", "pasted_text": "the cat sat on the mat",
     })
-    client.post("/profile/run")
 
     r = client.get("/profile/results")
     body = r.data.decode()
@@ -76,11 +72,10 @@ def test_ignore_config_is_applied_at_profile_time(client):
 @pytest.fixture
 def profiled_client(client):
     _build_builtin_reference(client)
-    client.post("/profile/upload", data={
+    r = client.post("/profile/upload", data={
         "pasted_name": "sample",
         "pasted_text": "Dr. Smith bought 3 apples in 2024. The cat sat on the mat.",
     })
-    r = client.post("/profile/run")
     assert r.status_code == 200
     return client
 
@@ -127,7 +122,6 @@ def test_job_progress_endpoint_reports_done(client):
     assert r.status_code == 302
 
     r = client.post("/profile/upload", data={"pasted_name": "s", "pasted_text": "the cat"})
-    r = client.post("/profile/run")
     job_id = r.get_json()["job_id"]
 
     r = client.get(f"/jobs/{job_id}/progress")
@@ -138,8 +132,7 @@ def test_job_progress_endpoint_reports_done(client):
 def test_job_progress_is_session_scoped(client, app):
     r = client.post("/reference/build/builtin",
                      data={"builtin_name": "ngsl", "band_size": "500", "language": "en"})
-    client.post("/profile/upload", data={"pasted_name": "s", "pasted_text": "the cat"})
-    r = client.post("/profile/run")
+    r = client.post("/profile/upload", data={"pasted_name": "s", "pasted_text": "the cat"})
     job_id = r.get_json()["job_id"]
 
     with app.test_client() as other_client:

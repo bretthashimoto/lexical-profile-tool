@@ -29,21 +29,26 @@ built earlier and downloaded as .json.">
     <label><input type="radio" name="source_kind_selector" value="saved" {% if default_source == "saved" %}checked{% endif %}> Saved reference (.json)</label>
 </div>
 <script>
-    (function () {
-        var selector = document.currentScript.previousElementSibling;
-        var panels = document.querySelectorAll("fieldset[data-source]");
-        function update() {
-            var chosen = selector.querySelector("input[name='source_kind_selector']:checked").value;
-            panels.forEach(function (panel) {
-                panel.hidden = panel.dataset.source !== chosen;
-            });
-        }
-        selector.addEventListener("change", update);
-        update();
-    })();
+    /* Initial visibility is set server-side (each fieldset[data-source]
+       below carries `hidden` unless it matches default_source), so
+       there's no flash of every panel before this runs. This just
+       handles switching panels afterward -- querying for them lazily
+       inside the handler, not at parse time, since this script tag
+       sits above them in the document and they wouldn't exist yet if
+       queried right here. */
+    var sourceRadios = document.querySelectorAll('input[name="source_kind_selector"]');
+    for (var i = 0; i < sourceRadios.length; i++) {
+        sourceRadios[i].addEventListener("change", function (evt) {
+            var chosen = evt.target.value;
+            var panels = document.querySelectorAll("fieldset[data-source]");
+            for (var j = 0; j < panels.length; j++) {
+                panels[j].hidden = panels[j].getAttribute("data-source") !== chosen;
+            }
+        });
+    }
 </script>
 
-<fieldset data-source="builtin">
+<fieldset data-source="builtin" {% if default_source != "builtin" %}hidden{% endif %}>
     <legend>Built-in word list</legend>
     <p class="caption">Profile against a published reference list bundled with this app — no file to find or format.</p>
     <form method="post" action="{{ url_for('reference.build_builtin') }}">
@@ -56,10 +61,6 @@ built earlier and downloaded as .json.">
                 {% endfor %}
             </select>
         </label>
-        <p class="caption">
-            Built-in lists always match by lemma (e.g. "runs"/"running"/"ran" all count as "run"),
-            so there's no separate lemmatize setting here.
-        </p>
         <p class="caption builtin-pos-note" hidden>
             This list also matches by part of speech (e.g. "record" as a verb is scored
             separately from "record" as a noun).
@@ -83,7 +84,7 @@ built earlier and downloaded as .json.">
     </form>
 </fieldset>
 
-<fieldset data-source="corpus">
+<fieldset data-source="corpus" {% if default_source != "corpus" %}hidden{% endif %}>
     <legend>Corpus of texts (.txt/.docx/.pdf)</legend>
     <p class="caption">Upload individual .txt/.docx/.pdf files, or use "Or choose a folder" to pick a whole directory from your computer. The reference builds automatically.</p>
     <form id="corpus-build-form" method="post" action="{{ url_for('reference.build_corpus') }}"
@@ -128,7 +129,7 @@ built earlier and downloaded as .json.">
     {% endif %}
 </fieldset>
 
-<fieldset data-source="wordlist">
+<fieldset data-source="wordlist" {% if default_source != "wordlist" %}hidden{% endif %}>
     <legend>Uploaded word list file</legend>
     <form method="post" action="{{ url_for('reference.build_wordlist') }}" enctype="multipart/form-data">
         <label title="One word per line, ranked most-frequent-first -- or &quot;word,frequency&quot;
@@ -155,7 +156,7 @@ override it if auto-detection guesses wrong for your file.">
     </form>
 </fieldset>
 
-<fieldset data-source="saved">
+<fieldset data-source="saved" {% if default_source != "saved" %}hidden{% endif %}>
     <legend>Previously-saved reference (.json)</legend>
     <form method="post" action="{{ url_for('reference.build_saved') }}" enctype="multipart/form-data">
         <label title="A reference previously exported with the &quot;Download this reference
@@ -185,8 +186,8 @@ override it if auto-detection guesses wrong for your file.">
     </script>
 </fieldset>
 
-<fieldset>
-    <legend>2. Ignore (optional)</legend>
+<details class="advanced-settings">
+    <summary>Advanced settings</summary>
     <p class="caption">Words and categories to exclude from band/off-list scoring.</p>
     <form method="post" action="{{ url_for('reference.ignore_config') }}" enctype="multipart/form-data">
         <label title="Detected via the language's part-of-speech tagger, so this requires a
@@ -216,5 +217,5 @@ tokens (the default).">
         <br>
         <button type="submit">Save ignore settings</button>
     </form>
-</fieldset>
+</details>
 {% endblock %}

@@ -2,13 +2,17 @@
 {% from "partials/_progress.html" import progress_bar %}
 {% block title %}Profile a text — LEAH{% endblock %}
 {% block content %}
-<h1>3. Profile target text(s)</h1>
+<h1>2. Profile target text(s)</h1>
 
 {% if target_texts %}
     <p>Texts staged for profiling: {{ target_texts.keys() | join(", ") }}</p>
+    <p class="caption"><a href="{{ url_for('profile.results') }}">View results &rarr;</a></p>
+    <p class="caption">Upload or paste more below to add them and re-profile everything staged so far.</p>
+{% else %}
+    <p class="caption">Upload or paste a text below -- profiling starts automatically.</p>
 {% endif %}
 
-<form method="post" action="{{ url_for('profile.upload') }}" enctype="multipart/form-data">
+<form id="profile-upload-form" method="post" action="{{ url_for('profile.upload') }}" enctype="multipart/form-data">
     <label title="Select multiple files, or use the folder picker to pick a whole directory.">
         Upload .txt/.docx/.pdf files to profile <input type="file" name="target_files" accept=".txt,.docx,.pdf" multiple>
     </label>
@@ -28,16 +32,10 @@ if you paste more than one text so they don't overwrite each other.">
         <textarea name="pasted_text" rows="8" cols="60"></textarea>
     </label>
     <br>
-    <button type="submit">Add text(s)</button>
+    <button type="submit">Profile text(s)</button>
 </form>
-
-{% if target_texts %}
-    <form id="profile-run-form" method="post" action="{{ url_for('profile.run') }}">
-        <button type="submit">Profile</button>
-    </form>
-    {{ progress_bar("progress-profile") }}
-    <script>
-        submitJobForm(document.getElementById("profile-run-form"), "progress-profile");
-    </script>
-{% endif %}
+{{ progress_bar("progress-profile") }}
+<script>
+    submitJobForm(document.getElementById("profile-upload-form"), "progress-profile");
+</script>
 {% endblock %}

@@ -49,19 +49,12 @@ def upload():
     if pasted_text.strip():
         meta["target_texts"][pasted_name] = pasted_text
 
+    if not meta["target_texts"]:
+        return jsonify({"error": "Upload or paste at least one text to profile."}), 400
+
     session_store.write_meta(sessions_root, session_id, meta)
     for w in warnings:
         flash(w, "warning")
-    return redirect(url_for("profile.targets"))
-
-
-@profile_bp.route("/run", methods=["POST"])
-def run():
-    sessions_root = current_app.config["SESSION_DIR"]
-    session_id = session["session_id"]
-    meta = session_store.read_meta(sessions_root, session_id)
-    if not meta["target_texts"]:
-        return jsonify({"error": "Upload or paste at least one text to profile."}), 400
 
     def target_fn(progress_callback):
         return profiling_service.get_results(
@@ -69,7 +62,7 @@ def run():
         )
 
     job_id = job_manager.start(session_id, target_fn, redirect_url=url_for("profile.results"))
-    return jsonify({"job_id": job_id})
+    return jsonify({"job_id": job_id, "warnings": warnings})
 
 
 @profile_bp.route("/results", methods=["GET"])

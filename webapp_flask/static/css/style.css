@@ -126,6 +126,18 @@ fieldset {
     margin-bottom: 1.5rem;
 }
 
+.advanced-settings {
+    border: 1px solid #c0c0c0;
+    border-radius: 4px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.advanced-settings summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
 .source-selector {
     display: flex;
     flex-wrap: wrap;
