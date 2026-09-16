@@ -4,7 +4,7 @@
 {% block title %}Build a reference — LEAH{% endblock %}
 {% block content %}
 {{ reset_button() }}
-<h1>1. Build a reference or select a word list</h1>
+<h1>1. Build a reference word list</h1>
 
 {% if has_reference %}
     {% if reference_summary %}
@@ -88,9 +88,14 @@ built earlier and downloaded as .json.">
 
 <fieldset data-source="corpus" {% if default_source != "corpus" %}hidden{% endif %}>
     <legend>Corpus of texts (.txt/.docx/.pdf)</legend>
-    <p class="caption">Upload individual .txt/.docx/.pdf files, or use "Or choose a folder" to pick a whole directory from your computer. The reference builds automatically.</p>
-    <form id="corpus-build-form" method="post" action="{{ url_for('reference.build_corpus') }}"
-          enctype="multipart/form-data">
+    <p class="caption">
+        Upload individual .txt/.docx/.pdf files, or use "Or choose a folder" to pick a whole
+        directory from your computer. Processing starts as soon as you select something -- keep
+        selecting more at any point, even while an earlier batch is still processing, and it's
+        added to the same reference automatically.
+    </p>
+    <form id="corpus-build-form" data-reference-exists="{{ 'true' if can_add_texts else 'false' }}"
+          method="post" action="{{ url_for('reference.build_corpus') }}" enctype="multipart/form-data">
         <label title="Select multiple files, or use the folder picker to pick a whole directory.">
             Choose files... <input type="file" name="corpus_files" accept=".txt,.docx,.pdf" multiple>
         </label>
@@ -102,37 +107,23 @@ built earlier and downloaded as .json.">
         <br>
         {% set show_lemmatize = true %}
         {% include "partials/_band_params.html" %}
-        <button type="submit">Build reference from this corpus</button>
     </form>
     {{ progress_bar("progress-corpus") }}
     <script>
-        submitJobForm(document.getElementById("corpus-build-form"), "progress-corpus");
+        initCorpusAutoUpload(document.getElementById("corpus-build-form"), "progress-corpus", {
+            buildUrl: {{ url_for('reference.build_corpus') | tojson }},
+            addUrl: {{ url_for('reference.add_texts') | tojson }},
+        });
     </script>
-
-    {% if can_add_texts %}
-        <details>
-            <summary>Add more texts to this reference</summary>
-            <p class="caption">Adds documents to the corpus this reference was built from, and recomputes ranks/bands from the combined word counts.</p>
-            <form id="add-texts-form" method="post" action="{{ url_for('reference.add_texts') }}"
-                  enctype="multipart/form-data">
-                <label>Choose files to add... <input type="file" name="corpus_files" accept=".txt,.docx,.pdf" multiple></label>
-                <br>
-                <label>Or choose a folder
-                    <input type="file" name="corpus_folder" accept=".txt,.docx,.pdf" webkitdirectory directory multiple>
-                </label>
-                <br>
-                <button type="submit">Add to reference</button>
-            </form>
-            {{ progress_bar("progress-add-texts") }}
-            <script>
-                submitJobForm(document.getElementById("add-texts-form"), "progress-add-texts", { showResult: true });
-            </script>
-        </details>
-    {% endif %}
 </fieldset>
 
 <fieldset data-source="wordlist" {% if default_source != "wordlist" %}hidden{% endif %}>
     <legend>Uploaded word list file</legend>
+    <p class="caption">
+        For a raw frequency word list from elsewhere (published list, spreadsheet export, etc.),
+        as plain text. To reload a reference this app already built and you downloaded earlier,
+        use "Saved reference (.json)" instead.
+    </p>
     <form method="post" action="{{ url_for('reference.build_wordlist') }}" enctype="multipart/form-data">
         <label title="One word per line, ranked most-frequent-first -- or &quot;word,frequency&quot;
 pairs (frequency used only to break ties/confirm ranking, not required to be exact counts).">

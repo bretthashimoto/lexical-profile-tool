@@ -43,10 +43,13 @@ def build():
             # its short label here instead.
             short_description = ref.source_description
             reference_build = meta["reference_build"]
-            if reference_build and reference_build.get("source_kind") == "builtin":
+            source_kind = reference_build.get("source_kind") if reference_build else None
+            if source_kind == "builtin":
                 entry = builtin_choices.get(reference_build.get("builtin_name", ""))
                 if entry:
                     short_description = entry["label"]
+            elif source_kind == "wordlist":
+                short_description = "User word list"
             reference_summary = {
                 "source_description": short_description,
                 "num_bands": ref.num_bands,
