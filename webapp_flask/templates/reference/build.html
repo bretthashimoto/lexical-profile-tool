@@ -80,7 +80,7 @@ uses lemmatization, regardless of the checkbox below.">
         submitJobForm(document.getElementById("corpus-build-form"), "progress-corpus");
     </script>
 
-    {% if has_reference and reference_build and reference_build.source_kind == "corpus" %}
+    {% if can_add_texts %}
         <details>
             <summary>Add more texts to this reference</summary>
             <p class="caption">Adds documents to the corpus this reference was built from, and recomputes ranks/bands from the combined word counts.</p>

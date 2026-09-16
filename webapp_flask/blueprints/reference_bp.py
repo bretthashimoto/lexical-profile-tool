@@ -32,6 +32,7 @@ def build():
 
     has_reference = session_store.has_reference(sessions_root, session_id)
     reference_summary = None
+    can_add_texts = False
     if has_reference:
         try:
             ref = Reference.load(str(session_store.reference_path(sessions_root, session_id)))
@@ -40,6 +41,11 @@ def build():
                 "num_bands": ref.num_bands,
                 "num_words": len(ref),
             }
+            # Streamlit's own gate for showing "Add more texts" is just
+            # `ref.counts` being non-empty -- true for any reference with
+            # real word counts (builtin/wordlist included, not just ones
+            # built from a corpus), not tied to how it was built.
+            can_add_texts = bool(ref.counts)
         except ValueError:
             has_reference = False
 
@@ -51,6 +57,7 @@ def build():
         has_reference=has_reference,
         reference_build=meta["reference_build"],
         reference_summary=reference_summary,
+        can_add_texts=can_add_texts,
         ignore_config=meta["ignore_config"],
     )
 

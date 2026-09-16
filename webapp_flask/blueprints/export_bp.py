@@ -11,7 +11,7 @@ export_bp = Blueprint("export", __name__, url_prefix="/export")
 # kind -> (export function, temp-file suffix, download filename, mimetype)
 _EXPORTS = {
     "csv": (report_mod.export_csv, ".csv", "band_coverage.csv", "text/csv"),
-    "json": (report_mod.export_json, ".json", "report.json", "application/json"),
+    "json": (report_mod.export_json, ".json", "full_report.json", "application/json"),
     "off-list-csv": (report_mod.export_off_list_csv, ".csv", "off_list_words.csv", "text/csv"),
     "ignored-csv": (report_mod.export_ignored_csv, ".csv", "ignored_words.csv", "text/csv"),
     "proper-nouns-csv": (
