@@ -99,6 +99,7 @@ def results():
         result=result,
         band_95=render_helpers.band_for_coverage(result, 95),
         band_98=render_helpers.band_for_coverage(result, 98),
+        max_coverage=render_helpers.max_coverage_pct(result),
         legend=render_helpers.legend_entries(result, profiler),
         highlighted=render_helpers.highlighted_tokens(profiler, text, result),
         off_list_words=render_helpers.word_table_rows(

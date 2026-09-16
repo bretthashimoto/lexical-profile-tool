@@ -45,6 +45,15 @@ def band_for_coverage(result, target_pct: float) -> int | None:
     )
 
 
+def max_coverage_pct(result) -> float:
+    """Highest cumulative token coverage reached across all known bands
+    (i.e. the coverage of the last band), for showing how close a text
+    got to the 95%/98% thresholds when neither was reached."""
+    if not result.cumulative_token_pct:
+        return 0.0
+    return result.cumulative_token_pct[max(result.cumulative_token_pct)]
+
+
 def legend_entries(result, profiler) -> list[dict]:
     num_bands = result.num_bands
     bands = sorted(result.band_token_counts.keys())
