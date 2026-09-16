@@ -12,7 +12,7 @@
         <p>A reference is already built{% if reference_build %} ({{ reference_build.source_kind }}){% endif %}.</p>
     {% endif %}
     <p>
-        <a href="{{ url_for('reference.download') }}">Download it (.json)</a> &middot;
+        <a href="{{ url_for('reference.download') }}">Download this reference (.json)</a> &middot;
         <a href="{{ url_for('profile.targets') }}">Continue to profiling &rarr;</a>
     </p>
 {% endif %}
@@ -59,7 +59,7 @@
     <form id="corpus-build-form" method="post" action="{{ url_for('reference.build_corpus') }}"
           enctype="multipart/form-data">
         <label title="Select multiple files, or use the folder picker to pick a whole directory.">
-            Choose files <input type="file" name="corpus_files" accept=".txt,.docx,.pdf" multiple>
+            Choose files... <input type="file" name="corpus_files" accept=".txt,.docx,.pdf" multiple>
         </label>
         <br>
         <label title="Select multiple files, or use the folder picker to pick a whole directory.">
@@ -86,7 +86,7 @@ uses lemmatization, regardless of the checkbox below.">
             <p class="caption">Adds documents to the corpus this reference was built from, and recomputes ranks/bands from the combined word counts.</p>
             <form id="add-texts-form" method="post" action="{{ url_for('reference.add_texts') }}"
                   enctype="multipart/form-data">
-                <label>Choose files <input type="file" name="corpus_files" accept=".txt,.docx,.pdf" multiple></label>
+                <label>Choose files to add... <input type="file" name="corpus_files" accept=".txt,.docx,.pdf" multiple></label>
                 <br>
                 <label>Or choose a folder
                     <input type="file" name="corpus_folder" accept=".txt,.docx,.pdf" webkitdirectory directory multiple>
@@ -107,7 +107,7 @@ uses lemmatization, regardless of the checkbox below.">
     <form method="post" action="{{ url_for('reference.build_wordlist') }}" enctype="multipart/form-data">
         <label title="One word per line, ranked most-frequent-first -- or &quot;word,frequency&quot;
 pairs (frequency used only to break ties/confirm ranking, not required to be exact counts).">
-            Word list .txt file <input type="file" name="wordlist_file" accept=".txt">
+            Upload a word list .txt file <input type="file" name="wordlist_file" accept=".txt">
         </label>
         <br>
         <details>
@@ -131,9 +131,9 @@ override it if auto-detection guesses wrong for your file.">
 <fieldset>
     <legend>Previously-saved reference (.json)</legend>
     <form method="post" action="{{ url_for('reference.build_saved') }}" enctype="multipart/form-data">
-        <label title="A reference previously exported with the &quot;Download it (.json)&quot;
-link above, so you don't have to rebuild it from a corpus/word list again.">
-            Saved reference .json file <input type="file" name="reference_file" accept=".json">
+        <label title="A reference previously exported with the &quot;Download this reference
+(.json)&quot; link above, so you don't have to rebuild it from a corpus/word list again.">
+            Upload a saved reference .json file <input type="file" name="reference_file" accept=".json">
         </label>
         <br>
         <button type="submit">Load this reference</button>
@@ -178,7 +178,7 @@ effect (proper nouns are just profiled like any other word).">
         <br>
         <label title="One word per line. Matched case-insensitively if the reference lowercases
 tokens (the default).">
-            Ignore list (.txt) <input type="file" name="ignore_file" accept=".txt">
+            Upload ignore list (.txt) <input type="file" name="ignore_file" accept=".txt">
         </label>
         <br>
         <label title="Merged with the uploaded file above, if both are given.">

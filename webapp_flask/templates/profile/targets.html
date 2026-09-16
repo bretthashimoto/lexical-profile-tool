@@ -10,12 +10,12 @@
 
 <form method="post" action="{{ url_for('profile.upload') }}" enctype="multipart/form-data">
     <label title="Select multiple files, or drag a whole folder onto this box.">
-        Upload files (.txt/.docx/.pdf) <input type="file" name="target_files" accept=".txt,.docx,.pdf" multiple>
+        Upload .txt/.docx/.pdf files to profile <input type="file" name="target_files" accept=".txt,.docx,.pdf" multiple>
     </label>
     <br><br>
     <label title="Label used to identify this text in the results table and exports -- change it
 if you paste more than one text so they don't overwrite each other.">
-        Name for pasted text <input type="text" name="pasted_name" value="pasted_text">
+        Name for this text <input type="text" name="pasted_name" value="pasted_text">
     </label>
     <br>
     <label>Paste text to profile
