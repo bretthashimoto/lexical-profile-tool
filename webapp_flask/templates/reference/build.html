@@ -22,6 +22,7 @@
 
 <fieldset>
     <legend>Built-in word list</legend>
+    <p class="caption">Profile against a published reference list bundled with this app — no file to find or format.</p>
     <form method="post" action="{{ url_for('reference.build_builtin') }}">
         <label title="Which published reference word list to profile against. See the
 &quot;How to cite&quot; page for how to cite whichever one you use.">
@@ -57,6 +58,7 @@
 
 <fieldset>
     <legend>Corpus of texts (.txt/.docx/.pdf)</legend>
+    <p class="caption">Upload individual .txt/.docx/.pdf files, or use "Or choose a folder" to pick a whole directory from your computer. The reference builds automatically.</p>
     <form id="corpus-build-form" method="post" action="{{ url_for('reference.build_corpus') }}"
           enctype="multipart/form-data">
         <label title="Select multiple files, or use the folder picker to pick a whole directory.">
@@ -84,6 +86,7 @@ uses lemmatization, regardless of the checkbox below.">
     {% if has_reference and reference_build and reference_build.source_kind == "corpus" %}
         <details>
             <summary>Add more texts to this reference</summary>
+            <p class="caption">Adds documents to the corpus this reference was built from, and recomputes ranks/bands from the combined word counts.</p>
             <form id="add-texts-form" method="post" action="{{ url_for('reference.add_texts') }}"
                   enctype="multipart/form-data">
                 <label>Choose files <input type="file" name="corpus_files" multiple></label>
@@ -160,6 +163,7 @@ link above, so you don't have to rebuild it from a corpus/word list again.">
 
 <fieldset>
     <legend>2. Ignore (optional)</legend>
+    <p class="caption">Words and categories to exclude from band/off-list scoring.</p>
     <form method="post" action="{{ url_for('reference.ignore_config') }}" enctype="multipart/form-data">
         <label title="Detected via the language's part-of-speech tagger, so this requires a
 trained pipeline to be installed for the selected language; with none installed, this has no
