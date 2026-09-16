@@ -1054,7 +1054,8 @@ with tab_cite:
 
     st.subheader("This tool")
     st.code(
-        "Hashimoto, B. (2026). lexical_profiler (Version 0.2.0) [Computer software]. "
+        "Hashimoto, B. (2026). Lexical Analysis -- Hashimoto: Multilingual lexical "
+        "profiler (Version 0.2.0) [Computer software]. "
         "https://github.com/bretthashimoto/lexical-profile-tool",
         language=None,
     )
