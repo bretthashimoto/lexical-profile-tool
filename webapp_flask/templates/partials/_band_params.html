@@ -1,8 +1,13 @@
 {# Shared reference-build parameter fields, included inside a <form>. #}
 <br>
-<label>Band size <input type="number" name="band_size" value="1000" min="1"></label>
+<label title="How many words make up each frequency band, e.g. band 1 = the 1000 most frequent
+words, band 2 = the next 1000, and so on. Smaller values give more (narrower) bands; doesn't
+affect which words end up off-list.">
+    Band size <input type="number" name="band_size" value="1000" min="1">
+</label>
 <br>
-<label>Language
+<label title="Used for tokenization and lemmatization (models for these languages are pre-installed).">
+    Language
     <select name="language" class="band-language-select">
         {% for lang in languages %}
             <option value="{{ lang }}">{{ language_names.get(lang, lang) }}</option>
@@ -10,21 +15,39 @@
     </select>
 </label>
 <br>
-<label><input type="checkbox" name="lemmatize" class="band-lemmatize-checkbox"> Lemmatize</label>
+<label title="Requires a spaCy pipeline installed for the language; silently falls back to
+surface forms otherwise. Uncheck to profile against surface word forms instead.">
+    <input type="checkbox" name="lemmatize" class="band-lemmatize-checkbox" checked> Lemmatize
+</label>
 <p class="caption model-warning" hidden>
     ⚠️ No lemmatizer model installed for this language yet.
     <a href="#model-download">Download it below</a>, or lemmatization will silently fall back to
     surface forms only.
 </p>
 <details>
-    <summary>Fine/coarse band overrides (optional)</summary>
-    <label>Fine band size <input type="number" name="fine_band_size" min="1"></label>
+    <summary title="Split the most frequent words into narrower bands than the rest of the list,
+so a coverage curve doesn't lump e.g. the top 1000 words together when finer distinctions there
+matter most.">Fine/coarse band overrides (optional)</summary>
+    <label title="Width of each narrow band, e.g. 100 words per band.">
+        Fine band size <input type="number" name="fine_band_size" min="1" placeholder="e.g. 100">
+    </label>
     <br>
-    <label>Fine-grained until rank <input type="number" name="fine_grained_until" min="1"></label>
+    <label title="The rank up to which the narrower band size applies, e.g. 2000 for narrow bands
+through the 2000th most frequent word. Normal-size (Band size) bands apply after that.">
+        Fine-grained until rank
+        <input type="number" name="fine_grained_until" min="1" placeholder="e.g. 2000">
+    </label>
     <br>
-    <label>Coarse band size <input type="number" name="coarse_band_size" min="1"></label>
+    <label title="Width of each wide band, e.g. 10,000 words per band.">
+        Coarse band size <input type="number" name="coarse_band_size" min="1" placeholder="e.g. 10000">
+    </label>
     <br>
-    <label>Coarse-grained from rank <input type="number" name="coarse_grained_from" min="1"></label>
+    <label title="The rank from which the wider band size applies, e.g. 50000 to start collapsing
+bands past the 50,000th most frequent word. Normal-size (Band size) bands apply before that (and
+after the fine-grained section above, if any).">
+        Coarse-grained from rank
+        <input type="number" name="coarse_grained_from" min="1" placeholder="e.g. 50000">
+    </label>
 </details>
 <br>
 <script>

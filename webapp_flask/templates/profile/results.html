@@ -37,8 +37,12 @@
     <div class="metric"><span class="metric-value">{{ result.total_tokens }}</span><span class="metric-label">Tokens</span></div>
     <div class="metric"><span class="metric-value">{{ result.total_types }}</span><span class="metric-label">Types</span></div>
     <div class="metric"><span class="metric-value">{{ "%.1f"|format(result.off_list_pct_tokens) }}%</span><span class="metric-label">Off-list</span></div>
-    <div class="metric"><span class="metric-value">{{ band_95 if band_95 else "N/A" }}</span><span class="metric-label">Bands for 95% coverage</span></div>
-    <div class="metric"><span class="metric-value">{{ band_98 if band_98 else "N/A" }}</span><span class="metric-label">Bands for 98% coverage</span></div>
+    <div class="metric" {% if not band_95 %}title="95% coverage is not reached by any band"{% endif %}>
+        <span class="metric-value">{{ band_95 if band_95 else "N/A" }}</span><span class="metric-label">Bands for 95% coverage</span>
+    </div>
+    <div class="metric" {% if not band_98 %}title="98% coverage is not reached by any band"{% endif %}>
+        <span class="metric-value">{{ band_98 if band_98 else "N/A" }}</span><span class="metric-label">Bands for 98% coverage</span>
+    </div>
 </div>
 
 <h3>Band coverage</h3>

@@ -23,7 +23,9 @@
 <fieldset>
     <legend>Built-in word list</legend>
     <form method="post" action="{{ url_for('reference.build_builtin') }}">
-        <label>List
+        <label title="Which published reference word list to profile against. See the
+&quot;How to cite&quot; page for how to cite whichever one you use.">
+            List
             <select name="builtin_name" class="builtin-select">
                 {% for key, info in builtin_choices.items() %}
                     <option value="{{ key }}" {% if info.get("pos_tagged") %}data-pos-tagged="1"{% endif %}>{{ info.label }}</option>
@@ -31,7 +33,9 @@
             </select>
         </label>
         <p class="caption builtin-pos-note" hidden>
-            This list is part-of-speech tagged — e.g. "record" as a verb is scored separately from "record" as a noun.
+            This list matches by lemma <em>and</em> part of speech (e.g. "record" as a verb is
+            scored separately from "record" as a noun), so lemmatization is always applied for
+            it, regardless of the checkbox below.
         </p>
         <script>
             (function () {
@@ -55,13 +59,20 @@
     <legend>Corpus of texts (.txt/.docx/.pdf)</legend>
     <form id="corpus-build-form" method="post" action="{{ url_for('reference.build_corpus') }}"
           enctype="multipart/form-data">
-        <label>Choose files <input type="file" name="corpus_files" multiple></label>
+        <label title="Select multiple files, or use the folder picker to pick a whole directory.">
+            Choose files <input type="file" name="corpus_files" multiple>
+        </label>
         <br>
-        <label>Or choose a folder
+        <label title="Select multiple files, or use the folder picker to pick a whole directory.">
+            Or choose a folder
             <input type="file" name="corpus_folder" webkitdirectory directory multiple>
         </label>
         <br>
-        <label><input type="checkbox" name="pos_tagged"> Tag part of speech</label>
+        <label title="Match target text by lemma &amp; part of speech (e.g. &quot;record&quot; as
+a verb scored separately from &quot;record&quot; as a noun), instead of by lemma alone. Always
+uses lemmatization, regardless of the checkbox below.">
+            <input type="checkbox" name="pos_tagged"> Tag part of speech
+        </label>
         {% include "partials/_band_params.html" %}
         <button type="submit">Build reference from this corpus</button>
     </form>
@@ -94,15 +105,24 @@
 <fieldset>
     <legend>Uploaded word list file</legend>
     <form method="post" action="{{ url_for('reference.build_wordlist') }}" enctype="multipart/form-data">
-        <label>Word list .txt file <input type="file" name="wordlist_file" accept=".txt"></label>
-        <br>
-        <label>Format
-            <select name="wordlist_format">
-                <option value="auto">Auto-detect</option>
-                <option value="freq">word,frequency pairs</option>
-                <option value="plain">Plain word list</option>
-            </select>
+        <label title="One word per line, ranked most-frequent-first -- or &quot;word,frequency&quot;
+pairs (frequency used only to break ties/confirm ranking, not required to be exact counts).">
+            Word list .txt file <input type="file" name="wordlist_file" accept=".txt">
         </label>
+        <br>
+        <details>
+            <summary>Advanced word list options</summary>
+            <label title="&quot;Auto-detect&quot; checks whether each line has a
+&quot;word,frequency&quot; pair or just a bare word, and works for almost every file -- only
+override it if auto-detection guesses wrong for your file.">
+                Format
+                <select name="wordlist_format">
+                    <option value="auto">Auto-detect</option>
+                    <option value="freq">word,frequency pairs</option>
+                    <option value="plain">Plain word list</option>
+                </select>
+            </label>
+        </details>
         {% include "partials/_band_params.html" %}
         <button type="submit">Build reference from this word list</button>
     </form>
@@ -111,7 +131,10 @@
 <fieldset>
     <legend>Previously-saved reference (.json)</legend>
     <form method="post" action="{{ url_for('reference.build_saved') }}" enctype="multipart/form-data">
-        <label>Saved reference .json file <input type="file" name="reference_file" accept=".json"></label>
+        <label title="A reference previously exported with the &quot;Download it (.json)&quot;
+link above, so you don't have to rebuild it from a corpus/word list again.">
+            Saved reference .json file <input type="file" name="reference_file" accept=".json">
+        </label>
         <br>
         <button type="submit">Load this reference</button>
     </form>
@@ -138,19 +161,27 @@
 <fieldset>
     <legend>2. Ignore (optional)</legend>
     <form method="post" action="{{ url_for('reference.ignore_config') }}" enctype="multipart/form-data">
-        <label>
+        <label title="Detected via the language's part-of-speech tagger, so this requires a
+trained pipeline to be installed for the selected language; with none installed, this has no
+effect (proper nouns are just profiled like any other word).">
             <input type="checkbox" name="exclude_proper_nouns" {% if ignore_config.exclude_proper_nouns %}checked{% endif %}>
             Exclude proper nouns
         </label>
         <br>
-        <label>
+        <label title="Catches tokens containing a digit character (e.g. &quot;42&quot;,
+&quot;3.14&quot;) -- works regardless of language pipeline availability. Spelled-out number words
+(e.g. &quot;twelve&quot;) are unaffected and stay profiled as ordinary vocabulary.">
             <input type="checkbox" name="exclude_digits" {% if ignore_config.exclude_digits %}checked{% endif %}>
             Exclude digits
         </label>
         <br>
-        <label>Ignore list (.txt) <input type="file" name="ignore_file" accept=".txt"></label>
+        <label title="One word per line. Matched case-insensitively if the reference lowercases
+tokens (the default).">
+            Ignore list (.txt) <input type="file" name="ignore_file" accept=".txt">
+        </label>
         <br>
-        <label>...or paste words, one per line
+        <label title="Merged with the uploaded file above, if both are given.">
+            ...or paste words, one per line
             <br>
             <textarea name="ignore_text" rows="4" cols="40">{{ ignore_config.ignore_words | join("\n") }}</textarea>
         </label>

@@ -66,10 +66,25 @@ body {
     font-weight: 600;
 }
 
+/* Wide layout (matches the Streamlit app's layout="wide"), rather than a
+   narrow centered column -- there's room to spare for the results page's
+   7-column summary table, band-coverage table, and highlighted text. */
 main {
-    max-width: 900px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 1.5rem;
+}
+
+/* Fields with a `title` attribute carry an explanatory tooltip (ported
+   from the Streamlit app's help= text on the equivalent widget) -- a
+   dotted underline hints that one's there, the way Streamlit's little
+   [?] icon did. text-decoration (not border-bottom) so it doesn't box
+   in a label's block-level children (a <select>/<textarea>). */
+label[title],
+summary[title] {
+    cursor: help;
+    text-decoration: underline dotted #999;
+    text-underline-offset: 3px;
 }
 
 .flashes {

@@ -9,9 +9,14 @@
 {% endif %}
 
 <form method="post" action="{{ url_for('profile.upload') }}" enctype="multipart/form-data">
-    <label>Upload files (.txt/.docx/.pdf) <input type="file" name="target_files" multiple></label>
+    <label title="Select multiple files, or drag a whole folder onto this box.">
+        Upload files (.txt/.docx/.pdf) <input type="file" name="target_files" multiple>
+    </label>
     <br><br>
-    <label>Name for pasted text <input type="text" name="pasted_name" value="pasted_text"></label>
+    <label title="Label used to identify this text in the results table and exports -- change it
+if you paste more than one text so they don't overwrite each other.">
+        Name for pasted text <input type="text" name="pasted_name" value="pasted_text">
+    </label>
     <br>
     <label>Paste text to profile
         <br>
