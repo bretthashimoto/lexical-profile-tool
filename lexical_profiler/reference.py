@@ -36,9 +36,13 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     "avl": {
         "file": "avl_academic.txt",
         "label": "Academic Vocabulary List (AVL)",
+        "pos_tagged": True,
         "description": (
             "Academic Vocabulary List (AVL) -- Gardner & Davies (2013), "
-            "~2,900 core academic word lemmas from the COCA Academic sub-corpus"
+            "~3,000 core academic word lemma+part-of-speech entries from the "
+            "COCA Academic sub-corpus; matches by lemma and part of speech, "
+            "so e.g. 'group' as a noun is scored separately from 'group' as "
+            "a verb"
         ),
         "citation": (
             "Gardner, D., & Davies, M. (2014). A new academic vocabulary list. "
@@ -823,8 +827,9 @@ class Reference:
             coarse_band_size, coarse_grained_from, lemmatize: same as
             from_word_list().
 
-        Whether the list is POS-tagged (e.g. "coca") is a property of the
-        file itself, read from BUILTIN_WORD_LISTS -- not a caller choice.
+        Whether the list is POS-tagged (e.g. "coca", "avl") is a property
+        of the file itself, read from BUILTIN_WORD_LISTS -- not a caller
+        choice.
         """
         key = name.strip().lower()
         entry = BUILTIN_WORD_LISTS.get(key)

@@ -374,7 +374,7 @@ it falls back to surface forms, same as the library does everywhere else.
 
 | Parameter | Default | What it does |
 |---|---|---|
-| `name` | *required* | Key of a word list bundled with this package (case-insensitive): `"avl"` (Academic Vocabulary List), `"ngsl"` (New General Service List), `"nawl"` (New Academic Word List), or `"coca"` (COCA lemma+POS list). |
+| `name` | *required* | Key of a word list bundled with this package (case-insensitive): `"avl"` (Academic Vocabulary List, lemma+POS), `"ngsl"` (New General Service List), `"nawl"` (New Academic Word List), or `"coca"` (COCA lemma+POS list). |
 | `band_size` | `1000` | Same as above. |
 | `lowercase` | `True` | Same as above. |
 | `language` | `"en"` | Same as above. |

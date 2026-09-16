@@ -183,15 +183,25 @@ def test_from_word_list_empty_file_raises(tmp_path):
 
 def test_from_builtin_loads_avl():
     ref = Reference.from_builtin("avl", band_size=100)
-    assert "study" in ref  # a high-frequency AVL word
-    assert ref.rank_of("study") == 1
+    assert "study_n" in ref  # a high-frequency AVL word (lemma + POS)
+    assert ref.rank_of("study_n") == 1
     assert len(ref) > 2000
     assert "avl" in ref.source_description.lower()
 
 
 def test_from_builtin_is_case_insensitive():
     ref = Reference.from_builtin("AVL", band_size=100)
-    assert "study" in ref
+    assert "study_n" in ref
+
+
+def test_from_builtin_avl_is_pos_tagged():
+    ref = Reference.from_builtin("avl", band_size=1000)
+    assert ref.pos_tagged is True
+    assert ref.lemmatize is True  # pos_tagged forces this on
+    # "group" as a noun and as a verb are distinct entries, not merged.
+    assert "group_n" in ref
+    assert "group_v" in ref
+    assert ref.rank_of("group_n") != ref.rank_of("group_v")
 
 
 def test_from_builtin_unknown_name_raises():
