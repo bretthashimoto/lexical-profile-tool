@@ -8,7 +8,7 @@
 
 {% if has_reference %}
     {% if reference_summary %}
-        <div class="flash flash-success">{{ reference_summary.source_description }}</div>
+        <div class="flash flash-success"><strong>Current reference:</strong> {{ reference_summary.source_description }}</div>
         <p class="caption">{{ reference_summary.num_bands }} bands, {{ reference_summary.num_words }} known words</p>
     {% else %}
         <p>A reference is already built{% if reference_build %} ({{ reference_build.source_kind }}){% endif %}.</p>
