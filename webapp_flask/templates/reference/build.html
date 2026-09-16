@@ -5,16 +5,13 @@
 <h1>1. Build a reference</h1>
 
 {% if has_reference %}
+    {% if reference_summary %}
+        <div class="flash flash-success">{{ reference_summary.source_description }}</div>
+        <p class="caption">{{ reference_summary.num_bands }} bands, {{ reference_summary.num_words }} known words</p>
+    {% else %}
+        <p>A reference is already built{% if reference_build %} ({{ reference_build.source_kind }}){% endif %}.</p>
+    {% endif %}
     <p>
-        {% if reference_summary %}
-            <strong>{{ reference_summary.source_description }}</strong>
-            <br>
-            <span class="caption">{{ reference_summary.num_bands }} bands, {{ reference_summary.num_words }} known words</span>
-            <br>
-        {% else %}
-            A reference is already built{% if reference_build %} ({{ reference_build.source_kind }}){% endif %}.
-            <br>
-        {% endif %}
         <a href="{{ url_for('reference.download') }}">Download it (.json)</a> &middot;
         <a href="{{ url_for('profile.targets') }}">Continue to profiling &rarr;</a>
     </p>

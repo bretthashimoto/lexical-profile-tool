@@ -70,7 +70,6 @@ def build_builtin():
 
     _save_reference(sessions_root, session_id, reference, source_kind="builtin",
                      builtin_name=name, **band_params)
-    flash(f"Reference built: {reference.source_description}", "success")
     return redirect(url_for("reference.build"))
 
 
@@ -99,7 +98,6 @@ def build_wordlist():
         return redirect(url_for("reference.build"))
 
     _save_reference(sessions_root, session_id, reference, source_kind="wordlist", **band_params)
-    flash(f"Reference built: {reference.source_description}", "success")
     return redirect(url_for("reference.build"))
 
 
@@ -122,7 +120,6 @@ def build_saved():
         return redirect(url_for("reference.build"))
 
     _save_reference(sessions_root, session_id, reference, source_kind="saved")
-    flash(f"Reference loaded: {reference.source_description}", "success")
     return redirect(url_for("reference.build"))
 
 

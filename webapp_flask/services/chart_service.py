@@ -34,8 +34,8 @@ def build_band_chart(result) -> dict:
         color=alt.Color("band_num:Q", scale=alt.Scale(range=BAND_RAMP), legend=None),
         tooltip=[
             alt.Tooltip("band:N", title="Band"),
-            alt.Tooltip("pct_tokens:Q", title="% tokens", format=".1f"),
-            alt.Tooltip("cumulative_pct:Q", title="Cumulative %", format=".1f"),
+            alt.Tooltip("pct_tokens:Q", title="% tokens", format=".2f"),
+            alt.Tooltip("cumulative_pct:Q", title="Cumulative %", format=".2f"),
         ],
     )
     line = alt.Chart(alt.Data(values=chart_data)).mark_line(color="#eb6834", point=True).encode(

@@ -14,10 +14,10 @@
             <td>{{ name }}</td>
             <td>{{ r.total_tokens }}</td>
             <td>{{ r.total_types }}</td>
-            <td>{{ "%.1f"|format(r.off_list_pct_tokens) }}</td>
-            <td>{{ "%.1f"|format(r.ignored_pct_tokens) }}</td>
-            <td>{{ "%.1f"|format(r.proper_noun_pct_tokens) }}</td>
-            <td>{{ "%.1f"|format(r.digit_pct_tokens) }}</td>
+            <td>{{ "%.2f"|format(r.off_list_pct_tokens) }}%</td>
+            <td>{{ "%.2f"|format(r.ignored_pct_tokens) }}%</td>
+            <td>{{ "%.2f"|format(r.proper_noun_pct_tokens) }}%</td>
+            <td>{{ "%.2f"|format(r.digit_pct_tokens) }}%</td>
         </tr>
     {% endfor %}
 </table>
@@ -63,19 +63,19 @@
             <tr>
                 <td>{{ result.band_label(band) }}</td>
                 <td>{{ result.band_token_counts.get(band, 0) }}</td>
-                <td>{{ "%.1f"|format(result.band_token_pct.get(band, 0)) }}</td>
-                <td>{{ "%.1f"|format(result.cumulative_token_pct.get(band, 0)) }}</td>
+                <td>{{ "%.2f"|format(result.band_token_pct.get(band, 0)) }}%</td>
+                <td>{{ "%.2f"|format(result.cumulative_token_pct.get(band, 0)) }}%</td>
             </tr>
         {% endfor %}
-        <tr><td>Off-list</td><td>{{ result.off_list_tokens }}</td><td>{{ "%.1f"|format(result.off_list_pct_tokens) }}</td><td>&mdash;</td></tr>
+        <tr><td>Off-list</td><td>{{ result.off_list_tokens }}</td><td>{{ "%.2f"|format(result.off_list_pct_tokens) }}%</td><td>&mdash;</td></tr>
         {% if result.ignored_tokens %}
-            <tr><td>Ignored</td><td>{{ result.ignored_tokens }}</td><td>{{ "%.1f"|format(result.ignored_pct_tokens) }}</td><td>&mdash;</td></tr>
+            <tr><td>Ignored</td><td>{{ result.ignored_tokens }}</td><td>{{ "%.2f"|format(result.ignored_pct_tokens) }}%</td><td>&mdash;</td></tr>
         {% endif %}
         {% if result.proper_noun_tokens %}
-            <tr><td>Proper nouns</td><td>{{ result.proper_noun_tokens }}</td><td>{{ "%.1f"|format(result.proper_noun_pct_tokens) }}</td><td>&mdash;</td></tr>
+            <tr><td>Proper nouns</td><td>{{ result.proper_noun_tokens }}</td><td>{{ "%.2f"|format(result.proper_noun_pct_tokens) }}%</td><td>&mdash;</td></tr>
         {% endif %}
         {% if result.digit_tokens %}
-            <tr><td>Digits</td><td>{{ result.digit_tokens }}</td><td>{{ "%.1f"|format(result.digit_pct_tokens) }}</td><td>&mdash;</td></tr>
+            <tr><td>Digits</td><td>{{ result.digit_tokens }}</td><td>{{ "%.2f"|format(result.digit_pct_tokens) }}%</td><td>&mdash;</td></tr>
         {% endif %}
     </table>
 </details>
