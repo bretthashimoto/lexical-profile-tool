@@ -36,6 +36,19 @@ if you paste more than one text so they don't overwrite each other.">
 </form>
 {{ progress_bar("progress-profile") }}
 <script>
-    submitJobForm(document.getElementById("profile-upload-form"), "progress-profile");
+    var profileUploadForm = document.getElementById("profile-upload-form");
+    submitJobForm(profileUploadForm, "progress-profile");
+
+    /* Selecting files/a folder profiles right away -- no extra click
+       needed. The button stays for the paste-text path, which has no
+       "selected" event to hook into. */
+    var profileFileInputs = profileUploadForm.querySelectorAll('input[type="file"]');
+    for (var i = 0; i < profileFileInputs.length; i++) {
+        profileFileInputs[i].addEventListener("change", function (evt) {
+            if (evt.target.files.length > 0) {
+                profileUploadForm.requestSubmit();
+            }
+        });
+    }
 </script>
 {% endblock %}

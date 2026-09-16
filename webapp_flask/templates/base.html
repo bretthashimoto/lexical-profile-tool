@@ -37,6 +37,10 @@
         <a href="{{ url_for('pages.about') }}">About profiling</a>
         <a href="{{ url_for('pages.cite') }}">How to cite</a>
         <a href="{{ url_for('pages.about_me') }}">About me</a>
+        <form method="post" action="{{ url_for('pages.reset') }}" class="reset-form"
+              onsubmit="return confirm('Start a new session? This clears your reference, target texts, and ignore settings.');">
+            <button type="submit" class="link-button">Start over</button>
+        </form>
     </nav>
     <main>
         {% with messages = get_flashed_messages(with_categories=true) %}

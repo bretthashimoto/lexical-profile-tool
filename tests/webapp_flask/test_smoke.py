@@ -108,6 +108,17 @@ def test_chart_json_unknown_text_404s(profiled_client):
     assert r.status_code == 404
 
 
+def test_reset_clears_session_state(client):
+    _build_builtin_reference(client)
+    client.post("/profile/upload", data={"pasted_name": "s", "pasted_text": "the cat"})
+
+    r = client.post("/reset")
+    assert r.status_code == 302
+
+    r = client.get("/profile")
+    assert r.status_code == 302  # no reference anymore -> redirected off the profile page
+
+
 def test_load_bundled_example_data(client):
     r = client.post("/guide/load-example")
     assert r.status_code == 302

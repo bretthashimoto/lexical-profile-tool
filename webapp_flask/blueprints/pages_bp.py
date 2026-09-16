@@ -19,6 +19,18 @@ def index():
     return redirect(url_for("reference.build"))
 
 
+@pages_bp.route("/reset", methods=["POST"])
+def reset():
+    """Wipe the current session's reference/targets/ignore-config and hand
+    out a fresh session id, so refreshing the page (which keeps the same
+    session cookie) can't bring old state back."""
+    sessions_root = current_app.config["SESSION_DIR"]
+    session_store.delete_session(sessions_root, session["session_id"])
+    session.clear()
+    flash("Started a new session.", "success")
+    return redirect(url_for("reference.build"))
+
+
 @pages_bp.route("/guide", methods=["GET"])
 def guide():
     return render_template("pages/guide.html")

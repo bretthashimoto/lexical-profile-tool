@@ -66,6 +66,25 @@ body {
     font-weight: 600;
 }
 
+.top-nav .reset-form {
+    display: inline;
+}
+
+.top-nav .link-button {
+    margin-right: 1.2rem;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: #184f95;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.top-nav .link-button:hover {
+    text-decoration: underline;
+}
+
 /* Wide layout (matches the Streamlit app's layout="wide"), rather than a
    narrow centered column -- there's room to spare for the results page's
    7-column summary table, band-coverage table, and highlighted text. */

@@ -80,6 +80,11 @@ def update_meta(sessions_root: Path, session_id: str, **updates) -> dict:
     return meta
 
 
+def delete_session(sessions_root: Path, session_id: str) -> None:
+    """Remove a session's on-disk directory (reference, meta, uploads)."""
+    shutil.rmtree(session_dir(sessions_root, session_id), ignore_errors=True)
+
+
 def touch(sessions_root: Path, session_id: str) -> None:
     """Mark a session as recently active, so the reaper doesn't sweep it."""
     marker = ensure_session_dir(sessions_root, session_id) / ".touch"
