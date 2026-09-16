@@ -94,7 +94,7 @@ built earlier and downloaded as .json.">
         selecting more at any point, even while an earlier batch is still processing, and it's
         added to the same reference automatically.
     </p>
-    <form id="corpus-build-form" data-reference-exists="{{ 'true' if can_add_texts else 'false' }}"
+    <form id="corpus-build-form" data-reference-exists="{{ 'true' if can_add_to_corpus else 'false' }}"
           method="post" action="{{ url_for('reference.build_corpus') }}" enctype="multipart/form-data">
         <label title="Select multiple files, or use the folder picker to pick a whole directory.">
             Choose files... <input type="file" name="corpus_files" accept=".txt,.docx,.pdf" multiple>
