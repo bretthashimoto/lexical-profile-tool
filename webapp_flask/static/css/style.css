@@ -1,8 +1,82 @@
+/* Design tokens -- one place to tune the whole app's look. Blues match
+   the existing banner gradient/brand color; everything else (radius,
+   shadow, spacing) is new, layered on top of the same markup/classes
+   the templates already use (this file is a visual refresh only, no
+   template changes needed). */
+:root {
+    --color-primary: #184f95;
+    --color-primary-light: #2a78d6;
+    --color-primary-bg: #e8f0fc;
+    --color-text: #1a1f27;
+    --color-text-muted: #667085;
+    --color-border: #e0e4ea;
+    --color-bg: #f5f6f9;
+    --color-surface: #ffffff;
+    --color-danger: #b3261e;
+    --color-danger-bg: #fdecea;
+    --color-success: #1a6a2e;
+    --color-success-bg: #e6f4ea;
+    --color-warning: #8a5a00;
+    --color-warning-bg: #fdf1d6;
+    --color-info: #14508a;
+    --color-info-bg: #e0eefc;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+    --shadow-md: 0 4px 14px rgba(16, 24, 40, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+        sans-serif;
     margin: 0;
-    background: #f7f8fa;
-    color: #1a1a1a;
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.55;
+}
+
+h1, h2, h3, h4 {
+    line-height: 1.25;
+    color: var(--color-text);
+}
+
+h1 {
+    font-size: 1.6rem;
+    margin: 0 0 1rem;
+}
+
+h2 {
+    font-size: 1.25rem;
+    margin: 1.1rem 0 0.5rem;
+}
+
+h3 {
+    font-size: 1.1rem;
+    margin: 1.1rem 0 0.5rem;
+}
+
+h4 {
+    font-size: 0.95rem;
+    margin: 0.6rem 0 0.3rem;
+}
+
+/* Templates still have manual <br> tags between fields from before
+   labels became block-level -- now redundant, stacking extra gaps on
+   top of each label's own margin. Hide the ones that immediately
+   follow a label, and collapse any doubled-up <br><br>, without
+   touching a <br> used deliberately inside a label (e.g. above a
+   textarea) or in running text. */
+label + br,
+br + br {
+    display: none;
+}
+
+a {
+    color: var(--color-primary);
 }
 
 /* Band-color ramp (light = most frequent/easiest, dark = least
@@ -12,7 +86,7 @@ body {
 .banner {
     background: linear-gradient(135deg, #184f95 0%, #2a78d6 100%);
     color: #fff;
-    padding: 0.7rem 3vw 0.9rem;
+    padding: 0.9rem 3vw 1.1rem;
 }
 
 .banner-row {
@@ -48,41 +122,51 @@ body {
 
 .banner-description {
     color: #d3e2f7;
-    font-size: 0.8rem;
-    margin-top: 0.3rem;
+    font-size: 0.82rem;
+    margin-top: 0.35rem;
     width: 100%;
 }
 
 .top-nav {
-    background: #fff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    padding: 0.5rem 1.5rem;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    padding: 0.7rem 3vw;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.4rem;
 }
 
 .top-nav a {
-    margin-right: 1.2rem;
     text-decoration: none;
-    color: #184f95;
+    color: var(--color-text-muted);
     font-weight: 600;
+    font-size: 0.92rem;
+    transition: color 0.15s ease;
+}
+
+.top-nav a:hover {
+    color: var(--color-primary);
 }
 
 .reset-form {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .reset-form .link-button {
-    padding: 0.3rem 0.7rem;
-    border: 1px solid #a11212;
-    border-radius: 4px;
-    background: #fff;
-    color: #a11212;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-danger);
     font: inherit;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
+    transition: background 0.15s ease;
 }
 
 .reset-form .link-button:hover {
-    background: #fde2e2;
+    background: var(--color-danger-bg);
 }
 
 /* Wide layout (matches the Streamlit app's layout="wide"), rather than a
@@ -91,7 +175,7 @@ body {
 main {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: 1.25rem 3vw 2rem;
 }
 
 /* Fields with a `title` attribute carry an explanatory tooltip (ported
@@ -102,8 +186,106 @@ main {
 label[title],
 summary[title] {
     cursor: help;
-    text-decoration: underline dotted #999;
+    text-decoration: underline dotted #99a1ae;
     text-underline-offset: 3px;
+}
+
+label {
+    display: block;
+    margin: 0.4rem 0;
+    font-size: 0.92rem;
+    font-weight: 500;
+}
+
+/* Checkbox/radio labels read better inline with their control, not as a
+   full-width block -- anything whose first child is a checkbox/radio
+   input keeps a normal inline layout instead. */
+label:has(> input[type="checkbox"]:first-child),
+label:has(> input[type="radio"]:first-child) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 400;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="file"],
+select,
+textarea {
+    font: inherit;
+    font-size: 0.92rem;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.65rem;
+    margin-top: 0.3rem;
+    max-width: 100%;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+textarea {
+    display: block;
+    font-family: inherit;
+}
+
+/* The "Paste text to profile" box specifically -- wide enough to read a
+   real paragraph comfortably, roughly two-thirds of the page on desktop,
+   still capped at 100% (see the shared rule above) so it never overflows
+   on narrow screens. */
+.textarea-wide {
+    width: 65%;
+    min-width: 280px;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="file"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--color-primary-light);
+    box-shadow: 0 0 0 3px var(--color-primary-bg);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--color-primary);
+    width: 16px;
+    height: 16px;
+}
+
+/* Every submit button in this app represents a primary action (build,
+   profile, add, download, save) -- styled uniformly as a filled button.
+   The one deliberately different action (Start over) already overrides
+   this via the more specific .reset-form .link-button rule above. */
+button {
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 0.55rem 1.1rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-primary);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+button:hover {
+    background: var(--color-primary-light);
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+button:disabled {
+    background: #c7ccd4;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .flashes {
@@ -112,19 +294,23 @@ summary[title] {
 }
 
 .flash {
-    padding: 0.6rem 1rem;
-    border-radius: 4px;
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius-sm);
+    border-left: 4px solid transparent;
     margin-bottom: 0.8rem;
+    font-size: 0.92rem;
 }
 
 .flash-error {
-    background: #fde2e2;
-    color: #a11212;
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    border-left-color: var(--color-danger);
 }
 
 .flash-success {
-    background: #e1f2e5;
-    color: #1a6a2e;
+    background: var(--color-success-bg);
+    color: var(--color-success);
+    border-left-color: var(--color-success);
 }
 
 /* Matches Streamlit's st.info (calm/blue, for "here's how to get
@@ -132,24 +318,53 @@ summary[title] {
    during extraction) tones -- both were previously collapsed into the
    red "error" category. */
 .flash-info {
-    background: #e0eefc;
-    color: #14508a;
+    background: var(--color-info-bg);
+    color: var(--color-info);
+    border-left-color: var(--color-info);
 }
 
 .flash-warning {
-    background: #fdf1d6;
-    color: #8a5a00;
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+    border-left-color: var(--color-warning);
 }
 
+/* Fieldsets read as elevated "cards" -- consistent with .advanced-settings
+   and the results page's <details> panels, rather than the browser's
+   default inset-groove border. */
 fieldset {
-    margin-bottom: 1.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    padding: 0.8rem 1.1rem 1rem;
+    margin: 0 0 1rem;
+}
+
+legend {
+    padding: 0 0.4rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    font-size: 1rem;
+}
+
+details {
+    margin-bottom: 0.6rem;
+}
+
+details > summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-text);
 }
 
 .advanced-settings {
-    border: 1px solid #c0c0c0;
-    border-radius: 4px;
-    padding: 0.6rem 1rem;
-    margin-bottom: 1.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    padding: 0.7rem 1.1rem;
+    margin-bottom: 1rem;
 }
 
 .advanced-settings summary {
@@ -161,51 +376,85 @@ fieldset {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.85rem;
 }
 
 .source-selector label {
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    padding: 0.4rem 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    font-weight: 500;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
     cursor: pointer;
-    background: #fff;
+    background: var(--color-surface);
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.source-selector label:hover {
+    border-color: var(--color-primary-light);
 }
 
 .source-selector input[type="radio"] {
-    margin-right: 0.3rem;
+    margin-right: 0.4rem;
 }
 
 .source-selector label:has(input:checked) {
-    border-color: #184f95;
-    background: #e0eefc;
-    font-weight: 600;
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.source-selector label:has(input:checked) input[type="radio"] {
+    accent-color: #fff;
 }
 
 table {
     border-collapse: collapse;
     width: 100%;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 
 table th, table td {
-    border: 1px solid #ddd;
-    padding: 0.4rem 0.6rem;
+    padding: 0.55rem 0.75rem;
     text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+table th {
+    background: var(--color-bg);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+}
+
+table tr:last-child td {
+    border-bottom: none;
+}
+
+table tbody tr:hover {
+    background: var(--color-bg);
 }
 
 .progress-container {
-    margin: 0.8rem 0;
+    margin: 0.6rem 0;
 }
 
 .progress-bar {
-    background: #e2e5ea;
-    border-radius: 4px;
-    height: 10px;
+    background: var(--color-border);
+    border-radius: 999px;
+    height: 8px;
     overflow: hidden;
 }
 
 .progress-bar-fill {
-    background: #2a78d6;
+    background: var(--color-primary-light);
     height: 100%;
     width: 0;
     transition: width 0.2s ease;
@@ -213,58 +462,67 @@ table th, table td {
 
 .progress-label {
     font-size: 0.85rem;
-    margin-top: 0.3rem;
-    color: #444;
+    margin-top: 0.4rem;
+    color: var(--color-text-muted);
 }
 
 .progress-error .progress-label {
-    color: #a11212;
+    color: var(--color-danger);
 }
 
 .progress-error .progress-bar-fill {
-    background: #a11212;
+    background: var(--color-danger);
 }
 
 .progress-success .progress-label {
-    color: #1a6a2e;
+    color: var(--color-success);
 }
 
 .progress-success .progress-bar-fill {
-    background: #1a6a2e;
+    background: var(--color-success);
 }
 
 .metrics-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 1.5rem;
-    margin: 1rem 0;
+    gap: 0.75rem;
+    margin: 0.6rem 0 1rem;
 }
 
 .metric {
     display: flex;
     flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0.7rem 1.1rem;
+    min-width: 8rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .metric-value {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 700;
+    color: var(--color-primary);
 }
 
 .metric-label {
-    font-size: 0.8rem;
-    color: #666;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-top: 0.1rem;
 }
 
 .caption {
-    font-size: 0.8rem;
-    color: #666;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
 }
 
 .pill {
     display: inline-block;
-    border-radius: 3px;
-    padding: 1px 6px;
-    margin-right: 2px;
+    border-radius: 999px;
+    padding: 2px 9px;
+    margin-right: 4px;
+    font-size: 0.85rem;
 }
 
 .legend .pill {
@@ -275,19 +533,21 @@ table th, table td {
 .highlighted-text {
     line-height: 2.2;
     font-size: 1.05rem;
-    padding: 1rem;
-    border: 1px solid rgba(128, 128, 128, 0.3);
-    border-radius: 8px;
+    padding: 1.1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
     max-height: 500px;
     overflow-y: auto;
 }
 
 .highlighted-text .pill {
-    padding: 0 1px;
+    padding: 0 2px;
     margin-right: 0;
-    border-radius: 2px;
+    border-radius: 3px;
 }
 
 .word-tables details {
-    margin-bottom: 1rem;
+    margin-bottom: 0.6rem;
 }
