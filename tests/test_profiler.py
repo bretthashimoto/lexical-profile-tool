@@ -33,8 +33,9 @@ def test_profile_text_with_ignore_words(small_reference):
     assert result.off_list_words == []
     assert result.ignored_tokens == 1
     assert result.ignored_words == ["mouse"]
-    # Ignored words still count toward totals.
-    assert result.total_tokens == 3
+    # Ignored words are excluded from totals.
+    assert result.total_tokens == 2
+    assert result.ignored_pct_tokens == pytest.approx(100 / 3)
 
 
 def test_profile_text_repeated_words_counted_correctly(small_reference):
@@ -202,6 +203,7 @@ def test_digits_included_by_default_and_counted_off_list(small_reference):
     assert result.digit_tokens == 0
     assert result.digit_words == []
     assert "42" in result.off_list_words
+    assert result.digit_pct_tokens == 0.0
 
 
 def test_exclude_digits_reports_them_separately(small_reference):
@@ -212,9 +214,10 @@ def test_exclude_digits_reports_them_separately(small_reference):
     assert result.digit_types == 2
     assert set(result.digit_words) == {"42", "100"}
     assert "42" not in result.off_list_words
-    # Digits still count toward totals, same convention as ignored_words.
-    assert result.total_tokens == 5
+    # Digits are excluded from totals, same convention as ignored_words.
+    assert result.total_tokens == 2
     assert result.off_list_tokens == 0
+    assert result.digit_pct_tokens == pytest.approx(60.0)
 
 
 def test_exclude_proper_nouns_bypassed_without_trained_pipeline(small_reference):
@@ -229,7 +232,8 @@ def test_exclude_proper_nouns_bypassed_without_trained_pipeline(small_reference)
     assert result.proper_noun_words == ["brett"]
     assert "brett" not in result.off_list_words
     assert result.off_list_words == ["zebra"]
-    assert result.total_tokens == 3
+    assert result.total_tokens == 2
+    assert result.proper_noun_pct_tokens == pytest.approx(100 / 3)
 
 
 def test_ignore_words_takes_priority_over_exclude_categories(small_reference):

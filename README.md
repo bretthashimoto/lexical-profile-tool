@@ -393,7 +393,7 @@ missing, unreadable, not valid JSON, or wasn't actually produced by
 |---|---|---|
 | `reference` | *required* | The `Reference` to profile target texts against. |
 | `min_length` | `1` | Minimum token length to include when tokenizing target texts. |
-| `ignore_words` | `None` | Specific words to pull out of band/off-list scoring entirely. They still count toward the text's total token/type counts, just reported separately as `ProfileResult.ignored_*`. Matched case-insensitively if the reference lowercases tokens. Takes priority over `exclude_proper_nouns`/`exclude_digits` if a word matches both. |
+| `ignore_words` | `None` | Specific words to pull out of band/off-list scoring entirely. They're also excluded from the text's total token/type counts, and reported separately as `ProfileResult.ignored_*`. Matched case-insensitively if the reference lowercases tokens. Takes priority over `exclude_proper_nouns`/`exclude_digits` if a word matches both. |
 | `exclude_proper_nouns` | `False` | Pull proper nouns (detected via the language's POS tagger) out of band/off-list scoring, reported separately as `ProfileResult.proper_noun_*` -- same mechanism as `ignore_words`, just automatic. Requires a trained spaCy pipeline for the reference's language; silently has no effect without one. If `False` (default), proper nouns are profiled like any other word. |
 | `exclude_digits` | `False` | Same, for tokens containing a digit character (e.g. `"42"`, `"3.14"`) -> `ProfileResult.digit_*`. Spelled-out number words (e.g. `"twelve"`) are unaffected and stay profiled as ordinary vocabulary. Works regardless of language pipeline availability. If `False` (default), digit tokens are profiled like any other word -- in practice usually landing off-list, since reference word lists/corpora don't carry digits as vocabulary. |
 
@@ -412,11 +412,11 @@ The return value of every profiling call above. Key fields/methods:
 
 | Field / method | What it is |
 |---|---|
-| `total_tokens` / `total_types` | Total word count / unique word count for the text. |
+| `total_tokens` / `total_types` | Total word count / unique word count for the text, **excluding** any `ignored_*`/`proper_noun_*`/`digit_*` tokens below -- only words that landed in a band or off-list count here, so `band_token_pct` + `off_list_pct_tokens` sum to 100%. |
 | `band_token_counts`, `band_token_pct`, `band_type_counts`, `band_type_pct` | Per-band coverage, by dict of band number → value. |
 | `cumulative_token_pct` | Running total of `band_token_pct` through each band (dict of band number → value): "how much of the text is covered by the N most frequent bands," the classic Lexical Frequency Profile coverage curve. Compare against the standard 95%/98% reading-comprehension coverage thresholds. |
 | `off_list_tokens`, `off_list_types`, `off_list_pct_tokens`, `off_list_words` | Words absent from the reference entirely; `off_list_words` is the **full** list, most-frequent-first (not just a sample). |
-| `ignored_tokens`, `ignored_types`, `ignored_pct_tokens`, `ignored_words` | Same, for words matched by `ignore_words`. |
+| `ignored_tokens`, `ignored_types`, `ignored_pct_tokens`, `ignored_words` | Same, for words matched by `ignore_words`. `ignored_pct_tokens` is a % of the *whole* text (not of `total_tokens`, since these are excluded from it). |
 | `proper_noun_tokens`, `proper_noun_types`, `proper_noun_pct_tokens`, `proper_noun_words` | Same, for proper nouns, when `exclude_proper_nouns=True`. Empty/zero otherwise. |
 | `digit_tokens`, `digit_types`, `digit_pct_tokens`, `digit_words` | Same, for digit tokens, when `exclude_digits=True`. Empty/zero otherwise. |
 | `.summary(max_bands_shown=None, max_off_list_shown=20)` | Human-readable report string. The `max_*_shown` params only limit *this printed view*; the underlying `off_list_words`/`ignored_words` fields always have everything. |
@@ -494,8 +494,8 @@ For each text, `ProfileResult` reports, per frequency band and overall:
   vocabulary, or vocabulary specific to a domain not covered by the
   reference.
 - **Ignored words**: specific words you deliberately excluded from
-  scoring (via `ignore_words`), still counted in the totals but broken
-  out separately instead of polluting the off-list.
+  scoring (via `ignore_words`), excluded from the totals and broken out
+  separately instead of polluting the off-list.
 - **Proper nouns / digits**: names, places, and digit tokens (e.g. `"42"`)
   are profiled like any other word by default (digits in practice usually
   land off-list, since reference word lists/corpora don't carry them as

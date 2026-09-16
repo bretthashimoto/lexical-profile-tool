@@ -512,9 +512,14 @@ table tbody tr:hover {
     margin-top: 0.1rem;
 }
 
+p {
+    margin: 0.4rem 0;
+}
+
 .caption {
     font-size: 0.85rem;
     color: var(--color-text-muted);
+    margin: 0.3rem 0;
 }
 
 .pill {

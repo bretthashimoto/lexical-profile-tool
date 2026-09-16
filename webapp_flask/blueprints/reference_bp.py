@@ -30,14 +30,25 @@ def build():
     session_id = session["session_id"]
     meta = session_store.read_meta(sessions_root, session_id)
 
+    builtin_choices = reference_service.builtin_choices()
     has_reference = session_store.has_reference(sessions_root, session_id)
     reference_summary = None
     can_add_texts = False
     if has_reference:
         try:
             ref = Reference.load(str(session_store.reference_path(sessions_root, session_id)))
+            # The full source_description (used in exports/citations) spells
+            # out a builtin list's whole description in parentheses, which
+            # reads as a wall of text banner-sized on this page -- show just
+            # its short label here instead.
+            short_description = ref.source_description
+            reference_build = meta["reference_build"]
+            if reference_build and reference_build.get("source_kind") == "builtin":
+                entry = builtin_choices.get(reference_build.get("builtin_name", ""))
+                if entry:
+                    short_description = entry["label"]
             reference_summary = {
-                "source_description": ref.source_description,
+                "source_description": short_description,
                 "num_bands": ref.num_bands,
                 "num_words": len(ref),
             }
@@ -53,7 +64,7 @@ def build():
         "reference/build.html",
         languages=sorted(WEBAPP_LANGUAGES, key=lambda code: LANGUAGE_DISPLAY_NAMES[code]),
         language_names=LANGUAGE_DISPLAY_NAMES,
-        builtin_choices=reference_service.builtin_choices(),
+        builtin_choices=builtin_choices,
         has_reference=has_reference,
         reference_build=meta["reference_build"],
         reference_summary=reference_summary,

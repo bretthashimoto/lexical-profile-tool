@@ -25,7 +25,7 @@ def test_export_json(tmp_path, results):
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert "essay.txt" in payload
-    assert payload["essay.txt"]["total_tokens"] == 5
+    assert payload["essay.txt"]["total_tokens"] == 3
     assert payload["essay.txt"]["off_list_words"] == ["mouse"]
     assert payload["essay.txt"]["digit_words"] == ["42"]
 

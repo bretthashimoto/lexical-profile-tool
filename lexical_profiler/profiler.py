@@ -21,6 +21,9 @@ from .tokenizer import classify_tokens, pipeline_for, pos_suffix
 class ProfileResult:
     """Result of profiling a single text against a Reference."""
 
+    # Excludes ignored/proper-noun/digit tokens (see ignored_tokens etc.
+    # below) -- only words actually scored (landed in a band or off-list)
+    # count here, so band_token_pct + off_list_pct_tokens sum to 100%.
     total_tokens: int
     total_types: int
     band_token_counts: dict[int, int]      # band -> token count
@@ -34,15 +37,17 @@ class ProfileResult:
     off_list_words: list[str]              # unique off-list words, most frequent first
     ignored_tokens: int = 0
     ignored_types: int = 0
+    # % of the whole text (not of total_tokens -- ignored words are
+    # excluded from that count, see total_tokens below).
     ignored_pct_tokens: float = 0.0
     # unique ignored words, most frequent first
     ignored_words: list[str] = field(default_factory=list)
     # Proper nouns and digit tokens are only broken out into their own
     # bucket when LexicalProfiler was told to exclude them
     # (exclude_proper_nouns/exclude_digits); otherwise they're just
-    # profiled like any other word and these stay at zero/empty. Same
-    # accounting convention as ignored_*: still counted toward
-    # total_tokens/total_types.
+    # profiled like any other word and these stay at zero/empty. Excluded
+    # from total_tokens/total_types (same as ignored_*), so their own
+    # *_pct_tokens is a % of the whole text instead.
     proper_noun_tokens: int = 0
     proper_noun_types: int = 0
     proper_noun_pct_tokens: float = 0.0
@@ -214,11 +219,11 @@ class LexicalProfiler:
             reference: the Reference frequency model to profile against.
             min_length: minimum token length to include.
             ignore_words: optional words to exclude from band/off-list
-                classification. Matching tokens are still counted toward
-                total_tokens/total_types, but reported separately under
-                ProfileResult.ignored_* instead of a frequency band or
-                off-list. Matched case-insensitively if the reference
-                lowercases tokens (the default). Takes priority over
+                classification. Matching tokens are excluded from
+                total_tokens/total_types too, and reported separately
+                under ProfileResult.ignored_* instead. Matched
+                case-insensitively if the reference lowercases tokens
+                (the default). Takes priority over
                 exclude_proper_nouns/exclude_digits below if a word
                 happens to match both.
             exclude_proper_nouns: if True, words tagged as proper nouns
@@ -439,8 +444,11 @@ class LexicalProfiler:
             word_counts[word] += 1
             word_category.setdefault(word, category)
 
-        total_tokens = len(classified_tokens)
-        total_types = len(word_counts)
+        # Raw counts before ignored/proper-noun/digit tokens are pulled out
+        # below -- used only to express those categories' own share of the
+        # whole text, since they're excluded from total_tokens/total_types.
+        raw_tokens = len(classified_tokens)
+        raw_types = len(word_counts)
 
         band_token_counts: dict[int, int] = {b: 0 for b in range(1, self.reference.num_bands + 1)}
         band_type_counts: dict[int, int] = {b: 0 for b in range(1, self.reference.num_bands + 1)}
@@ -455,8 +463,9 @@ class LexicalProfiler:
         # exclude that category), a frequency band, or off-list. Ignored
         # words are checked first (an explicit, user-supplied override),
         # then the automatic proper-noun/digit categories, then the
-        # reference itself. All of these still count toward the totals
-        # above; they just don't land in a band or in off-list.
+        # reference itself. Ignored/proper-noun/digit tokens are excluded
+        # from total_tokens/total_types (below) -- only band and off-list
+        # words count as "scored" vocabulary.
         for word, count in word_counts.items():
             category = word_category[word]
             if word in self.ignore_words:
@@ -474,6 +483,19 @@ class LexicalProfiler:
             else:
                 band_token_counts[band] += count
                 band_type_counts[band] += 1
+
+        off_list_tokens = sum(off_list_word_counts.values())
+        ignored_tokens = sum(ignored_word_counts.values())
+        proper_noun_tokens = sum(proper_noun_word_counts.values())
+        digit_tokens = sum(digit_word_counts.values())
+
+        # "Scored" totals: everything except ignored/proper-noun/digit
+        # tokens, so band_token_pct + off_list_pct_tokens sum to 100%.
+        total_tokens = raw_tokens - ignored_tokens - proper_noun_tokens - digit_tokens
+        total_types = (
+            raw_types - len(ignored_word_counts)
+            - len(proper_noun_word_counts) - len(digit_word_counts)
+        )
 
         def pct(n, d):
             return (n / d * 100.0) if d else 0.0
@@ -493,11 +515,6 @@ class LexicalProfiler:
         # most_common() with no argument returns every entry sorted by
         # count descending, which is exactly the "most frequent first"
         # ordering these word lists are documented to have.
-        off_list_tokens = sum(off_list_word_counts.values())
-        ignored_tokens = sum(ignored_word_counts.values())
-        proper_noun_tokens = sum(proper_noun_word_counts.values())
-        digit_tokens = sum(digit_word_counts.values())
-
         return ProfileResult(
             total_tokens=total_tokens,
             total_types=total_types,
@@ -512,15 +529,15 @@ class LexicalProfiler:
             off_list_words=[w for w, _ in off_list_word_counts.most_common()],
             ignored_tokens=ignored_tokens,
             ignored_types=len(ignored_word_counts),
-            ignored_pct_tokens=pct(ignored_tokens, total_tokens),
+            ignored_pct_tokens=pct(ignored_tokens, raw_tokens),
             ignored_words=[w for w, _ in ignored_word_counts.most_common()],
             proper_noun_tokens=proper_noun_tokens,
             proper_noun_types=len(proper_noun_word_counts),
-            proper_noun_pct_tokens=pct(proper_noun_tokens, total_tokens),
+            proper_noun_pct_tokens=pct(proper_noun_tokens, raw_tokens),
             proper_noun_words=[w for w, _ in proper_noun_word_counts.most_common()],
             digit_tokens=digit_tokens,
             digit_types=len(digit_word_counts),
-            digit_pct_tokens=pct(digit_tokens, total_tokens),
+            digit_pct_tokens=pct(digit_tokens, raw_tokens),
             digit_words=[w for w, _ in digit_word_counts.most_common()],
             word_counts=word_counts,
             num_bands=self.reference.num_bands,

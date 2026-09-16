@@ -4,7 +4,6 @@
    isn't meaningful there, so a hidden field keeps lemmatize=True without
    showing a checkbox the user could wrongly uncheck. #}
 {% set show_lemmatize = show_lemmatize | default(true) %}
-<br>
 <label title="How many words make up each frequency band, e.g. band 1 = the 1000 most frequent
 words, band 2 = the next 1000, and so on. Smaller values give more (narrower) bands; doesn't
 affect which words end up off-list.">
@@ -67,7 +66,6 @@ after the fine-grained section above, if any).">
         <input type="number" name="coarse_grained_from" min="1" placeholder="e.g. 50000">
     </label>
 </details>
-<br>
 <script>
     (function () {
         var form = document.currentScript.closest("form");
