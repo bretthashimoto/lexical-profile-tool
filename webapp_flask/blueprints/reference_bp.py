@@ -45,7 +45,7 @@ def build():
 
     return render_template(
         "reference/build.html",
-        languages=WEBAPP_LANGUAGES,
+        languages=sorted(WEBAPP_LANGUAGES, key=lambda code: LANGUAGE_DISPLAY_NAMES[code]),
         language_names=LANGUAGE_DISPLAY_NAMES,
         builtin_choices=reference_service.builtin_choices(),
         has_reference=has_reference,

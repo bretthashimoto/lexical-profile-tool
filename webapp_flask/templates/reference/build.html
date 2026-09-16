@@ -59,12 +59,12 @@
     <form id="corpus-build-form" method="post" action="{{ url_for('reference.build_corpus') }}"
           enctype="multipart/form-data">
         <label title="Select multiple files, or use the folder picker to pick a whole directory.">
-            Choose files <input type="file" name="corpus_files" multiple>
+            Choose files <input type="file" name="corpus_files" accept=".txt,.docx,.pdf" multiple>
         </label>
         <br>
         <label title="Select multiple files, or use the folder picker to pick a whole directory.">
             Or choose a folder
-            <input type="file" name="corpus_folder" webkitdirectory directory multiple>
+            <input type="file" name="corpus_folder" accept=".txt,.docx,.pdf" webkitdirectory directory multiple>
         </label>
         <br>
         <label title="Match target text by lemma &amp; part of speech (e.g. &quot;record&quot; as
@@ -86,10 +86,10 @@ uses lemmatization, regardless of the checkbox below.">
             <p class="caption">Adds documents to the corpus this reference was built from, and recomputes ranks/bands from the combined word counts.</p>
             <form id="add-texts-form" method="post" action="{{ url_for('reference.add_texts') }}"
                   enctype="multipart/form-data">
-                <label>Choose files <input type="file" name="corpus_files" multiple></label>
+                <label>Choose files <input type="file" name="corpus_files" accept=".txt,.docx,.pdf" multiple></label>
                 <br>
                 <label>Or choose a folder
-                    <input type="file" name="corpus_folder" webkitdirectory directory multiple>
+                    <input type="file" name="corpus_folder" accept=".txt,.docx,.pdf" webkitdirectory directory multiple>
                 </label>
                 <br>
                 <button type="submit">Add to reference</button>

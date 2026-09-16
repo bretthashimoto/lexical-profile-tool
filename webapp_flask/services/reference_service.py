@@ -42,4 +42,6 @@ def build_from_builtin(name: str, **band_params) -> Reference:
 
 
 def builtin_choices() -> dict:
-    return BUILTIN_WORD_LISTS
+    """Alphabetical by key, matching the Streamlit app's
+    `sorted(BUILTIN_WORD_LISTS)` ordering in its list dropdown."""
+    return {name: BUILTIN_WORD_LISTS[name] for name in sorted(BUILTIN_WORD_LISTS)}
