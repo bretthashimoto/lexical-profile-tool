@@ -1,6 +1,5 @@
 # Dependencies for the Flask web app (webapp_flask/app.py). Kept separate
-# from the repo-root pyproject.toml (plain library/CLI) and from
-# webapp/requirements.txt (the Streamlit app), same pattern as that file.
+# from the repo-root pyproject.toml (plain library/CLI).
 #
 # spaCy is pinned to the 3.8.x line so it matches the pre-installed model
 # wheels below (spaCy trained pipelines require a matching major.minor
@@ -16,8 +15,7 @@ python-docx>=1.0
 pypdf>=4.0
 
 # Pre-installed spaCy pipelines, so lemmatization works instantly for these
-# languages without needing the in-app "download model" step. See
-# webapp/requirements.txt for the full rationale (identical here).
+# languages without needing the in-app "download model" step.
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
 https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.8.0/es_core_news_sm-3.8.0-py3-none-any.whl
 https://github.com/explosion/spacy-models/releases/download/fr_core_news_sm-3.8.0/fr_core_news_sm-3.8.0-py3-none-any.whl

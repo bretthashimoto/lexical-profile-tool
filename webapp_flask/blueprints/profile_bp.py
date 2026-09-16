@@ -40,7 +40,8 @@ def upload():
     session_id = session["session_id"]
     meta = session_store.read_meta(sessions_root, session_id)
 
-    new_texts, warnings = uploads.collect_uploaded_texts(request.files.getlist("target_files"))
+    file_storages = request.files.getlist("target_files") + request.files.getlist("target_folder")
+    new_texts, warnings = uploads.collect_uploaded_texts(file_storages)
     meta["target_texts"].update(new_texts)
 
     pasted_name = (request.form.get("pasted_name") or "pasted_text").strip()

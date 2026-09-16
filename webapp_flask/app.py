@@ -14,8 +14,7 @@ from flask import Flask, render_template, session
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 # Guarantees `import lexical_profiler` works regardless of whether the
-# package was pip-installed into this environment -- same rationale as
-# webapp/app.py's identical sys.path insert.
+# package was pip-installed into this environment.
 sys.path.insert(0, str(REPO_ROOT))
 
 from .blueprints.chart_bp import chart_bp  # noqa: E402

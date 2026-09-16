@@ -30,10 +30,13 @@
                 {% endfor %}
             </select>
         </label>
+        <p class="caption">
+            Built-in lists always match by lemma (e.g. "runs"/"running"/"ran" all count as "run"),
+            so there's no separate lemmatize setting here.
+        </p>
         <p class="caption builtin-pos-note" hidden>
-            This list matches by lemma <em>and</em> part of speech (e.g. "record" as a verb is
-            scored separately from "record" as a noun), so lemmatization is always applied for
-            it, regardless of the checkbox below.
+            This list also matches by part of speech (e.g. "record" as a verb is scored
+            separately from "record" as a noun).
         </p>
         <script>
             (function () {
@@ -48,6 +51,7 @@
                 update();
             })();
         </script>
+        {% set show_lemmatize = false %}
         {% include "partials/_band_params.html" %}
         <button type="submit">Build reference from this word list</button>
     </form>
@@ -67,11 +71,7 @@
             <input type="file" name="corpus_folder" accept=".txt,.docx,.pdf" webkitdirectory directory multiple>
         </label>
         <br>
-        <label title="Match target text by lemma &amp; part of speech (e.g. &quot;record&quot; as
-a verb scored separately from &quot;record&quot; as a noun), instead of by lemma alone. Always
-uses lemmatization, regardless of the checkbox below.">
-            <input type="checkbox" name="pos_tagged"> Tag part of speech
-        </label>
+        {% set show_lemmatize = true %}
         {% include "partials/_band_params.html" %}
         <button type="submit">Build reference from this corpus</button>
     </form>
@@ -123,6 +123,7 @@ override it if auto-detection guesses wrong for your file.">
                 </select>
             </label>
         </details>
+        {% set show_lemmatize = true %}
         {% include "partials/_band_params.html" %}
         <button type="submit">Build reference from this word list</button>
     </form>

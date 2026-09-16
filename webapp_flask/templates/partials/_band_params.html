@@ -1,9 +1,14 @@
-{# Shared reference-build parameter fields, included inside a <form>. #}
+{# Shared reference-build parameter fields, included inside a <form>.
+   Pass {% set show_lemmatize = false %} before including for a source
+   that always matches by lemma (the built-in word lists) -- the choice
+   isn't meaningful there, so a hidden field keeps lemmatize=True without
+   showing a checkbox the user could wrongly uncheck. #}
+{% set show_lemmatize = show_lemmatize | default(true) %}
 <br>
 <label title="How many words make up each frequency band, e.g. band 1 = the 1000 most frequent
 words, band 2 = the next 1000, and so on. Smaller values give more (narrower) bands; doesn't
 affect which words end up off-list.">
-    Band size <input type="number" name="band_size" value="1000" min="1" step="100">
+    Band size <input type="number" name="band_size" value="1000" min="1" step="1">
 </label>
 <br>
 <label title="Used for tokenization and lemmatization (models for these languages are pre-installed).">
@@ -15,10 +20,14 @@ affect which words end up off-list.">
     </select>
 </label>
 <br>
-<label title="Requires a spaCy pipeline installed for the language; silently falls back to
+{% if show_lemmatize %}
+    <label title="Requires a spaCy pipeline installed for the language; silently falls back to
 surface forms otherwise. Uncheck to profile against surface word forms instead.">
-    <input type="checkbox" name="lemmatize" class="band-lemmatize-checkbox" checked> Lemmatize
-</label>
+        <input type="checkbox" name="lemmatize" class="band-lemmatize-checkbox" checked> Lemmatize
+    </label>
+{% else %}
+    <input type="hidden" name="lemmatize" value="on">
+{% endif %}
 <p class="caption model-warning" hidden>
     ⚠️ No lemmatizer model installed for this language yet.
     <a href="#model-download">Download it below</a>, or lemmatization will silently fall back to
@@ -67,7 +76,9 @@ after the fine-grained section above, if any).">
         var warning = form.querySelector(".model-warning");
 
         function checkModel() {
-            if (!lemmatizeCheckbox.checked) {
+            // No checkbox means lemmatize is always on for this source
+            // (e.g. a built-in list), so the check runs regardless.
+            if (lemmatizeCheckbox && !lemmatizeCheckbox.checked) {
                 warning.hidden = true;
                 return;
             }
@@ -78,7 +89,7 @@ after the fine-grained section above, if any).">
         }
 
         langSelect.addEventListener("change", checkModel);
-        lemmatizeCheckbox.addEventListener("change", checkModel);
+        if (lemmatizeCheckbox) lemmatizeCheckbox.addEventListener("change", checkModel);
         checkModel();
     })();
 </script>
