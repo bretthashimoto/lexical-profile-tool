@@ -17,7 +17,33 @@
     </p>
 {% endif %}
 
-<fieldset>
+{% set default_source = reference_build.source_kind
+    if reference_build and reference_build.source_kind in ["builtin", "corpus", "wordlist", "saved"]
+    else "builtin" %}
+<div class="source-selector" title="What to profile target texts against: a published word list
+bundled with this app, your own corpus of texts, your own word list file, or a reference you
+built earlier and downloaded as .json.">
+    <label><input type="radio" name="source_kind_selector" value="builtin" {% if default_source == "builtin" %}checked{% endif %}> Built-in word list</label>
+    <label><input type="radio" name="source_kind_selector" value="corpus" {% if default_source == "corpus" %}checked{% endif %}> Corpus of texts</label>
+    <label><input type="radio" name="source_kind_selector" value="wordlist" {% if default_source == "wordlist" %}checked{% endif %}> Word list</label>
+    <label><input type="radio" name="source_kind_selector" value="saved" {% if default_source == "saved" %}checked{% endif %}> Saved reference (.json)</label>
+</div>
+<script>
+    (function () {
+        var selector = document.currentScript.previousElementSibling;
+        var panels = document.querySelectorAll("fieldset[data-source]");
+        function update() {
+            var chosen = selector.querySelector("input[name='source_kind_selector']:checked").value;
+            panels.forEach(function (panel) {
+                panel.hidden = panel.dataset.source !== chosen;
+            });
+        }
+        selector.addEventListener("change", update);
+        update();
+    })();
+</script>
+
+<fieldset data-source="builtin">
     <legend>Built-in word list</legend>
     <p class="caption">Profile against a published reference list bundled with this app — no file to find or format.</p>
     <form method="post" action="{{ url_for('reference.build_builtin') }}">
@@ -57,7 +83,7 @@
     </form>
 </fieldset>
 
-<fieldset>
+<fieldset data-source="corpus">
     <legend>Corpus of texts (.txt/.docx/.pdf)</legend>
     <p class="caption">Upload individual .txt/.docx/.pdf files, or use "Or choose a folder" to pick a whole directory from your computer. The reference builds automatically.</p>
     <form id="corpus-build-form" method="post" action="{{ url_for('reference.build_corpus') }}"
@@ -102,7 +128,7 @@
     {% endif %}
 </fieldset>
 
-<fieldset>
+<fieldset data-source="wordlist">
     <legend>Uploaded word list file</legend>
     <form method="post" action="{{ url_for('reference.build_wordlist') }}" enctype="multipart/form-data">
         <label title="One word per line, ranked most-frequent-first -- or &quot;word,frequency&quot;
@@ -129,7 +155,7 @@ override it if auto-detection guesses wrong for your file.">
     </form>
 </fieldset>
 
-<fieldset>
+<fieldset data-source="saved">
     <legend>Previously-saved reference (.json)</legend>
     <form method="post" action="{{ url_for('reference.build_saved') }}" enctype="multipart/form-data">
         <label title="A reference previously exported with the &quot;Download this reference

@@ -126,6 +126,31 @@ fieldset {
     margin-bottom: 1.5rem;
 }
 
+.source-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.source-selector label {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    background: #fff;
+}
+
+.source-selector input[type="radio"] {
+    margin-right: 0.3rem;
+}
+
+.source-selector label:has(input:checked) {
+    border-color: #184f95;
+    background: #e0eefc;
+    font-weight: 600;
+}
+
 table {
     border-collapse: collapse;
     width: 100%;
