@@ -34,7 +34,6 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=7.0", "ruff>=0.16"]
-webapp = ["streamlit>=1.30", "altair>=5.0", "pandas>=2.0"]
 
 [project.scripts]
 lexical-profiler = "lexical_profiler.cli:main"

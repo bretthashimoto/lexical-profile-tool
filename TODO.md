@@ -7,7 +7,7 @@
 6. Word families? not just lemmas? 
 4. get help testing out features
 6. Add good baseline frequency data to use as a default for English
-9. Have a better default example
+   9. Have a better default example
 10. Add a tutorial to the interface
 11. clean up and get rid of dead code and other unnecessary stuff
 12. 
