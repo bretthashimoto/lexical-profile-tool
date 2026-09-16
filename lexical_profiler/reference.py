@@ -25,7 +25,7 @@ from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
-from .tokenizer import tokenize
+from .tokenizer import LANGUAGE_DISPLAY_NAMES, tokenize
 
 _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
@@ -234,6 +234,20 @@ def _read_source_item(kind: str, value: str, catch_open_errors: bool,
         return f.read()
 
 
+def _corpus_description(document_count: int, counter: Counter, language: str) -> str:
+    """Human-readable summary for a corpus-built reference -- a fresh
+    cumulative total each time (document count, total word occurrences,
+    unique words), not an appended log of each from_corpus/add_texts call,
+    so repeated add_texts() calls don't produce a run-on description."""
+    language_name = LANGUAGE_DISPLAY_NAMES.get(language, language)
+    total_words = sum(counter.values())
+    unique_words = len(counter)
+    return (
+        f"corpus ({document_count} document(s), {total_words} total words, "
+        f"{unique_words} unique words, language={language_name})"
+    )
+
+
 def _tokenize_corpus(
     source: str | Iterable[str] | dict[str, str], *, language: str, lowercase: bool,
     lemmatize: bool, min_length: int, encoding: str, pos_tagged: bool,
@@ -416,6 +430,11 @@ class Reference:
     pos_tagged: bool = False
     language: str = "en"
     source_description: str = ""
+    # Only meaningful for corpus-built references (from_corpus/add_texts);
+    # 0 otherwise. Tracked separately from `counts` since document
+    # boundaries aren't otherwise preserved once texts are tokenized into
+    # a single combined word-count table.
+    document_count: int = 0
 
     # ---------- constructors ----------
 
@@ -540,8 +559,8 @@ class Reference:
             lemmatize=lemmatize,
             pos_tagged=pos_tagged,
             language=language,
-            source_description=f"corpus ({n_docs} document(s), {len(ranked)} unique words, "
-                                f"language={language})",
+            source_description=_corpus_description(n_docs, counter, language),
+            document_count=n_docs,
         )
 
     @classmethod
@@ -714,7 +733,7 @@ class Reference:
             source_description=f"word list '{os.path.basename(path)}' "
                                 f"({len(ordered_words)} words, "
                                 f"{'with' if use_freq else 'without'} frequencies, "
-                                f"language={language})",
+                                f"language={LANGUAGE_DISPLAY_NAMES.get(language, language)})",
         )
 
     def add_texts(self, source: str | Iterable[str] | dict[str, str], encoding: str = "utf-8",
@@ -781,8 +800,10 @@ class Reference:
             lemmatize=self.lemmatize,
             pos_tagged=self.pos_tagged,
             language=self.language,
-            source_description=f"{self.source_description} + {n_docs} more document(s) "
-                                f"added ({len(ranked)} unique words total)",
+            source_description=_corpus_description(
+                self.document_count + n_docs, counter, self.language,
+            ),
+            document_count=self.document_count + n_docs,
         )
 
     @classmethod
@@ -842,6 +863,7 @@ class Reference:
             "pos_tagged": self.pos_tagged,
             "language": self.language,
             "source_description": self.source_description,
+            "document_count": self.document_count,
         }
         try:
             with open(path, "w", encoding="utf-8") as f:
@@ -939,6 +961,7 @@ class Reference:
                 pos_tagged=payload.get("pos_tagged", False),
                 language=payload.get("language", "en"),
                 source_description=payload.get("source_description", ""),
+                document_count=payload.get("document_count", 0),
             )
         except (TypeError, KeyError, AttributeError, ValueError):
             raise ValueError(

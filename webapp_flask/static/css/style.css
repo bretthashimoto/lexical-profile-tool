@@ -410,6 +410,10 @@ details > summary {
     accent-color: #fff;
 }
 
+.wordlist-kind-selector {
+    margin-bottom: 0.6rem;
+}
+
 table {
     border-collapse: collapse;
     width: 100%;

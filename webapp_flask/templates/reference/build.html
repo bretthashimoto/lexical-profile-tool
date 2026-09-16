@@ -20,15 +20,14 @@
 {% endif %}
 
 {% set default_source = reference_build.source_kind
-    if reference_build and reference_build.source_kind in ["builtin", "corpus", "wordlist", "saved"]
-    else "builtin" %}
+    if reference_build and reference_build.source_kind in ["builtin", "corpus", "wordlist"]
+    else ("wordlist" if reference_build and reference_build.source_kind == "saved" else "builtin") %}
+{% set default_wordlist_kind = "saved" if reference_build and reference_build.source_kind == "saved" else "wordlist" %}
 <div class="source-selector" title="What to profile target texts against: a published word list
-bundled with this app, your own corpus of texts, your own word list file, or a reference you
-built earlier and downloaded as .json.">
+bundled with this app, your own corpus of texts, or your own word list/saved reference file.">
     <label><input type="radio" name="source_kind_selector" value="builtin" {% if default_source == "builtin" %}checked{% endif %}> Built-in word list</label>
     <label><input type="radio" name="source_kind_selector" value="corpus" {% if default_source == "corpus" %}checked{% endif %}> Corpus of texts</label>
-    <label><input type="radio" name="source_kind_selector" value="wordlist" {% if default_source == "wordlist" %}checked{% endif %}> Word list</label>
-    <label><input type="radio" name="source_kind_selector" value="saved" {% if default_source == "saved" %}checked{% endif %}> Saved reference (.json)</label>
+    <label><input type="radio" name="source_kind_selector" value="wordlist" {% if default_source == "wordlist" %}checked{% endif %}> Word list / saved reference</label>
 </div>
 <script>
     /* Initial visibility is set server-side (each fieldset[data-source]
@@ -118,13 +117,32 @@ built earlier and downloaded as .json.">
 </fieldset>
 
 <fieldset data-source="wordlist" {% if default_source != "wordlist" %}hidden{% endif %}>
-    <legend>Uploaded word list file</legend>
-    <p class="caption">
-        For a raw frequency word list from elsewhere (published list, spreadsheet export, etc.),
-        as plain text. To reload a reference this app already built and you downloaded earlier,
-        use "Saved reference (.json)" instead.
-    </p>
-    <form method="post" action="{{ url_for('reference.build_wordlist') }}" enctype="multipart/form-data">
+    <legend>Word list / saved reference</legend>
+    <div class="source-selector wordlist-kind-selector">
+        <label><input type="radio" name="wordlist_kind_selector" value="wordlist" {% if default_wordlist_kind == "wordlist" %}checked{% endif %}> Word list (.txt)</label>
+        <label><input type="radio" name="wordlist_kind_selector" value="saved" {% if default_wordlist_kind == "saved" %}checked{% endif %}> Saved reference (.json)</label>
+    </div>
+    <script>
+        /* Same lazy-query pattern as the outer source_kind_selector script
+           above -- the two forms below don't exist yet at parse time. */
+        var wordlistKindRadios = document.querySelectorAll('input[name="wordlist_kind_selector"]');
+        for (var i = 0; i < wordlistKindRadios.length; i++) {
+            wordlistKindRadios[i].addEventListener("change", function (evt) {
+                var chosen = evt.target.value;
+                var forms = document.querySelectorAll("form[data-wordlist-kind]");
+                for (var j = 0; j < forms.length; j++) {
+                    forms[j].hidden = forms[j].getAttribute("data-wordlist-kind") !== chosen;
+                }
+            });
+        }
+    </script>
+
+    <form data-wordlist-kind="wordlist" {% if default_wordlist_kind != "wordlist" %}hidden{% endif %}
+          method="post" action="{{ url_for('reference.build_wordlist') }}" enctype="multipart/form-data">
+        <p class="caption">
+            For a raw frequency word list from elsewhere (published list, spreadsheet export,
+            etc.), as plain text.
+        </p>
         <label title="One word per line, ranked most-frequent-first -- or &quot;word,frequency&quot;
 pairs (frequency used only to break ties/confirm ranking, not required to be exact counts).">
             Upload a word list .txt file <input type="file" name="wordlist_file" accept=".txt">
@@ -147,13 +165,14 @@ override it if auto-detection guesses wrong for your file.">
         {% include "partials/_band_params.html" %}
         <button type="submit">Build reference from this word list</button>
     </form>
-</fieldset>
 
-<fieldset data-source="saved" {% if default_source != "saved" %}hidden{% endif %}>
-    <legend>Previously-saved reference (.json)</legend>
-    <form method="post" action="{{ url_for('reference.build_saved') }}" enctype="multipart/form-data">
-        <label title="A reference previously exported with the &quot;Download this reference
-(.json)&quot; link above, so you don't have to rebuild it from a corpus/word list again.">
+    <form data-wordlist-kind="saved" {% if default_wordlist_kind != "saved" %}hidden{% endif %}
+          method="post" action="{{ url_for('reference.build_saved') }}" enctype="multipart/form-data">
+        <p class="caption">
+            A reference previously exported with the "Download this reference (.json)" link
+            above, so you don't have to rebuild it from a corpus/word list again.
+        </p>
+        <label>
             Upload a saved reference .json file <input type="file" name="reference_file" accept=".json">
         </label>
         <br>
