@@ -286,7 +286,7 @@ def load_example_data(*, band_size=20, language="en", lemmatize=True,
 # few px of empty space in the one-line case for a banner height that's
 # simply always correct, so the spacer/sticky-offset numbers below only
 # ever need to match this one constant instead of chasing a moving target.
-BANNER_HEIGHT_PX = 120
+BANNER_HEIGHT_PX = 172
 _banner_html = f"""
 <link rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap">
@@ -397,7 +397,7 @@ div.st-key-top_menu [role="tablist"] {{
             color:#ffffff;
         ">LEAH</span>
         <span style="color:#e8f0fc; font-size:1.5rem;">
-            <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto
+            <b>LE</b>xical <b>A</b>nalysis — <b>H</b>ashimoto: Multilingual lexical profiler
         </span>
     </div>
 </div>
