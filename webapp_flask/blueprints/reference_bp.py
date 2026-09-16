@@ -142,6 +142,11 @@ def build_corpus():
     if not texts:
         return jsonify({"error": "No usable files were found in the upload "
                                   "(only .txt/.docx/.pdf are supported)."}), 400
+    # Flashed now (not just returned in the JSON below, which the polling
+    # JS doesn't surface) so a skipped file shows up on the next page
+    # render, once the job-backed build redirects there.
+    for w in warnings:
+        flash(w, "warning")
 
     def target_fn(progress_callback):
         reference = Reference.from_corpus(
@@ -166,6 +171,8 @@ def add_texts():
     texts, warnings = uploads.collect_uploaded_texts(file_storages)
     if not texts:
         return jsonify({"error": "No usable files were found in the upload."}), 400
+    for w in warnings:
+        flash(w, "warning")
 
     ref_path = str(session_store.reference_path(sessions_root, session_id))
 

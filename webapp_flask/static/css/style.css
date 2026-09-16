@@ -108,6 +108,20 @@ summary[title] {
     color: #1a6a2e;
 }
 
+/* Matches Streamlit's st.info (calm/blue, for "here's how to get
+   started" guidance) and st.warning (non-fatal, e.g. a skipped file
+   during extraction) tones -- both were previously collapsed into the
+   red "error" category. */
+.flash-info {
+    background: #e0eefc;
+    color: #14508a;
+}
+
+.flash-warning {
+    background: #fdf1d6;
+    color: #8a5a00;
+}
+
 fieldset {
     margin-bottom: 1.5rem;
 }

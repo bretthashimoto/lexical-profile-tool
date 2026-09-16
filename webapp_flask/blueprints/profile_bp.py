@@ -17,13 +17,18 @@ from ..services import profiling_service, render_helpers, session_store, uploads
 
 profile_bp = Blueprint("profile", __name__, url_prefix="/profile")
 
+NO_REFERENCE_MESSAGE = (
+    'Build a reference on the "Build reference" page first (or use the '
+    '"Load bundled example data" button on the Step-by-step guide page) to get started.'
+)
+
 
 @profile_bp.route("", methods=["GET"])
 def targets():
     sessions_root = current_app.config["SESSION_DIR"]
     session_id = session["session_id"]
     if not session_store.has_reference(sessions_root, session_id):
-        flash("Build a reference first.", "error")
+        flash(NO_REFERENCE_MESSAGE, "info")
         return redirect(url_for("reference.build"))
     meta = session_store.read_meta(sessions_root, session_id)
     return render_template("profile/targets.html", target_texts=meta["target_texts"])
@@ -45,7 +50,7 @@ def upload():
 
     session_store.write_meta(sessions_root, session_id, meta)
     for w in warnings:
-        flash(w, "error")
+        flash(w, "warning")
     return redirect(url_for("profile.targets"))
 
 
@@ -71,7 +76,7 @@ def results():
     sessions_root = current_app.config["SESSION_DIR"]
     session_id = session["session_id"]
     if not session_store.has_reference(sessions_root, session_id):
-        flash("Build a reference first.", "error")
+        flash(NO_REFERENCE_MESSAGE, "info")
         return redirect(url_for("reference.build"))
 
     meta = session_store.read_meta(sessions_root, session_id)
