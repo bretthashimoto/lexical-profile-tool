@@ -1,6 +1,12 @@
 {% macro progress_bar(id) %}
 <div id="{{ id }}" class="progress-container" hidden>
-    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+    <div class="progress-bar-row">
+        <span class="book-icon" aria-hidden="true">
+            <span class="book-page-left"></span>
+            <span class="book-page-flip"></span>
+        </span>
+        <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+    </div>
     <div class="progress-label"></div>
 </div>
 {% endmacro %}
