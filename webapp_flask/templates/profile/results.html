@@ -5,6 +5,22 @@
 <h1>3. Results</h1>
 <p class="caption"><a href="{{ url_for('profile.targets') }}">Add more texts to profile</a></p>
 
+<details>
+    <summary>Export results</summary>
+    <div class="export-list">
+        <a class="button-link" href="{{ url_for('export.csv') }}">Band coverage (CSV)</a>
+        <a class="button-link" href="{{ url_for('export.json_export') }}">Full report (JSON)</a>
+        <a class="button-link" href="{{ url_for('export.off_list_csv') }}">Off-list words (CSV)</a>
+        <a class="button-link" href="{{ url_for('export.ignored_csv') }}">Ignored words (CSV)</a>
+        {% if has_proper_nouns %}
+            <a class="button-link" href="{{ url_for('export.proper_nouns_csv') }}">Proper nouns (CSV)</a>
+        {% endif %}
+        {% if has_digits %}
+            <a class="button-link" href="{{ url_for('export.digits_csv') }}">Digits (CSV)</a>
+        {% endif %}
+    </div>
+</details>
+
 <table>
     <tr>
         <th>Text</th><th>Tokens</th><th>Types</th><th>Off-list %</th><th>Ignored %</th>
@@ -124,18 +140,4 @@
         </details>
     {% endif %}
 </div>
-
-<h3>Export</h3>
-<ul class="export-list">
-    <li><a href="{{ url_for('export.csv') }}">Band coverage (CSV)</a></li>
-    <li><a href="{{ url_for('export.json_export') }}">Full report (JSON)</a></li>
-    <li><a href="{{ url_for('export.off_list_csv') }}">Off-list words (CSV)</a></li>
-    <li><a href="{{ url_for('export.ignored_csv') }}">Ignored words (CSV)</a></li>
-    {% if has_proper_nouns %}
-        <li><a href="{{ url_for('export.proper_nouns_csv') }}">Proper nouns (CSV)</a></li>
-    {% endif %}
-    {% if has_digits %}
-        <li><a href="{{ url_for('export.digits_csv') }}">Digits (CSV)</a></li>
-    {% endif %}
-</ul>
 {% endblock %}
