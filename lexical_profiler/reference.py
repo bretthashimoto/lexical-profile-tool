@@ -24,6 +24,7 @@ import os
 from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
+from functools import cached_property
 
 from .tokenizer import LANGUAGE_DISPLAY_NAMES, tokenize
 
@@ -37,6 +38,12 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
         "file": "avl_academic.txt",
         "label": "Academic Vocabulary List (AVL)",
         "pos_tagged": True,
+        # AVL is a deliberately size-capped top-~3,000 list: a missing
+        # lemma+POS pairing (e.g. no "study_v" even though "study_n" made
+        # the cut) is an editorial choice about which POS uses count as
+        # core academic vocabulary, not a gap to paper over with a
+        # same-lemma-different-POS fallback match (see Reference.pos_fallback).
+        "pos_fallback": False,
         "description": (
             "Academic Vocabulary List (AVL) -- Gardner & Davies (2013), "
             "~3,000 core academic word lemma+part-of-speech entries from the "
@@ -417,6 +424,21 @@ class Reference:
             entry, not "record_n". Implies lemmatize=True (POS-aware
             matching against a lemma-keyed reference is meaningless
             against inflected surface forms).
+        pos_fallback: only meaningful when pos_tagged is True. If a word's
+            exact "lemma_CODE" entry isn't in the reference, fall back to
+            matching the bare lemma under whatever other part of speech it
+            does have an entry for (see _pos_fallback below), rather than
+            calling it off-list. Defaults to True, which is right for a
+            reference built from a corpus (a user's own texts, or COCA's
+            unusually large 100k-entry list) -- there, a missing
+            lemma+POS pairing just means that inflection didn't happen to
+            occur in the source data, not that it's unknown vocabulary.
+            It's wrong for a curated, deliberately size-capped list like
+            AVL (the top ~3,000 lemma+POS entries by academic keyness):
+            there, a missing pairing (e.g. "study_v" when "study_n" made
+            the cut) reflects a real editorial choice about which specific
+            POS uses count as "core academic vocabulary," so AVL sets this
+            False after loading (see BUILTIN_WORD_LISTS/from_builtin).
     """
 
     word_to_rank: dict[str, int]
@@ -432,6 +454,7 @@ class Reference:
     lowercase: bool = True
     lemmatize: bool = False
     pos_tagged: bool = False
+    pos_fallback: bool = True
     language: str = "en"
     source_description: str = ""
     # Only meaningful for corpus-built references (from_corpus/add_texts);
@@ -803,6 +826,7 @@ class Reference:
             lowercase=self.lowercase,
             lemmatize=self.lemmatize,
             pos_tagged=self.pos_tagged,
+            pos_fallback=self.pos_fallback,
             language=self.language,
             source_description=_corpus_description(
                 self.document_count + n_docs, counter, self.language,
@@ -846,6 +870,7 @@ class Reference:
             coarse_band_size=coarse_band_size, coarse_grained_from=coarse_grained_from,
             lemmatize=lemmatize, pos_tagged=entry.get("pos_tagged", False),
         )
+        reference.pos_fallback = entry.get("pos_fallback", True)
         reference.source_description = f"built-in word list '{key}' ({entry['description']})"
         return reference
 
@@ -866,6 +891,7 @@ class Reference:
             "lowercase": self.lowercase,
             "lemmatize": self.lemmatize,
             "pos_tagged": self.pos_tagged,
+            "pos_fallback": self.pos_fallback,
             "language": self.language,
             "source_description": self.source_description,
             "document_count": self.document_count,
@@ -964,6 +990,7 @@ class Reference:
                 lowercase=payload.get("lowercase", True),
                 lemmatize=payload.get("lemmatize", False),
                 pos_tagged=payload.get("pos_tagged", False),
+                pos_fallback=payload.get("pos_fallback", True),
                 language=payload.get("language", "en"),
                 source_description=payload.get("source_description", ""),
                 document_count=payload.get("document_count", 0),
@@ -986,11 +1013,45 @@ class Reference:
     def __len__(self) -> int:
         return len(self.word_to_rank)
 
+    @cached_property
+    def _pos_fallback(self) -> dict[str, tuple[int, int]]:
+        """POS-tagged references only: bare lemma -> (rank, band) of its
+        most frequent "lemma_CODE" entry, e.g. "group" -> whichever of
+        "group_n"/"group_v" is ranked higher. Lets band_of/rank_of match a
+        word used with a part of speech the reference doesn't itself carry
+        an entry for, by falling back to the same lemma under whatever
+        part of speech the reference does have -- better than calling it
+        off-list just because the exact lemma+POS pairing isn't listed.
+        Built lazily (and cached) on first lookup that needs it, since most
+        references are never queried this way.
+        """
+        fallback: dict[str, tuple[int, int]] = {}
+        if not self.pos_tagged or not self.pos_fallback:
+            return fallback
+        for key, rank in self.word_to_rank.items():
+            lemma = key.rsplit("_", 1)[0] if "_" in key else key
+            best = fallback.get(lemma)
+            if best is None or rank < best[0]:
+                fallback[lemma] = (rank, self.word_to_band[key])
+        return fallback
+
+    def _pos_fallback_lemma(self, word: str) -> str | None:
+        lemma = word.rsplit("_", 1)[0] if "_" in word else word
+        return lemma if lemma in self._pos_fallback else None
+
     def band_of(self, word: str) -> int | None:
-        return self.word_to_band.get(word)
+        band = self.word_to_band.get(word)
+        if band is not None or not self.pos_tagged:
+            return band
+        lemma = self._pos_fallback_lemma(word)
+        return self._pos_fallback[lemma][1] if lemma else None
 
     def rank_of(self, word: str) -> int | None:
-        return self.word_to_rank.get(word)
+        rank = self.word_to_rank.get(word)
+        if rank is not None or not self.pos_tagged:
+            return rank
+        lemma = self._pos_fallback_lemma(word)
+        return self._pos_fallback[lemma][0] if lemma else None
 
     def band_label(self, band: int) -> str:
         """Human-readable label for a band, e.g. "1-999", "1000-1999"."""

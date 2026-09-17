@@ -338,6 +338,13 @@ def classify_tokens(text: str, language: str = "en", lowercase: bool = True,
         word = tok.lemma_ if (do_lemmatize and tok.lemma_) else surface
         if lowercase:
             word = word.lower()
+        # spaCy treats "a"/"an" as distinct lemmas -- the alternation is
+        # purely phonological (triggered by a following vowel sound), not
+        # inflectional like "cats"/"cat" -- so lemmatizing alone never
+        # collapses "an" into "a". Do it here so reference word lists only
+        # need to list "a" and English "an" isn't wrongly flagged off-list.
+        if do_lemmatize and language.startswith("en") and word.lower() == "an":
+            word = "a" if word.islower() else "A"
         if len(word) < min_length:
             continue
         if do_pos_tag:
