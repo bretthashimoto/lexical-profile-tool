@@ -100,21 +100,23 @@
     </table>
 </details>
 
-<h3>Highlighted text</h3>
-<p class="legend">
-    {% for entry in legend %}
-        <span class="pill" style="background:{{ entry.bg }};color:{{ entry.fg }}">{{ entry.label }}</span>
-    {% endfor %}
-</p>
-<div class="highlighted-text">
-    {% for tok in highlighted %}
-        {%- if tok.status == "skipped" -%}
-            {{ tok.text }}{{ tok.whitespace }}
-        {%- else -%}
-            <span class="pill" style="background:{{ tok.bg }};color:{{ tok.fg }}" title="{{ tok.title }}">{{ tok.text }}</span>{{ tok.whitespace }}
-        {%- endif -%}
-    {% endfor %}
-</div>
+<details>
+    <summary>Highlighted text</summary>
+    <p class="legend">
+        {% for entry in legend %}
+            <span class="pill" style="background:{{ entry.bg }};color:{{ entry.fg }}">{{ entry.label }}</span>
+        {% endfor %}
+    </p>
+    <div class="highlighted-text">
+        {% for tok in highlighted %}
+            {%- if tok.status == "skipped" -%}
+                {{ tok.text }}{{ tok.whitespace }}
+            {%- else -%}
+                <span class="pill" style="background:{{ tok.bg }};color:{{ tok.fg }}" title="{{ tok.title }}">{{ tok.text }}</span>{{ tok.whitespace }}
+            {%- endif -%}
+        {% endfor %}
+    </div>
+</details>
 
 <div class="word-tables">
     <details>
