@@ -49,7 +49,7 @@ You should see a table breaking the essay down into frequency bands, an
 worked. Move on to trying it for real.
 
 For the full walkthrough of what everything means, see the
-[README tutorial](README.md#tutorial-profiling-a-couple-of-nature-and-economy-essays).
+[README tutorial](README.md#tutorial-profiling-two-aesops-fables-passages).
 
 ## 3. Try it on your own text
 

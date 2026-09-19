@@ -95,7 +95,9 @@ rule the night. ...
 
 A **target file** (used to *profile*) looks exactly the same: any
 plain-text document you want scored against the reference, e.g.
-`examples/targets/student_essay_1.txt`.
+`examples/targets/student_essay_1.txt` -- two short public-domain fables
+from Aesop's Fables: A New Translation (V. S. Vernon Jones, 1912), via
+[the Internet Archive](https://archive.org/stream/aesopsfablesanew11339gut/11339.txt).
 
 Point at a whole **folder** instead of a single file and every `.txt`
 file inside it (subfolders included) is picked up automatically. That
@@ -130,19 +132,17 @@ owl,980
 
 An **ignore list** (`examples/ignore_list.txt`) is the same one-word-per-
 line format, used to keep specific words (usually proper nouns, brand
-names, or made-up terms) out of the band/off-list scoring entirely:
+names, or made-up terms) out of the band/off-list scoring entirely --
+handy when a target text has names like `Zocharias` or brand terms like
+`Fintastic` that aren't really "vocabulary difficulty." The bundled
+example targets don't happen to need any, so the file ships empty
+(just the explanatory comment) by default.
 
-```text
-Zocharias
-Priya
-Fintastic
-```
+## Tutorial: profiling two Aesop's Fables passages
 
-## Tutorial: profiling a couple of nature-and-economy essays
-
-Let's actually use the files above. Imagine two students turned in short
-essays (one about a hike, one about the economy) and we want to know
-how "wordy" each one is relative to a small reference built from three
+Let's actually use the files above. We want to know how much of two
+short passages of Aesop's Fables (two fables apiece) falls outside
+everyday vocabulary, relative to a small reference built from three
 sample articles.
 
 ### Step 1: Build a reference
@@ -155,7 +155,7 @@ from lexical_profiler import Reference, LexicalProfiler
 
 reference = Reference.from_corpus("examples/corpus", band_size=20)
 print(reference.source_description)
-# corpus (3 document(s), 129 unique words, language=en)
+# corpus (3 document(s), 168 total words, 129 unique words, language=English)
 ```
 
 `band_size=20` means "put the 20 most frequent words in band 1, the next
@@ -176,11 +176,13 @@ ignore_words = [
 profiler = LexicalProfiler(reference, ignore_words=ignore_words)
 ```
 
-`ignore_words` keeps `Zocharias`, `Priya`, and `Fintastic` from showing up
-as "off-list" (i.e. unknown/rare) vocabulary. They're names, not
-vocabulary difficulty, and it'd be misleading to score them that way.
+`ignore_words` keeps any names/brand terms you list from showing up as
+"off-list" (i.e. unknown/rare) vocabulary -- they're not vocabulary
+difficulty, and it'd be misleading to score them that way. The bundled
+example targets don't have any such words, so `ignore_words` is just an
+empty list here; it still works exactly the same way if you add some.
 
-### Step 3: Profile a single essay
+### Step 3: Profile a single text
 
 ```python
 result = profiler.profile_document("examples/targets/student_essay_1.txt")
@@ -188,39 +190,36 @@ print(result.summary())
 ```
 
 ```text
-Tokens: 61   Types: 45
+Tokens: 306   Types: 155
 
 Band          Tokens    % Tokens     Cum %     Types     % Types
-1-20              18      29.51%    29.51%         7      15.56%
-21-40              0       0.00%    29.51%         0       0.00%
-41-60              3       4.92%    34.43%         3       6.67%
-61-80              0       0.00%    34.43%         0       0.00%
-81-100             6       9.84%    44.26%         4       8.89%
-101-120            5       8.20%    52.46%         4       8.89%
-121-129            2       3.28%    55.74%         1       2.22%
-Off-list          26      42.62%                  25
-Ignored            1       1.64%                   1
+1-20              61      19.93%    19.93%         7       4.52%
+21-40              6       1.96%    21.90%         4       2.58%
+41-60              7       2.29%    24.18%         3       1.94%
+61-80              2       0.65%    24.84%         2       1.29%
+81-100             8       2.61%    27.45%         2       1.29%
+101-120            1       0.33%    27.78%         1       0.65%
+121-129            7       2.29%    30.07%         1       0.65%
+Off-list         214      69.93%                 135
 
-Sample off-list words: unpredictable, yesterday, my, friend, i, went,
-hiking, we, saw, darting, between, trees, an, hooting, softly, as, set,
-rolled, during, light  (+5 more)
-
-Sample ignored words: zocharias
+Sample off-list words: wolf, he, at, so, his, hare, tortoise, for, i,
+race, 's, but, as, had, boy, sheep, fun, slow, 'll, you  (+115 more)
 ```
 
-Reading this: 61 words total, 45 of them unique. About 30% of the essay's
-words are in band 1 (the most common words in our tiny reference), and a
-big chunk (42.6%) is "off-list": words our 3-article reference has just
-never seen, like `yesterday` or `unpredictable`. `Zocharias` shows up
-under **Ignored**, not **Off-list**, exactly as intended. **Cum %** is the
-running total of `% Tokens` through that band: "how much of the essay is
-covered by the N most frequent bands," the number to watch against the
-standard 95%/98% reading-comprehension coverage thresholds once you're
-using a real-sized reference instead of this tiny tutorial one.
+Reading this: 306 tokens total, 155 of them unique types. About 20% of the
+text's tokens are in band 1 (the most common words in our tiny
+reference), and a big chunk (69.9%) is "off-list": words our 3-article
+reference has just never seen, like `wolf` or `tortoise` -- unsurprising,
+since a 129-word reference vocabulary barely covers ordinary English, let
+alone a Victorian-era fable translation. **Cum %** is the running total
+of `% Tokens` through that band: "how much of the text is covered by
+the N most frequent bands," the number to watch against the standard
+95%/98% reading-comprehension coverage thresholds once you're using a
+real-sized reference instead of this tiny tutorial one.
 
-### Step 4: Profile a whole folder of essays at once
+### Step 4: Profile a whole folder of texts at once
 
-Got a stack of essays to grade instead of just one? Point
+Got a stack of texts to score instead of just one? Point
 `profile_corpus` at the folder and every `.txt` file inside gets scored
 independently:
 
@@ -232,8 +231,8 @@ for name, result in results.items():
 ```
 
 ```text
-student_essay_1.txt -> 61 tokens, 42.6% off-list
-student_essay_2.txt -> 49 tokens, 67.3% off-list
+student_essay_1.txt -> 306 tokens, 69.9% off-list
+student_essay_2.txt -> 232 tokens, 69.4% off-list
 ```
 
 (`profile_corpus` searches subfolders too, and keys its results by path
@@ -567,7 +566,7 @@ webapp_flask/
   requirements.txt                                   # deploy-time deps
 examples/
   corpus/                       # sample reference corpus used in the tutorial
-  targets/                      # sample target essays used in the tutorial
+  targets/                      # sample target texts used in the tutorial
   wordlists/                    # sample plain + frequency word lists
   ignore_list.txt               # sample ignore list
 example.py                        # end-to-end runnable demo

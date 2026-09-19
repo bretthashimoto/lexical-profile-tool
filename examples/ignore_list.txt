@@ -2,6 +2,7 @@
 # names, or made-up/brand terms that would otherwise show up as "off-list"
 # even though they're not really vocabulary difficulty.
 # One word per line. Lines starting with "#" and blank lines are ignored.
-Zocharias
-Priya
-Fintastic
+#
+# The bundled example target texts (examples/targets/) don't happen to
+# contain any names/brand terms that need excluding, so this list is
+# empty by default -- add your own below if your target texts do.
