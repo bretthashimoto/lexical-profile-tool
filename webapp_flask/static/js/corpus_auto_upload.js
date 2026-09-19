@@ -16,6 +16,7 @@ function initCorpusAutoUpload(form, progressId, { buildUrl, addUrl }) {
     const queue = [];
     let busy = false;
     let ranAtLeastOnce = false;
+    let lastRedirectUrl = null;
 
     function collect(input) {
         return input.files ? Array.from(input.files) : [];
@@ -46,8 +47,11 @@ function initCorpusAutoUpload(form, progressId, { buildUrl, addUrl }) {
             // Refresh once the queue is empty so the persistent
             // "reference built" status and word/band counts catch up --
             // but only if something actually ran (avoid a pointless
-            // reload if this was invoked with nothing queued).
-            if (ranAtLeastOnce) window.location.reload();
+            // reload if this was invoked with nothing queued). navigateTo
+            // (poll.js) forces a real reload rather than just a scroll,
+            // since redirect_url only differs from the current URL by
+            // its #step-2 anchor.
+            if (ranAtLeastOnce) navigateTo(lastRedirectUrl);
             return;
         }
         busy = true;
@@ -74,8 +78,9 @@ function initCorpusAutoUpload(form, progressId, { buildUrl, addUrl }) {
                         label.textContent = message;
                         bar.style.width = total ? `${(current / total) * 100}%` : "50%";
                     },
-                    onDone: () => {
+                    onDone: (redirectUrl) => {
                         referenceExists = true;
+                        lastRedirectUrl = redirectUrl;
                         runNext();
                     },
                     onError: (error) => {

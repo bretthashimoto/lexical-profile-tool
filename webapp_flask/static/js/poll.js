@@ -1,6 +1,28 @@
 /* Generic job-progress polling, driven by the /jobs/<id>/progress endpoint
    (see webapp_flask/blueprints/jobs_bp.py). */
 
+/* Every job's redirect_url in this app points back to the same page
+   (just optionally with a different #anchor, e.g. #step-2/#step-3), so a
+   plain `location.href = url` often wouldn't do anything: navigating to
+   a URL that differs from the current one only by its fragment is a
+   same-document scroll, not a reload, per how browsers handle fragment
+   navigation -- so the freshly rendered content (new reference summary,
+   results, etc.) would never actually load. Setting the hash first and
+   then forcing reload() gets both the anchor landing *and* a real
+   refresh. Falls back to a plain navigation if the target is actually a
+   different page. */
+function navigateTo(url) {
+    const hashIndex = url.indexOf("#");
+    const path = hashIndex === -1 ? url : url.slice(0, hashIndex);
+    const onSamePage = path === window.location.pathname + window.location.search;
+    if (onSamePage && hashIndex !== -1) {
+        window.location.hash = url.slice(hashIndex + 1);
+        window.location.reload();
+    } else {
+        window.location.href = url;
+    }
+}
+
 function pollJob(jobId, { onProgress, onDone, onError, intervalMs = 500 } = {}) {
     const tick = () => {
         fetch(`/jobs/${jobId}/progress`)
@@ -65,9 +87,9 @@ function submitJobForm(form, progressId, { showResult = false } = {}) {
                             label.textContent = result;
                             bar.style.width = "100%";
                             container.classList.add("progress-success");
-                            setTimeout(() => { window.location.href = redirectUrl; }, 900);
+                            setTimeout(() => navigateTo(redirectUrl), 900);
                         } else {
-                            window.location.href = redirectUrl;
+                            navigateTo(redirectUrl);
                         }
                     },
                     onError: (error) => {

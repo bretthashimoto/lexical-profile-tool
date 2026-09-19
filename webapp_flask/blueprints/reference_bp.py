@@ -18,7 +18,7 @@ from lexical_profiler.tokenizer import LANGUAGE_DISPLAY_NAMES
 
 from ..config import WEBAPP_LANGUAGES
 from ..extensions import job_manager
-from ..services import reference_service, session_store, uploads
+from ..services import profiling_service, reference_service, render_helpers, session_store, uploads
 from ..services.profiling_service import read_word_list
 
 reference_bp = Blueprint("reference", __name__, url_prefix="/reference")
@@ -66,6 +66,58 @@ def build():
         except ValueError:
             has_reference = False
 
+    # Profiling lives on this same page (below the reference and target-text
+    # sections) rather than a separate page, so results.html's old context
+    # gets computed here too -- has_results gates whether that section
+    # renders at all, since the template can't safely loop over an
+    # undefined `results` otherwise.
+    target_texts = meta["target_texts"]
+    profile_context = {"has_results": False}
+    if has_reference and target_texts:
+        try:
+            profiler = profiling_service.get_profiler(sessions_root, session_id)
+            results_by_name = profiler.profile_texts(target_texts)
+            selected = request.args.get("text")
+            if selected not in results_by_name:
+                selected = next(iter(results_by_name))
+            result = results_by_name[selected]
+            text = target_texts[selected]
+            pos_tagged = profiler.reference.pos_tagged
+            profile_context = {
+                "has_results": True,
+                "results": results_by_name,
+                "selected": selected,
+                "result": result,
+                "band_95": render_helpers.band_for_coverage(result, 95),
+                "band_98": render_helpers.band_for_coverage(result, 98),
+                "max_coverage": render_helpers.max_coverage_pct(result),
+                "legend": render_helpers.legend_entries(result, profiler),
+                "highlighted": render_helpers.highlighted_tokens(profiler, text, result),
+                "off_list_words": render_helpers.word_table_rows(
+                    result.off_list_words, result.word_counts, pos_tagged,
+                ),
+                "ignored_words": render_helpers.word_table_rows(
+                    result.ignored_words, result.word_counts, pos_tagged,
+                ),
+                "proper_noun_words": render_helpers.word_table_rows(
+                    result.proper_noun_words, result.word_counts, pos_tagged,
+                ),
+                "digit_words": render_helpers.word_table_rows(
+                    result.digit_words, result.word_counts, pos_tagged,
+                ),
+                "pos_tagged": pos_tagged,
+                "has_proper_nouns": any(r.proper_noun_words for r in results_by_name.values()),
+                "has_digits": any(r.digit_words for r in results_by_name.values()),
+            }
+        except Exception as e:
+            # Broader than a typical ValueError-only catch: this block is
+            # gating an optional section of a page that also hosts the
+            # reference-building/ignore-config controls, so an unexpected
+            # profiling failure (not just a validation ValueError) must
+            # not 500 the whole page and strand the user with no way to
+            # fix the underlying issue or start over.
+            flash(f"Couldn't profile the staged text(s): {e}", "error")
+
     return render_template(
         "reference/build.html",
         languages=sorted(WEBAPP_LANGUAGES, key=lambda code: LANGUAGE_DISPLAY_NAMES[code]),
@@ -76,6 +128,8 @@ def build():
         reference_summary=reference_summary,
         can_add_to_corpus=can_add_to_corpus,
         ignore_config=meta["ignore_config"],
+        target_texts=target_texts,
+        **profile_context,
     )
 
 
@@ -94,7 +148,7 @@ def build_builtin():
 
     _save_reference(sessions_root, session_id, reference, source_kind="builtin",
                      builtin_name=name, **band_params)
-    return redirect(url_for("reference.build"))
+    return redirect(url_for("reference.build", _anchor="step-2"))
 
 
 @reference_bp.route("/build/wordlist", methods=["POST"])
@@ -122,7 +176,7 @@ def build_wordlist():
         return redirect(url_for("reference.build"))
 
     _save_reference(sessions_root, session_id, reference, source_kind="wordlist", **band_params)
-    return redirect(url_for("reference.build"))
+    return redirect(url_for("reference.build", _anchor="step-2"))
 
 
 @reference_bp.route("/build/saved", methods=["POST"])
@@ -144,7 +198,7 @@ def build_saved():
         return redirect(url_for("reference.build"))
 
     _save_reference(sessions_root, session_id, reference, source_kind="saved")
-    return redirect(url_for("reference.build"))
+    return redirect(url_for("reference.build", _anchor="step-2"))
 
 
 @reference_bp.route("/build/corpus", methods=["POST"])
@@ -173,7 +227,9 @@ def build_corpus():
                          pos_tagged=pos_tagged, **band_params)
         return reference.source_description
 
-    job_id = job_manager.start(session_id, target_fn, redirect_url=url_for("reference.build"))
+    job_id = job_manager.start(
+        session_id, target_fn, redirect_url=url_for("reference.build", _anchor="step-2"),
+    )
     return jsonify({"job_id": job_id, "warnings": warnings})
 
 
@@ -200,7 +256,9 @@ def add_texts():
         session_store.update_meta(sessions_root, session_id, target_texts={})
         return f"Added {len(texts)} file(s) to the reference."
 
-    job_id = job_manager.start(session_id, target_fn, redirect_url=url_for("reference.build"))
+    job_id = job_manager.start(
+        session_id, target_fn, redirect_url=url_for("reference.build", _anchor="step-2"),
+    )
     return jsonify({"job_id": job_id, "warnings": warnings})
 
 

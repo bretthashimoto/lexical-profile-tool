@@ -28,7 +28,7 @@ def _export(kind: str):
         results = profiling_service.get_results(sessions_root, session_id)
     except ValueError as e:
         flash(str(e), "error")
-        return redirect(url_for("profile.targets"))
+        return redirect(url_for("reference.build"))
 
     export_fn, suffix, filename, mimetype = _EXPORTS[kind]
     data = report_service.export_to_bytes(export_fn, results, suffix)

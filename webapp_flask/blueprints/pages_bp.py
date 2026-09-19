@@ -74,7 +74,7 @@ def load_example():
         "target_texts": target_texts,
     })
     flash("Loaded the bundled example data.", "success")
-    return redirect(url_for("profile.results"))
+    return redirect(url_for("reference.build"))
 
 
 @pages_bp.route("/about")

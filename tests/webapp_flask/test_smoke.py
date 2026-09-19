@@ -3,9 +3,13 @@ full flow (build a reference -> profile -> results -> export), using the
 `app`/`client` fixtures from conftest.py (TESTING=True runs background
 jobs inline, so no polling/sleeping is needed here).
 
-Not exhaustive -- visual/branding parity has no automated coverage here,
-matching how webapp/app.py (the Streamlit app) has never had automated
-UI tests either. See the plan file for the fuller verification approach.
+Building a reference, profiling target texts, and viewing results all
+render on the single /reference/build page now (see reference_bp.build) --
+/profile and /profile/results still exist as routes but just redirect
+there, kept for old links/bookmarks.
+
+Not exhaustive -- visual/branding parity has no automated coverage here.
+See the plan file for the fuller verification approach.
 """
 
 import pytest
@@ -50,7 +54,7 @@ def test_full_flow_builtin_reference_to_results(client):
     assert r.status_code == 200
     assert "job_id" in r.get_json()
 
-    r = client.get("/profile/results")
+    r = client.get("/reference/build")
     assert r.status_code == 200
     body = r.data.decode()
     assert "sample" in body
@@ -64,7 +68,7 @@ def test_ignore_config_is_applied_at_profile_time(client):
         "pasted_name": "sample", "pasted_text": "the cat sat on the mat",
     })
 
-    r = client.get("/profile/results")
+    r = client.get("/reference/build")
     body = r.data.decode()
     assert "Ignored words" in body
 
@@ -115,16 +119,17 @@ def test_reset_clears_session_state(client):
     r = client.post("/reset")
     assert r.status_code == 302
 
-    r = client.get("/profile")
-    assert r.status_code == 302  # no reference anymore -> redirected off the profile page
+    r = client.get("/reference/build")
+    assert b"known words" not in r.data
 
 
 def test_load_bundled_example_data(client):
     r = client.post("/guide/load-example")
     assert r.status_code == 302
 
-    r = client.get("/profile/results")
+    r = client.get("/reference/build")
     assert r.status_code == 200
+    assert b"known words" in r.data
 
 
 def test_job_progress_endpoint_reports_done(client):
