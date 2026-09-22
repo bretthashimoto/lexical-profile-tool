@@ -10,9 +10,9 @@
 5. 
 6. Word families? not just lemmas? 
 4. get help testing out features
-10. Add a tutorial to the inorm other things to improve about the appterface
+10. Add a tutorial to the interface
 11. clean up and get rid of dead code and other unnecessary stuff
-12. 
+12. Brainstorm other things to improve about the app
 17. Have Claude help brainstorm new features
 18. 
 19. Find default frequency reference data for Spanish, French, and German,
