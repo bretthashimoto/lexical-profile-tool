@@ -38,18 +38,17 @@ def guide():
 
 @pages_bp.route("/guide/load-example", methods=["POST"])
 def load_example():
-    """Build a reference from the bundled examples/ corpus, ignore list,
-    and target essays, and profile them -- a one-click way to try the
-    tool. Ported from webapp/app.py's load_example_data(), called there
-    with the Build tab's live widget values -- band_size=1000 is that
-    widget's default (its own default parameter value of 20 is never
-    actually used by the real UI), so that's what's used here too."""
+    """Build a reference from the COCA built-in word list and profile the
+    bundled example target texts against it -- a one-click way to try the
+    tool against a real published reference instead of hunting down a
+    corpus or word list first. lemmatize is always True for a built-in
+    list (see partials/_band_params.html's show_lemmatize=false), and
+    exclude_proper_nouns/exclude_digits use this app's usual defaults
+    (see session_store.DEFAULT_META)."""
     sessions_root = current_app.config["SESSION_DIR"]
     session_id = session["session_id"]
 
-    reference = Reference.from_corpus(
-        str(REPO_ROOT / "examples" / "corpus"), band_size=1000, language="en", lemmatize=True,
-    )
+    reference = Reference.from_builtin("coca", band_size=1000, language="en", lemmatize=True)
     ignore_words = profiling_service.read_word_list(
         (REPO_ROOT / "examples" / "ignore_list.txt").read_text(encoding="utf-8")
     )
@@ -61,19 +60,14 @@ def load_example():
     session_store.ensure_session_dir(sessions_root, session_id)
     reference.save(str(session_store.reference_path(sessions_root, session_id)))
     session_store.write_meta(sessions_root, session_id, {
-        "reference_build": {
-            "source_kind": "example", "band_size": 1000, "language": "en", "lemmatize": True,
-        },
-        # Streamlit's load_example_data() constructs LexicalProfiler directly
-        # without passing exclude_proper_nouns/exclude_digits, so those take
-        # the library's own defaults (False/False) here too -- not this
-        # app's usual True/True (the ignore-config UI's own defaults).
+        "reference_build": {"source_kind": "builtin", "builtin_name": "coca",
+                             "band_size": 1000, "language": "en", "lemmatize": True},
         "ignore_config": {
-            "exclude_proper_nouns": False, "exclude_digits": False, "ignore_words": ignore_words,
+            "exclude_proper_nouns": True, "exclude_digits": True, "ignore_words": ignore_words,
         },
         "target_texts": target_texts,
     })
-    flash("Loaded the bundled example data.", "success")
+    flash("Loaded the sample profile: two of Aesop's Fables against the COCA word list.", "success")
     return redirect(url_for("reference.build"))
 
 

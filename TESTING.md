@@ -41,10 +41,10 @@ Confirm everything's working using the sample files already in the repo:
 ```bash
 python -m lexical_profiler \
     --reference-corpus examples/corpus \
-    --target examples/targets/student_essay_1.txt
+    --target examples/targets/aesops_fables_1.txt
 ```
 
-You should see a table breaking the essay down into frequency bands, an
+You should see a table breaking the text down into frequency bands, an
 "Off-list" row, and a sample of unfamiliar words. If you see that, setup
 worked. Move on to trying it for real.
 

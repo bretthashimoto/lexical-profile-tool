@@ -71,10 +71,13 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     "nawl": {
         "file": "nawl.txt",
         "label": "New Academic Word List (NAWL)",
+        "pos_tagged": True,
         "description": (
             "New Academic Word List (NAWL) -- Browne, Culligan & Phillips (2013), "
-            "963 academic word families that complement the NGSL; alphabetical, "
-            "not frequency-ranked"
+            "959 academic word families that complement the NGSL; matches by "
+            "lemma and part of speech, so e.g. 'study' as a noun is scored "
+            "separately from 'study' as a verb; alphabetical, not "
+            "frequency-ranked"
         ),
         "citation": (
             "Browne, C., Culligan, B., & Phillips, J. (2013). The New Academic Word "

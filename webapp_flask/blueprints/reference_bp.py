@@ -62,7 +62,7 @@ def build():
             # still reads as "COCA lemmas", which is misleading. Picking
             # files in the corpus tab should build a fresh corpus reference
             # unless there's already a corpus-based one to extend.
-            can_add_to_corpus = source_kind in ("corpus", "example") and bool(ref.counts)
+            can_add_to_corpus = source_kind == "corpus" and bool(ref.counts)
         except ValueError:
             has_reference = False
 

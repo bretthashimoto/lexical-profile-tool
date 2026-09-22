@@ -76,8 +76,8 @@ examples/
     weather.txt
     economy.txt
   targets/                       # texts you want to *profile*
-    student_essay_1.txt
-    student_essay_2.txt
+    aesops_fables_1.txt
+    aesops_fables_2.txt
   wordlists/
     simple_wordlist.txt          # one word per line, no frequencies
     frequency_wordlist.txt       # "word,frequency" pairs
@@ -95,7 +95,7 @@ rule the night. ...
 
 A **target file** (used to *profile*) looks exactly the same: any
 plain-text document you want scored against the reference, e.g.
-`examples/targets/student_essay_1.txt` -- two short public-domain fables
+`examples/targets/aesops_fables_1.txt` -- two short public-domain fables
 from Aesop's Fables: A New Translation (V. S. Vernon Jones, 1912), via
 [the Internet Archive](https://archive.org/stream/aesopsfablesanew11339gut/11339.txt).
 
@@ -185,7 +185,7 @@ empty list here; it still works exactly the same way if you add some.
 ### Step 3: Profile a single text
 
 ```python
-result = profiler.profile_document("examples/targets/student_essay_1.txt")
+result = profiler.profile_document("examples/targets/aesops_fables_1.txt")
 print(result.summary())
 ```
 
@@ -231,8 +231,8 @@ for name, result in results.items():
 ```
 
 ```text
-student_essay_1.txt -> 306 tokens, 69.9% off-list
-student_essay_2.txt -> 232 tokens, 69.4% off-list
+aesops_fables_1.txt -> 306 tokens, 69.9% off-list
+aesops_fables_2.txt -> 232 tokens, 69.4% off-list
 ```
 
 (`profile_corpus` searches subfolders too, and keys its results by path
@@ -286,13 +286,13 @@ Everything above has a command-line equivalent, handy for scripting or
 for people who'd rather not write Python:
 
 ```bash
-# Build a reference from the sample corpus, profile one essay
+# Build a reference from the sample corpus, profile one text
 python -m lexical_profiler \
     --reference-corpus examples/corpus --band-size 20 \
-    --target examples/targets/student_essay_1.txt \
+    --target examples/targets/aesops_fables_1.txt \
     --ignore-list examples/ignore_list.txt
 
-# Profile every essay in the folder, ignore the same names, export reports
+# Profile every text in the folder, ignore the same names, export reports
 python -m lexical_profiler \
     --reference-corpus examples/corpus --band-size 20 \
     --target-dir examples/targets \
@@ -304,12 +304,12 @@ python -m lexical_profiler \
 python -m lexical_profiler \
     --reference-wordlist examples/wordlists/frequency_wordlist.txt \
     --band-size 5 \
-    --target examples/targets/student_essay_2.txt
+    --target examples/targets/aesops_fables_2.txt
 
 # Or profile against a bundled word list (avl, ngsl, nawl, or coca)
 python -m lexical_profiler \
     --reference-builtin avl --band-size 500 \
-    --target examples/targets/student_essay_2.txt
+    --target examples/targets/aesops_fables_2.txt
 ```
 
 Run `python -m lexical_profiler --help` to see every flag at once.
@@ -373,7 +373,7 @@ it falls back to surface forms, same as the library does everywhere else.
 
 | Parameter | Default | What it does |
 |---|---|---|
-| `name` | *required* | Key of a word list bundled with this package (case-insensitive): `"avl"` (Academic Vocabulary List, lemma+POS), `"ngsl"` (New General Service List), `"nawl"` (New Academic Word List), or `"coca"` (COCA lemma+POS list). |
+| `name` | *required* | Key of a word list bundled with this package (case-insensitive): `"avl"` (Academic Vocabulary List, lemma+POS), `"ngsl"` (New General Service List), `"nawl"` (New Academic Word List, lemma+POS), or `"coca"` (COCA lemma+POS list). |
 | `band_size` | `1000` | Same as above. |
 | `lowercase` | `True` | Same as above. |
 | `language` | `"en"` | Same as above. |

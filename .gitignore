@@ -15,6 +15,7 @@ lexical_profile_demo.json
 AVL data.xlsx
 COCA data.csv
 NAWL data.csv
+NAWL_1.2 data.csv
 NGSL data.csv
 
 # per-session state for the Flask webapp (uploaded files, built references)
