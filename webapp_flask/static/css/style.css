@@ -18,8 +18,6 @@
     --color-success-bg: #e6f4ea;
     --color-warning: #8a5a00;
     --color-warning-bg: #fdf1d6;
-    --color-info: #14508a;
-    --color-info-bg: #e0eefc;
     --radius-sm: 6px;
     --radius-md: 10px;
     --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
@@ -349,16 +347,6 @@ button:disabled {
     background: var(--color-success-bg);
     color: var(--color-success);
     border-left-color: var(--color-success);
-}
-
-/* Matches Streamlit's st.info (calm/blue, for "here's how to get
-   started" guidance) and st.warning (non-fatal, e.g. a skipped file
-   during extraction) tones -- both were previously collapsed into the
-   red "error" category. */
-.flash-info {
-    background: var(--color-info-bg);
-    color: var(--color-info);
-    border-left-color: var(--color-info);
 }
 
 .flash-warning {

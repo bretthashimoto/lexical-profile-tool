@@ -1,21 +1,11 @@
 """Thin wrapper around building/loading a lexical_profiler.Reference from
 Flask form data.
-
-Milestone 1 only wires up the builtin-word-list path (synchronous, fast
-enough to run inline in a request); corpus/word-list/saved-reference
-building are added in later milestones.
 """
 
 from __future__ import annotations
 
 from lexical_profiler import Reference
 from lexical_profiler.reference import BUILTIN_WORD_LISTS
-
-BAND_PARAM_FIELDS = (
-    "band_size", "language", "lemmatize",
-    "fine_band_size", "fine_grained_until",
-    "coarse_band_size", "coarse_grained_from",
-)
 
 
 def parse_band_params(form) -> dict:
