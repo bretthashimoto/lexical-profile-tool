@@ -13,7 +13,7 @@ from flask import (
     url_for,
 )
 
-from lexical_profiler import Reference, download_model, lemmatizer_available
+from lexical_profiler import Reference, auto_n_process, download_model, lemmatizer_available
 from lexical_profiler.tokenizer import LANGUAGE_DISPLAY_NAMES
 
 from ..config import WEBAPP_LANGUAGES
@@ -219,9 +219,12 @@ def build_corpus():
     for w in warnings:
         flash(w, "warning")
 
+    n_process = auto_n_process(len(texts))
+
     def target_fn(progress_callback):
         reference = Reference.from_corpus(
-            texts, progress_callback=progress_callback, pos_tagged=pos_tagged, **band_params,
+            texts, progress_callback=progress_callback, pos_tagged=pos_tagged,
+            n_process=n_process, **band_params,
         )
         _save_reference(sessions_root, session_id, reference, source_kind="corpus",
                          pos_tagged=pos_tagged, **band_params)
@@ -248,10 +251,13 @@ def add_texts():
         flash(w, "warning")
 
     ref_path = str(session_store.reference_path(sessions_root, session_id))
+    n_process = auto_n_process(len(texts))
 
     def target_fn(progress_callback):
         existing = Reference.load(ref_path)
-        updated = existing.add_texts(texts, progress_callback=progress_callback)
+        updated = existing.add_texts(
+            texts, progress_callback=progress_callback, n_process=n_process,
+        )
         updated.save(ref_path)
         session_store.update_meta(sessions_root, session_id, target_texts={})
         return f"Added {len(texts)} file(s) to the reference."

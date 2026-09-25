@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
 from .reference import Reference, open_text_file, require_txt_extension
-from .tokenizer import classify_tokens, pipeline_for, pos_suffix
+from .tokenizer import classify_texts, classify_tokens, pipeline_for, pos_suffix
 
 
 @dataclass
@@ -334,11 +334,18 @@ class LexicalProfiler:
     def profile_texts(
         self, texts: dict[str, str],
         progress_callback: Callable[[int, int, str], None] | None = None,
+        n_process: int = 1,
     ) -> dict[str, ProfileResult]:
         """Profile multiple named texts (e.g. {filename: content, ...}).
 
-        Returns a dict of filename -> ProfileResult, run independently
-        per text (each text's own token/type counts, not pooled).
+        Every text is tokenized together as a single spaCy batch
+        (`classify_texts()`, built on `nlp.pipe()`) rather than one text at
+        a time in a loop -- substantially faster for many texts, since
+        each text is still profiled independently afterward (each text's
+        own token/type counts, not pooled) and order doesn't matter for
+        that part.
+
+        Returns a dict of filename -> ProfileResult.
 
         Args:
             progress_callback: optional `callback(current, total, message)`,
@@ -347,14 +354,29 @@ class LexicalProfiler:
                 real per-document progress instead of a generic spinner
                 while a large batch of texts tokenizes -- the same pattern
                 `Reference.from_corpus` uses while building a reference.
+            n_process: worker processes spaCy uses while tokenizing the
+                batch (default 1, i.e. no multiprocessing). See
+                `Reference.from_corpus`'s `n_process` for when raising this
+                is worth it, and the Windows/"spawn" caveat.
         """
         total = len(texts)
         if progress_callback and total:
             progress_callback(0, total, "Profiling...")
 
+        names = list(texts.keys())
+        classified = classify_texts(
+            list(texts.values()),
+            language=self.reference.language,
+            lowercase=self.reference.lowercase,
+            lemmatize=self.reference.lemmatize,
+            min_length=self.min_length,
+            pos_tag=self.reference.pos_tagged,
+            n_process=n_process,
+        )
+
         results = {}
-        for idx, (name, content) in enumerate(texts.items(), start=1):
-            results[name] = self.profile_text(content)
+        for idx, (name, tokens) in enumerate(zip(names, classified), start=1):
+            results[name] = self._profile_tokens(tokens)
             if progress_callback:
                 progress_callback(idx, total, f"Profiling {name} ({idx} of {total})")
         return results
@@ -374,7 +396,9 @@ class LexicalProfiler:
             text = f.read()
         return self.profile_text(text)
 
-    def profile_corpus(self, path: str, encoding: str = "utf-8") -> dict[str, ProfileResult]:
+    def profile_corpus(
+        self, path: str, encoding: str = "utf-8", n_process: int = 1,
+    ) -> dict[str, ProfileResult]:
         """Profile every .txt file found in a directory, each independently.
 
         Searches `path` recursively, mirroring how Reference.from_corpus
@@ -386,6 +410,7 @@ class LexicalProfiler:
             encoding: text encoding used to read each file (default
                 'utf-8'). Bytes that don't decode are dropped rather than
                 raising (errors='ignore').
+            n_process: passed through to `profile_texts()`.
 
         Returns:
             A dict mapping each file's path (relative to `path`) to its
@@ -426,7 +451,7 @@ class LexicalProfiler:
                 f".txt files (checked all subfolders too). Add some .txt "
                 f"files to it, or double-check this is the folder you meant."
             )
-        return self.profile_texts(texts)
+        return self.profile_texts(texts, n_process=n_process)
 
     def _profile_tokens(self, classified_tokens: list[tuple[str, str]]) -> ProfileResult:
         """Classify pre-tokenized (word, category) pairs -- see

@@ -31,10 +31,10 @@ Typical usage:
 
 from .profiler import HighlightedToken, LexicalProfiler, ProfileResult
 from .reference import Reference
-from .tokenizer import download_model, lemmatizer_available, tokenize
+from .tokenizer import auto_n_process, download_model, lemmatizer_available, tokenize
 
 __all__ = [
     "Reference", "LexicalProfiler", "ProfileResult", "HighlightedToken",
-    "tokenize", "lemmatizer_available", "download_model",
+    "tokenize", "lemmatizer_available", "download_model", "auto_n_process",
 ]
 __version__ = "0.2.0"

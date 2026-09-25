@@ -23,6 +23,7 @@ check ahead of time, or `download_model(language)` to fetch one.
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -274,47 +275,13 @@ def pipeline_for(language: str = "en") -> tuple[Language, bool]:
     return _cached_pipeline(language)
 
 
-def classify_tokens(text: str, language: str = "en", lowercase: bool = True,
-                     lemmatize: bool = False, min_length: int = 1,
-                     pos_tag: bool = False) -> list[tuple[str, str]]:
-    """Like `tokenize()`, but returns (word, category) pairs instead of a
-    flat word list, where category is "word", "proper_noun", or "digit".
-    This is what lets a caller (see LexicalProfiler's
-    exclude_proper_nouns/exclude_digits) report proper nouns and
-    digit tokens separately from ordinary running text instead of profiling
-    them like any other word.
-
-    Two differences from `tokenize()`:
-      - A digit token (e.g. "42", "3.14") is kept and categorized
-        "digit" instead of being dropped outright for having no
-        alphabetic character -- `tokenize()` itself still drops these
-        (it's built on top of this function, filtering "digit" out),
-        so existing callers see no change.
-      - Every kept token is tagged "word", "proper_noun", or "digit".
-
-    "proper_noun" classification uses the language's POS tagger, so (like
-    `lemmatize`/`pos_tag`) it requires a trained pipeline for `language`
-    to be installed; with none installed, no token is ever classified
-    "proper_noun" -- everything that isn't a digit token is just "word".
-
-    Note this only catches tokens actually written with digit characters
-    (e.g. "42", "3.14", "3rd"), not spelled-out number words like "twelve"
-    or "forty-two" -- those stay ordinary vocabulary ("word"), unlike
-    spaCy's broader `like_num`. An alphanumeric word that merely contains a
-    digit (e.g. "word2") isn't a "digit" token either, since it isn't a
-    number at all.
-
-    Args: same as `tokenize()`.
-    """
-    nlp, has_lemmatizer = _cached_pipeline(language)
-    doc = nlp(text)
-
-    # Only actually lemmatize/tag if the caller asked for it *and* we have
-    # a pipeline capable of it; otherwise silently fall back to surface
-    # forms rather than erroring (see module docstring for rationale).
-    do_lemmatize = lemmatize and has_lemmatizer
-    do_pos_tag = pos_tag and has_lemmatizer
-
+def _classify_doc(doc, *, language: str, lowercase: bool, min_length: int,
+                   do_lemmatize: bool, do_pos_tag: bool,
+                   has_lemmatizer: bool) -> list[tuple[str, str]]:
+    """Shared per-document token-classification loop used by both
+    `classify_tokens()` (one spaCy Doc at a time) and `classify_texts()`
+    (many Docs from a single `nlp.pipe()` batch) -- kept as one function
+    so the two call paths can never silently drift apart."""
     tokens: list[tuple[str, str]] = []
     for tok in doc:
         surface = tok.text
@@ -362,6 +329,105 @@ def classify_tokens(text: str, language: str = "en", lowercase: bool = True,
     return tokens
 
 
+def classify_tokens(text: str, language: str = "en", lowercase: bool = True,
+                     lemmatize: bool = False, min_length: int = 1,
+                     pos_tag: bool = False) -> list[tuple[str, str]]:
+    """Like `tokenize()`, but returns (word, category) pairs instead of a
+    flat word list, where category is "word", "proper_noun", or "digit".
+    This is what lets a caller (see LexicalProfiler's
+    exclude_proper_nouns/exclude_digits) report proper nouns and
+    digit tokens separately from ordinary running text instead of profiling
+    them like any other word.
+
+    Two differences from `tokenize()`:
+      - A digit token (e.g. "42", "3.14") is kept and categorized
+        "digit" instead of being dropped outright for having no
+        alphabetic character -- `tokenize()` itself still drops these
+        (it's built on top of this function, filtering "digit" out),
+        so existing callers see no change.
+      - Every kept token is tagged "word", "proper_noun", or "digit".
+
+    "proper_noun" classification uses the language's POS tagger, so (like
+    `lemmatize`/`pos_tag`) it requires a trained pipeline for `language`
+    to be installed; with none installed, no token is ever classified
+    "proper_noun" -- everything that isn't a digit token is just "word".
+
+    Note this only catches tokens actually written with digit characters
+    (e.g. "42", "3.14", "3rd"), not spelled-out number words like "twelve"
+    or "forty-two" -- those stay ordinary vocabulary ("word"), unlike
+    spaCy's broader `like_num`. An alphanumeric word that merely contains a
+    digit (e.g. "word2") isn't a "digit" token either, since it isn't a
+    number at all.
+
+    Processing many texts? Use `classify_texts()` instead -- it feeds
+    them through spaCy as a single batch (`nlp.pipe()`), which is
+    substantially faster than calling this function once per text in a
+    Python loop.
+
+    Args: same as `tokenize()`.
+    """
+    nlp, has_lemmatizer = _cached_pipeline(language)
+    doc = nlp(text)
+
+    # Only actually lemmatize/tag if the caller asked for it *and* we have
+    # a pipeline capable of it; otherwise silently fall back to surface
+    # forms rather than erroring (see module docstring for rationale).
+    do_lemmatize = lemmatize and has_lemmatizer
+    do_pos_tag = pos_tag and has_lemmatizer
+
+    return _classify_doc(doc, language=language, lowercase=lowercase, min_length=min_length,
+                          do_lemmatize=do_lemmatize, do_pos_tag=do_pos_tag,
+                          has_lemmatizer=has_lemmatizer)
+
+
+def classify_texts(texts: list[str], language: str = "en", lowercase: bool = True,
+                    lemmatize: bool = False, min_length: int = 1, pos_tag: bool = False,
+                    n_process: int = 1, batch_size: int = 1000,
+                    ) -> list[list[tuple[str, str]]]:
+    """Like `classify_tokens()`, but for many texts at once -- feeds them
+    through spaCy as a single batch via `nlp.pipe()` instead of the caller
+    looping and calling `classify_tokens()` once per text.
+
+    `nlp.pipe()` amortizes per-call overhead across the batch and (unlike
+    repeated single-text calls) can spread the work across processes, so
+    this is the right tool for "many independent texts, order doesn't
+    depend on each other" workloads -- building a reference from a corpus,
+    or profiling a folder of target texts.
+
+    Returns a list of per-text (word, category) lists, in the same order
+    as `texts`.
+
+    Args:
+        texts: the texts to process, in order.
+        n_process: worker processes to use (default 1, i.e. no
+            multiprocessing -- batching alone already gives most of the
+            speedup for typical corpus/target-text sizes; consider raising
+            this only for a large number of documents or a slow pipeline,
+            since each extra process pays a real startup cost -- reloading
+            the spaCy pipeline in each worker takes real time and memory).
+            -1 uses all available CPU cores. On Windows (or anywhere
+            multiprocessing uses "spawn" rather than "fork"), a value > 1
+            requires the calling code to run under
+            `if __name__ == "__main__":`, same as spaCy's own multi-
+            processing docs -- otherwise spawning re-imports and re-runs
+            the entry script in each worker.
+        batch_size: texts per internal batch sent to a worker. spaCy's own
+            default (1000) is fine for typical text lengths; lower it if
+            individual texts are unusually large.
+        Other args: same as `classify_tokens()`.
+    """
+    nlp, has_lemmatizer = _cached_pipeline(language)
+    do_lemmatize = lemmatize and has_lemmatizer
+    do_pos_tag = pos_tag and has_lemmatizer
+
+    return [
+        _classify_doc(doc, language=language, lowercase=lowercase, min_length=min_length,
+                      do_lemmatize=do_lemmatize, do_pos_tag=do_pos_tag,
+                      has_lemmatizer=has_lemmatizer)
+        for doc in nlp.pipe(texts, n_process=n_process, batch_size=batch_size)
+    ]
+
+
 def tokenize(text: str, language: str = "en", lowercase: bool = True,
              lemmatize: bool = False, min_length: int = 1, pos_tag: bool = False):
     """Tokenize raw text into a list of word tokens using spaCy.
@@ -398,3 +464,61 @@ def tokenize(text: str, language: str = "en", lowercase: bool = True,
         min_length=min_length, pos_tag=pos_tag,
     )
     return [word for word, category in classified if category != "digit"]
+
+
+def tokenize_texts(texts: list[str], language: str = "en", lowercase: bool = True,
+                    lemmatize: bool = False, min_length: int = 1, pos_tag: bool = False,
+                    n_process: int = 1, batch_size: int = 1000) -> list[list[str]]:
+    """Like `tokenize()`, but for many texts at once -- see
+    `classify_texts()` for why/when to prefer this over calling
+    `tokenize()` once per text in a loop.
+
+    Returns a list of per-text token-string lists, in the same order as
+    `texts`. Pure digit tokens are dropped, same as `tokenize()`.
+    """
+    classified = classify_texts(
+        texts, language=language, lowercase=lowercase, lemmatize=lemmatize,
+        min_length=min_length, pos_tag=pos_tag, n_process=n_process, batch_size=batch_size,
+    )
+    return [[word for word, category in doc_tokens if category != "digit"]
+            for doc_tokens in classified]
+
+
+def auto_n_process(n_texts: int, texts_per_process: int = 6000) -> int:
+    """Pick a reasonable `n_process` for `classify_texts()`/`tokenize_texts()`
+    (and the `n_process` args on `Reference.from_corpus`/`add_texts` and
+    `LexicalProfiler.profile_texts`/`profile_corpus`) based on how many
+    texts there are, so callers don't have to hand-tune it themselves.
+
+    Below `texts_per_process` texts this returns 1 (no multiprocessing).
+    Above that, it scales up roughly one process per `texts_per_process`
+    texts, capped at the number of CPU cores available (`os.cpu_count()`,
+    or 1 if that can't be determined).
+
+    The default threshold is high on purpose, not a typo: each extra
+    worker process has to reload the *entire* spaCy pipeline (tokenizer +
+    tagger + lemmatizer) from scratch before it can do anything, and that
+    fixed reload cost turned out to be substantial in practice -- on the
+    machine this was benchmarked on (Windows, `en_core_web_sm`), 2
+    processes were still slower than 1 at 3,000 real documents, and only
+    projected to break even somewhere around 6,000-8,000. That reload cost
+    is independent of corpus size, so there's no threshold that's both
+    "low enough to matter for typical corpus sizes" and "high enough not
+    to backfire" -- multiprocessing here only pays off for genuinely large
+    corpora. This will vary by machine, OS (process startup is pricier on
+    Windows than Linux), and spaCy pipeline size, so benchmark your own
+    deployment (`n_process=1` vs a higher value, at your real corpus
+    sizes) before assuming a lower threshold would help.
+
+    This is opt-in -- nothing calls it automatically, since spinning up
+    real worker processes changes execution semantics in a way a library
+    shouldn't do silently (see `classify_texts`'s `n_process` docs for the
+    Windows/"spawn" caveat, which callers using this need to be set up
+    for). Callers that know their own execution context is safe for it
+    (e.g. a background job thread, not a bare top-level script) should
+    call this themselves and pass the result as `n_process`.
+    """
+    if n_texts < texts_per_process:
+        return 1
+    cpu_count = os.cpu_count() or 1
+    return max(1, min(cpu_count, n_texts // texts_per_process))

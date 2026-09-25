@@ -26,7 +26,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from functools import cached_property
 
-from .tokenizer import LANGUAGE_DISPLAY_NAMES, tokenize
+from .tokenizer import LANGUAGE_DISPLAY_NAMES, tokenize_texts
 
 _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
@@ -266,17 +266,25 @@ def _tokenize_corpus(
     source: str | Iterable[str] | dict[str, str], *, language: str, lowercase: bool,
     lemmatize: bool, min_length: int, encoding: str, pos_tagged: bool,
     progress_callback: Callable[[int, int, str], None] | None,
-    counter: Counter,
+    counter: Counter, n_process: int = 1,
 ) -> int:
     """Expand `source`, tokenize every document into `counter` (updated in
     place), and return the number of documents successfully read.
 
+    Every successfully-read document is tokenized together as a single
+    spaCy batch (`tokenize_texts()`, built on `nlp.pipe()`) rather than one
+    text at a time in a loop -- substantially faster, especially for many
+    small-to-medium documents where per-call overhead otherwise dominates.
+
     Drives `progress_callback(current, total, message)`, if given, through
-    each real stage of the work: an initial "loading" call, one call per
-    document as it's tokenized (and lemmatized, if requested), and a final
-    call once every document is done and frequency bands are about to be
-    computed -- so a caller like the web UI can show real, specific status
-    text (not just a generic spinner) for however long this takes.
+    each real stage of the work: an initial "loading" call while every
+    document is read from disk (reading itself isn't individually
+    instrumented, since it's normally fast relative to tokenizing and
+    batching means it now happens as one up-front phase), one call per
+    document as the tokenized batch is consumed, and a final call once
+    every document is done and frequency bands are about to be computed --
+    so a caller like the web UI can show real, specific status text (not
+    just a generic spinner) for however long this takes.
     """
     items = _expand_sources(source)
     total = len(items)
@@ -285,18 +293,30 @@ def _tokenize_corpus(
     if progress_callback and total:
         progress_callback(0, total, "Loading documents...")
 
-    stage_label = "Lemmatizing" if lemmatize else "Tokenizing"
+    # (position in `items`, display name, text) for every document that
+    # actually read successfully -- kept alongside its original 1-based
+    # position so progress numbering below still reflects skipped files
+    # exactly as it did when read+tokenize happened in one combined loop.
+    read_docs: list[tuple[int, str | None, str]] = []
     for idx, (kind, value, name, catch_open_errors) in enumerate(items, start=1):
         text = _read_source_item(kind, value, catch_open_errors, encoding)
         if text is None:
             continue
         n_docs += 1
-        tokens = tokenize(text, language=language, lowercase=lowercase,
-                           lemmatize=lemmatize, min_length=min_length, pos_tag=pos_tagged)
-        counter.update(tokens)
-        if progress_callback:
-            suffix = f" {name}" if name else ""
-            progress_callback(idx, total, f"{stage_label}{suffix} ({idx} of {total})")
+        read_docs.append((idx, name, text))
+
+    stage_label = "Lemmatizing" if lemmatize else "Tokenizing"
+    if read_docs:
+        tokenized = tokenize_texts(
+            [text for _, _, text in read_docs], language=language, lowercase=lowercase,
+            lemmatize=lemmatize, min_length=min_length, pos_tag=pos_tagged,
+            n_process=n_process,
+        )
+        for (idx, name, _text), tokens in zip(read_docs, tokenized):
+            counter.update(tokens)
+            if progress_callback:
+                suffix = f" {name}" if name else ""
+                progress_callback(idx, total, f"{stage_label}{suffix} ({idx} of {total})")
 
     if progress_callback and total:
         progress_callback(total, total, "Computing frequency bands...")
@@ -478,7 +498,7 @@ class Reference:
                      coarse_grained_from: int | None = None,
                      encoding: str = "utf-8",
                      progress_callback: Callable[[int, int, str], None] | None = None,
-                     pos_tagged: bool = False,
+                     pos_tagged: bool = False, n_process: int = 1,
                      ) -> Reference:
         """Build a reference frequency model from a corpus of texts.
 
@@ -534,6 +554,16 @@ class Reference:
                 a plain (non-POS) reference otherwise. Forces lemmatize=True
                 regardless of what was passed, since POS-aware matching
                 against surface forms is meaningless.
+            n_process: worker processes spaCy uses while tokenizing the
+                corpus (default 1, i.e. no multiprocessing). Every document
+                is already tokenized as one batch rather than one at a time
+                regardless of this setting, which is normally the bigger
+                speedup; raise this only for a large corpus or a slow
+                pipeline, since each extra process reloads the spaCy
+                pipeline (real time and memory cost). -1 uses all available
+                CPU cores. On Windows (or anywhere multiprocessing uses
+                "spawn" rather than "fork"), a value > 1 requires the
+                calling code to run under `if __name__ == "__main__":`.
         """
         if pos_tagged:
             lemmatize = True
@@ -544,7 +574,7 @@ class Reference:
         n_docs = _tokenize_corpus(
             source, language=language, lowercase=lowercase, lemmatize=lemmatize,
             min_length=min_length, encoding=encoding, pos_tagged=pos_tagged,
-            progress_callback=progress_callback, counter=counter,
+            progress_callback=progress_callback, counter=counter, n_process=n_process,
         )
 
         if not counter:
@@ -768,6 +798,7 @@ class Reference:
 
     def add_texts(self, source: str | Iterable[str] | dict[str, str], encoding: str = "utf-8",
                   progress_callback: Callable[[int, int, str], None] | None = None,
+                  n_process: int = 1,
                   ) -> Reference:
         """Add more documents to this reference, recomputing ranks and bands
         from the combined word counts.
@@ -778,7 +809,7 @@ class Reference:
         strings, or a dict of {display name: raw text}). Returns a new
         Reference; this one is left as-is.
 
-        `progress_callback` behaves as in `from_corpus`.
+        `progress_callback`/`n_process` behave as in `from_corpus`.
 
         Raises ValueError if this reference has no raw word counts to
         merge with (e.g. a rank-only word list), since there'd be nothing
@@ -797,7 +828,7 @@ class Reference:
             source, language=self.language, lowercase=self.lowercase,
             lemmatize=self.lemmatize, min_length=1, encoding=encoding,
             pos_tagged=self.pos_tagged,
-            progress_callback=progress_callback, counter=counter,
+            progress_callback=progress_callback, counter=counter, n_process=n_process,
         )
 
         if n_docs == 0:
