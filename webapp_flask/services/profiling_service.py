@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from lexical_profiler import LexicalProfiler, ProfileResult, Reference
+from lexical_profiler import LexicalProfiler, ProfileResult, Reference, auto_n_process
 
 from . import session_store
 
@@ -45,4 +45,8 @@ def get_results(
 ) -> dict[str, ProfileResult]:
     meta = session_store.read_meta(sessions_root, session_id)
     profiler = get_profiler(sessions_root, session_id)
-    return profiler.profile_texts(meta["target_texts"], progress_callback=progress_callback)
+    target_texts = meta["target_texts"]
+    return profiler.profile_texts(
+        target_texts, progress_callback=progress_callback,
+        n_process=auto_n_process(len(target_texts)),
+    )

@@ -76,7 +76,9 @@ def build():
     if has_reference and target_texts:
         try:
             profiler = profiling_service.get_profiler(sessions_root, session_id)
-            results_by_name = profiler.profile_texts(target_texts)
+            results_by_name = profiler.profile_texts(
+                target_texts, n_process=auto_n_process(len(target_texts)),
+            )
             selected = request.args.get("text")
             if selected not in results_by_name:
                 selected = next(iter(results_by_name))
