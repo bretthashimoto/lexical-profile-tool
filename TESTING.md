@@ -49,7 +49,7 @@ You should see a table breaking the text down into frequency bands, an
 worked. Move on to trying it for real.
 
 For the full walkthrough of what everything means, see the
-[README tutorial](README.md#tutorial-profiling-two-aesops-fables-passages).
+[README tutorial](README.md#tutorial-profiling-seven-aesops-fables-passages).
 
 ## 3. Try it on your own text
 
@@ -108,7 +108,7 @@ exercises a different part of the tool:
 
 There's an equivalent Python API (`Reference`, `LexicalProfiler`, `report`)
 that the CLI is a thin wrapper around: the
-[README](README.md#tutorial-profiling-a-couple-of-nature-and-economy-essays)
+[README](README.md#tutorial-profiling-seven-aesops-fables-passages)
 walks through it step by step, and `example.py` is a runnable end-to-end
 script (`python example.py`). If you try this route, I'm especially
 interested in whether the API feels intuitive to call without hand-holding.

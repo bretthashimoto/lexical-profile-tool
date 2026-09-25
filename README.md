@@ -78,6 +78,11 @@ examples/
   targets/                       # texts you want to *profile*
     aesops_fables_1.txt
     aesops_fables_2.txt
+    aesops_fables_3.txt
+    aesops_fables_4.txt
+    aesops_fables_5.txt
+    aesops_fables_6.txt
+    aesops_fables_7.txt
   wordlists/
     simple_wordlist.txt          # one word per line, no frequencies
     frequency_wordlist.txt       # "word,frequency" pairs
@@ -95,9 +100,10 @@ rule the night. ...
 
 A **target file** (used to *profile*) looks exactly the same: any
 plain-text document you want scored against the reference, e.g.
-`examples/targets/aesops_fables_1.txt` -- two short public-domain fables
+`examples/targets/aesops_fables_1.txt` -- a short public-domain fable
 from Aesop's Fables: A New Translation (V. S. Vernon Jones, 1912), via
 [the Internet Archive](https://archive.org/stream/aesopsfablesanew11339gut/11339.txt).
+`examples/targets/` has seven such files, one fable per file.
 
 Point at a whole **folder** instead of a single file and every `.txt`
 file inside it (subfolders included) is picked up automatically. That
@@ -138,12 +144,12 @@ handy when a target text has names like `Zocharias` or brand terms like
 example targets don't happen to need any, so the file ships empty
 (just the explanatory comment) by default.
 
-## Tutorial: profiling two Aesop's Fables passages
+## Tutorial: profiling seven Aesop's Fables passages
 
-Let's actually use the files above. We want to know how much of two
-short passages of Aesop's Fables (two fables apiece) falls outside
-everyday vocabulary, relative to a small reference built from three
-sample articles.
+Let's actually use the files above. We want to know how much of seven
+short Aesop's Fables passages (one fable each) falls outside everyday
+vocabulary, relative to a small reference built from three sample
+articles.
 
 ### Step 1: Build a reference
 
@@ -190,26 +196,26 @@ print(result.summary())
 ```
 
 ```text
-Tokens: 306   Types: 155
+Tokens: 156   Types: 94
 
 Band          Tokens    % Tokens     Cum %     Types     % Types
-1-20              61      19.93%    19.93%         7       4.52%
-21-40              6       1.96%    21.90%         4       2.58%
-41-60              7       2.29%    24.18%         3       1.94%
-61-80              2       0.65%    24.84%         2       1.29%
-81-100             8       2.61%    27.45%         2       1.29%
-101-120            1       0.33%    27.78%         1       0.65%
-121-129            7       2.29%    30.07%         1       0.65%
-Off-list         214      69.93%                 135
+1-20              34      21.79%    21.79%         6       6.38%
+21-40              5       3.21%    25.00%         4       4.26%
+41-60              3       1.92%    26.92%         2       2.13%
+61-80              1       0.64%    27.56%         1       1.06%
+81-100             4       2.56%    30.13%         1       1.06%
+101-120            1       0.64%    30.77%         1       1.06%
+121-129            4       2.56%    33.33%         1       1.06%
+Off-list         104      66.67%                  78
 
-Sample off-list words: wolf, he, at, so, his, hare, tortoise, for, i,
-race, 's, but, as, had, boy, sheep, fun, slow, 'll, you  (+115 more)
+Sample off-list words: hare, tortoise, so, i, race, at, he, for, slow,
+his, 'll, well, soon, but, on, one, day, making, fun, being  (+58 more)
 ```
 
-Reading this: 306 tokens total, 155 of them unique types. About 20% of the
+Reading this: 156 tokens total, 94 of them unique types. About 22% of the
 text's tokens are in band 1 (the most common words in our tiny
-reference), and a big chunk (69.9%) is "off-list": words our 3-article
-reference has just never seen, like `wolf` or `tortoise` -- unsurprising,
+reference), and a big chunk (66.7%) is "off-list": words our 3-article
+reference has just never seen, like `hare` or `tortoise` -- unsurprising,
 since a 129-word reference vocabulary barely covers ordinary English, let
 alone a Victorian-era fable translation. **Cum %** is the running total
 of `% Tokens` through that band: "how much of the text is covered by
@@ -231,8 +237,13 @@ for name, result in results.items():
 ```
 
 ```text
-aesops_fables_1.txt -> 306 tokens, 69.9% off-list
-aesops_fables_2.txt -> 232 tokens, 69.4% off-list
+aesops_fables_1.txt -> 156 tokens, 66.7% off-list
+aesops_fables_2.txt -> 150 tokens, 73.3% off-list
+aesops_fables_3.txt -> 97 tokens, 63.9% off-list
+aesops_fables_4.txt -> 135 tokens, 73.3% off-list
+aesops_fables_5.txt -> 182 tokens, 70.9% off-list
+aesops_fables_6.txt -> 168 tokens, 69.6% off-list
+aesops_fables_7.txt -> 270 tokens, 67.4% off-list
 ```
 
 (`profile_corpus` searches subfolders too, and keys its results by path
@@ -244,7 +255,7 @@ with the same name in different subfolders don't collide.)
 ```python
 from lexical_profiler import report
 
-report.export_csv(results, "band_coverage.csv")           # one row per band per essay
+report.export_csv(results, "band_coverage.csv")           # one row per band per text
 report.export_json(results, "full_report.json")            # everything, structured
 report.export_off_list_csv(results, "unknown_words.csv")   # every off-list word, with counts
 report.export_ignored_csv(results, "ignored_words.csv")    # every ignored word, with counts
