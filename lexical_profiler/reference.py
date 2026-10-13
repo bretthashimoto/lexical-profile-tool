@@ -33,10 +33,14 @@ _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 # Reference word lists bundled with the package, keyed by the name passed to
 # Reference.from_builtin(...). Add an entry here (plus the corresponding file
 # under lexical_profiler/data/) to make a new published list available.
+# "language" is the ISO 639-1 code of the language the list covers: it's the
+# language the reference tokenizes target texts in, and the webapp only
+# offers a list when that language is selected.
 BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     "avl": {
         "file": "avl_academic.txt",
         "label": "Academic Vocabulary List (AVL)",
+        "language": "en",
         "pos_tagged": True,
         # AVL is a deliberately size-capped top-~3,000 list: a missing
         # lemma+POS pairing (e.g. no "study_v" even though "study_n" made
@@ -59,6 +63,7 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     "ngsl": {
         "file": "ngsl.txt",
         "label": "New General Service List (NGSL)",
+        "language": "en",
         "description": (
             "New General Service List (NGSL) -- Browne & Culligan (2013), "
             "~2,800 core word families for everyday (non-academic) English"
@@ -71,6 +76,7 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     "nawl": {
         "file": "nawl.txt",
         "label": "New Academic Word List (NAWL)",
+        "language": "en",
         "pos_tagged": True,
         "description": (
             "New Academic Word List (NAWL) -- Browne, Culligan & Phillips (2013), "
@@ -87,6 +93,7 @@ BUILTIN_WORD_LISTS: dict[str, dict[str, str | bool]] = {
     "coca": {
         "file": "coca.txt",
         "label": "COCA lemmas",
+        "language": "en",
         "pos_tagged": True,
         "description": (
             "Corpus of Contemporary American English (COCA) -- Davies (2008-), "
@@ -870,7 +877,7 @@ class Reference:
 
     @classmethod
     def from_builtin(cls, name: str, band_size: int = 1000, lowercase: bool = True,
-                      language: str = "en", fine_band_size: int | None = None,
+                      language: str | None = None, fine_band_size: int | None = None,
                       fine_grained_until: int | None = None,
                       coarse_band_size: int | None = None,
                       coarse_grained_from: int | None = None,
@@ -881,7 +888,11 @@ class Reference:
 
         Args:
             name: key into BUILTIN_WORD_LISTS, e.g. "avl". Case-insensitive.
-            band_size, lowercase, language, fine_band_size, fine_grained_until,
+            language: defaults to the list's own language (its "language"
+                entry in BUILTIN_WORD_LISTS). Passing a different language
+                raises ValueError, since e.g. profiling Spanish text against
+                an English list would mark almost every word off-list.
+            band_size, lowercase, fine_band_size, fine_grained_until,
             coarse_band_size, coarse_grained_from, lemmatize: same as
             from_word_list().
 
@@ -896,6 +907,16 @@ class Reference:
             raise ValueError(
                 f"'{name}' isn't a built-in word list this package ships with. "
                 f"Available options: {available}."
+            )
+        list_language = entry["language"]
+        if language is None:
+            language = list_language
+        # Compare base codes so a full pipeline name like "en_core_web_sm"
+        # still counts as English.
+        elif language.split("_")[0].lower() != list_language:
+            raise ValueError(
+                f"The built-in word list '{key}' is for language "
+                f"'{list_language}', not '{language}'."
             )
         path = os.path.join(_DATA_DIR, entry["file"])
         reference = cls.from_word_list(

@@ -96,7 +96,7 @@ def main(argv=None):
         "--reference-builtin", metavar="NAME", choices=sorted(BUILTIN_WORD_LISTS),
         help="Use a word list bundled with this package instead of your own file. "
              "Available: " + ", ".join(
-                 f"{name} ({entry['description']})"
+                 f"{name} [{entry['language']}] ({entry['description']})"
                  for name, entry in sorted(BUILTIN_WORD_LISTS.items())
              ),
     )
@@ -131,10 +131,12 @@ def main(argv=None):
                          help="Rank from which --coarse-band-size applies (e.g. 50000 "
                               "collapses the long tail past rank 50000 into a handful "
                               "of wide bands instead of many normal --band-size ones).")
-    parser.add_argument("--language", default="en",
+    # Default resolved below: "en", except a built-in list defaults to its own language.
+    parser.add_argument("--language", default=None,
                          help="ISO 639-1 language code (e.g. en, es, de, fr, zh, ja, ru) "
                               "or a full spaCy model name (e.g. en_core_web_sm). "
-                              "Default: en. Tokenization works for any spaCy-supported "
+                              "Default: en (or, with --reference-builtin, that list's "
+                              "own language). Tokenization works for any spaCy-supported "
                               "language even without a downloaded model; lemmatization "
                               "requires one (see --download-model).")
     parser.add_argument("--download-model", action="store_true",
@@ -200,12 +202,16 @@ def main(argv=None):
             ".txt files with --target-dir some_folder/."
         )
 
+    if args.language is None and not args.reference_builtin:
+        args.language = "en"
+
     if args.download_model:
         # Imported lazily so a plain `--help` invocation doesn't need to
         # import the tokenizer module (and therefore spaCy) at all.
         from . import tokenizer as tokenizer_mod
-        print(f"Downloading spaCy model for language={args.language} ...", file=sys.stderr)
-        ok = tokenizer_mod.download_model(args.language)
+        model_language = args.language or BUILTIN_WORD_LISTS[args.reference_builtin]["language"]
+        print(f"Downloading spaCy model for language={model_language} ...", file=sys.stderr)
+        ok = tokenizer_mod.download_model(model_language)
         print("Download succeeded." if ok else "Download failed or unavailable "
               "for this language; continuing with fallback tokenizer.", file=sys.stderr)
 

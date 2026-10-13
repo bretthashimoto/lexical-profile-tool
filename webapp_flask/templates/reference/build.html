@@ -7,7 +7,39 @@
 {{ reset_button() }}
 <h1>Profile a text</h1>
 
-<h2>1. Build a reference or select a word list</h2>
+<h2>1. Choose a language, then build a reference or select a word list</h2>
+
+{# The one language control for every reference-build form below: it decides
+   which built-in lists are offered, and the formdata listener here adds it
+   (plus the band fields from "Advanced settings") to whichever form with
+   data-band-params gets submitted -- natively or via `new FormData(form)`. #}
+{% set current_language = ((reference_build or {}).get("language") or "en").split("_")[0] %}
+<div class="page-language">
+    <span class="page-language-label">Language of your texts</span>
+    <div id="page-language" class="source-selector" title="Used for tokenization and lemmatization
+(models for these languages are pre-installed), and decides which built-in word lists are
+available.">
+        {% for lang in languages %}
+            <label><input type="radio" name="page_language" value="{{ lang }}" {% if lang == current_language or (loop.first and current_language not in languages) %}checked{% endif %}> {{ language_names.get(lang, lang) }}</label>
+        {% endfor %}
+    </div>
+</div>
+<script>
+    /* Radios' change events bubble, so scripts below listen for "change"
+       on #page-language and read the choice through this. */
+    function pageLanguage() {
+        return document.querySelector('input[name="page_language"]:checked').value;
+    }
+
+    document.addEventListener("formdata", function (evt) {
+        if (evt.target.dataset.bandParams !== "true") return;
+        evt.formData.set("language", pageLanguage());
+        var inputs = document.querySelectorAll("#band-size-settings input[name]");
+        for (var i = 0; i < inputs.length; i++) {
+            evt.formData.set(inputs[i].name, inputs[i].value);
+        }
+    });
+</script>
 
 {% if has_reference %}
     {% if reference_summary %}
@@ -58,27 +90,52 @@ bundled with this app, your own corpus of texts, or your own word list/saved ref
         <label title="Which published reference word list to profile against. See the
 &quot;How to cite&quot; page for how to cite whichever one you use.">
             List
-            <select name="builtin_name" class="builtin-select">
-                {% for key, info in builtin_choices.items() %}
-                    <option value="{{ key }}" {% if info.get("pos_tagged") %}data-pos-tagged="1"{% endif %}>{{ info.label }}</option>
-                {% endfor %}
-            </select>
+            <select name="builtin_name" class="builtin-select"></select>
         </label>
         <p class="caption builtin-pos-note" hidden>
             This list also matches by part of speech (e.g. "record" as a verb is scored
             separately from "record" as a noun).
         </p>
+        <p class="caption builtin-none" hidden>
+            No built-in word lists for this language yet. Build a reference from a corpus of texts
+            or your own word list instead.
+        </p>
         <script>
             (function () {
                 var form = document.currentScript.closest("form");
+                var langPicker = document.getElementById("page-language");
                 var select = form.querySelector(".builtin-select");
                 var note = form.querySelector(".builtin-pos-note");
-                function update() {
+                var none = form.querySelector(".builtin-none");
+                var lists = {{ builtin_choices | tojson }};
+                var initial = {{ ((reference_build or {}).get("builtin_name") or "") | tojson }};
+
+                function updateNote() {
                     var opt = select.options[select.selectedIndex];
                     note.hidden = !(opt && opt.dataset.posTagged);
                 }
-                select.addEventListener("change", update);
-                update();
+
+                // Rebuilt rather than hiding <option>s, which Safari ignores.
+                function updateLists() {
+                    var previous = select.value || initial;
+                    select.innerHTML = "";
+                    Object.keys(lists).forEach(function (key) {
+                        var info = lists[key];
+                        if (info.language !== pageLanguage()) return;
+                        var opt = new Option(info.label, key, false, key === previous);
+                        if (info.pos_tagged) opt.dataset.posTagged = "1";
+                        select.add(opt);
+                    });
+                    var empty = select.options.length === 0;
+                    select.disabled = empty;
+                    none.hidden = !empty;
+                    form.querySelector('button[type="submit"]').disabled = empty;
+                    updateNote();
+                }
+
+                select.addEventListener("change", updateNote);
+                langPicker.addEventListener("change", updateLists);
+                updateLists();
             })();
         </script>
         {% set show_lemmatize = false %}
@@ -204,9 +261,9 @@ override it if auto-detection guesses wrong for your file.">
     <summary>Advanced settings</summary>
     <h4>Frequency bands</h4>
     <p class="caption">Applied the next time you build a reference above.</p>
-    {# Deliberately outside any <form>: the script below copies these into
-       whichever reference-build form gets submitted, so one set of fields
-       serves all of them. #}
+    {# Deliberately outside any <form>: the formdata listener at the top of
+       step 1 copies these into whichever reference-build form gets
+       submitted, so one set of fields serves all of them. #}
     <div id="band-size-settings">
         <label title="How many words make up each frequency band, e.g. band 1 = the 1000 most frequent
 words, band 2 = the next 1000, and so on. Smaller values give more (narrower) bands; doesn't
@@ -248,17 +305,6 @@ after the fine-grained section above, if any).">
             </label>
         </details>
     </div>
-    <script>
-        /* "formdata" fires both on a native submit and on `new FormData(form)`
-           (submitJobForm, corpus auto-upload), so this covers every build path. */
-        document.addEventListener("formdata", function (evt) {
-            if (evt.target.dataset.bandParams !== "true") return;
-            var inputs = document.querySelectorAll("#band-size-settings input[name]");
-            for (var i = 0; i < inputs.length; i++) {
-                evt.formData.set(inputs[i].name, inputs[i].value);
-            }
-        });
-    </script>
     <h4>Exclusions</h4>
     <p class="caption">Words and categories to exclude from band/off-list scoring.</p>
     <form method="post" action="{{ url_for('reference.ignore_config') }}" enctype="multipart/form-data">

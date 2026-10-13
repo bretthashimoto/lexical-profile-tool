@@ -387,7 +387,7 @@ it falls back to surface forms, same as the library does everywhere else.
 | `name` | *required* | Key of a word list bundled with this package (case-insensitive): `"avl"` (Academic Vocabulary List, lemma+POS), `"ngsl"` (New General Service List), `"nawl"` (New Academic Word List, lemma+POS), or `"coca"` (COCA lemma+POS list). |
 | `band_size` | `1000` | Same as above. |
 | `lowercase` | `True` | Same as above. |
-| `language` | `"en"` | Same as above. |
+| `language` | the list's own language | Every bundled list is tied to one language (all four current ones are English, `"en"`). Passing a different language raises `ValueError`. |
 | `fine_band_size` / `fine_grained_until` | `None` | Same as above. |
 
 ### `Reference.save(path)` / `Reference.load(path)`

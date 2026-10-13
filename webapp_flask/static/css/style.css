@@ -398,6 +398,18 @@ details > summary {
     font-weight: 600;
 }
 
+/* Step 1's page-wide language picker, above the source selector -- same
+   pill styling (via .source-selector), with a heading-weight label. */
+.page-language-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.page-language .source-selector {
+    margin-bottom: 1.25rem;
+}
+
 .source-selector {
     display: flex;
     flex-wrap: wrap;

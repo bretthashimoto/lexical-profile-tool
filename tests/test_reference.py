@@ -209,6 +209,27 @@ def test_from_builtin_unknown_name_raises():
         Reference.from_builtin("not-a-real-list")
 
 
+def test_every_builtin_list_has_a_language():
+    from lexical_profiler.reference import BUILTIN_WORD_LISTS
+    for name, entry in BUILTIN_WORD_LISTS.items():
+        assert entry.get("language"), name
+
+
+def test_from_builtin_defaults_to_the_lists_language():
+    ref = Reference.from_builtin("ngsl", band_size=1000)
+    assert ref.language == "en"
+
+
+def test_from_builtin_accepts_full_pipeline_name_for_lists_language():
+    ref = Reference.from_builtin("ngsl", band_size=1000, language="en_core_web_sm")
+    assert ref.language == "en_core_web_sm"
+
+
+def test_from_builtin_rejects_a_different_language():
+    with pytest.raises(ValueError, match="'en'"):
+        Reference.from_builtin("ngsl", language="es")
+
+
 def test_from_builtin_coca_is_pos_tagged():
     ref = Reference.from_builtin("coca", band_size=1000)
     assert ref.pos_tagged is True

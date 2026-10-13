@@ -3,19 +3,10 @@
    that always matches by lemma (the built-in word lists) -- the choice
    isn't meaningful there, so a hidden field keeps lemmatize=True without
    showing a checkbox the user could wrongly uncheck.
-   Band size and fine/coarse bands live once in the page's "Advanced
-   settings" section instead; the data-band-params marker set below is
-   what tells that section's script to add them to this form's data. #}
+   Language (top of step 1) and band size/fine/coarse bands ("Advanced
+   settings") live once on the page instead; the data-band-params marker
+   set below is what tells the page to add them to this form's data. #}
 {% set show_lemmatize = show_lemmatize | default(true) %}
-<label title="Used for tokenization and lemmatization (models for these languages are pre-installed).">
-    Language
-    <select name="language" class="band-language-select">
-        {% for lang in languages %}
-            <option value="{{ lang }}">{{ language_names.get(lang, lang) }}</option>
-        {% endfor %}
-    </select>
-</label>
-<br>
 {% if show_lemmatize %}
     <label title="Requires a spaCy pipeline installed for the language; silently falls back to
 surface forms otherwise. Uncheck to profile against surface word forms instead.">
@@ -33,7 +24,7 @@ surface forms otherwise. Uncheck to profile against surface word forms instead."
     (function () {
         var form = document.currentScript.closest("form");
         form.dataset.bandParams = "true";
-        var langSelect = form.querySelector(".band-language-select");
+        var langPicker = document.getElementById("page-language");
         var lemmatizeCheckbox = form.querySelector(".band-lemmatize-checkbox");
         var warning = form.querySelector(".model-warning");
 
@@ -44,13 +35,13 @@ surface forms otherwise. Uncheck to profile against surface word forms instead."
                 warning.hidden = true;
                 return;
             }
-            fetch(`/reference/model-status?language=${encodeURIComponent(langSelect.value)}`)
+            fetch(`/reference/model-status?language=${encodeURIComponent(pageLanguage())}`)
                 .then((r) => r.json())
                 .then((data) => { warning.hidden = data.available; })
                 .catch(() => { warning.hidden = true; });
         }
 
-        langSelect.addEventListener("change", checkModel);
+        langPicker.addEventListener("change", checkModel);
         if (lemmatizeCheckbox) lemmatizeCheckbox.addEventListener("change", checkModel);
         checkModel();
     })();
